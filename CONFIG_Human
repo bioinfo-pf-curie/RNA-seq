@@ -1,0 +1,68 @@
+# Please change the variable settings below if necessary
+
+#########################################################################
+## Paths and Settings
+#########################################################################
+
+FASTQC_PATH=/bioinfo/local/build/Centos/FastQC/FastQC_v0.11.5
+JAVA_PATH=/bioinfo/local/build/Centos/java/jre1.8.0_101/bin
+BOWTIE_PATH=/bioinfo/local/build/Centos/bowtie/bowtie-1.2/bin
+TOPHAT2_PATH=/bioinfo/local/build/Centos/tophat/tophat_2.1.1/bin
+BOWTIE2_PATH=/bioinfo/local/build/Centos/bowtie2/bowtie2-2.2.9
+STAR_PATH=/bioinfo/local/build/Centos/STAR/STAR-2.5.2b/bin/Linux_x86_64
+SAMTOOLS_PATH=/bioinfo/local/build/Centos/samtools/samtools-1.3/bin
+HTSEQ_PATH=/bioinfo/local/build/HTSeq-0.6.1/bin
+FEATURECOUNTS_PATH=/bioinfo/local/build/subread-1.5.1/bin
+BEDTOOLS_PATH=/bioinfo/local/build/Centos/bedtools/bedtools-2.25.0/bin
+R_PATH=/bioinfo/local/build/R/R-3.3.0_centos/bin
+PYTHON_PATH=/bioinfo/local/build/Centos/python/python-2.7.11/bin
+RSEQC_PATH=/bioinfo/local/build/Centos/RSeQC/RSeQC-2.6.4/scripts
+PICARD_PATH = /bioinfo/local/build/Centos/picard/2.6.0/picard.jar
+
+#########################################################################
+## GENOME
+#########################################################################
+
+ORG = Human
+BUILD = hg19
+
+#########################################################################
+## WORKFLOW
+#########################################################################
+
+## STAR or TOPHAT2
+MAPPING_TOOL = STAR
+
+## STAR or HTSEQ or FEATURECOUNTS
+COUNT_TOOL = STAR
+
+#########################################################################
+## Data
+#########################################################################
+
+# must be "no", "yes", or "reverse"
+STRANDED = "no"
+
+#########################################################################
+## Define Options
+#########################################################################
+
+BOWTIE_RRNA_IDX = /data/tmp/annotation_pipelines/Human/rRNA/rRNA_human_complete
+BOWTIE_OPTS = -v 2 -a -m 1 --best --strata --nomaqround -y
+
+STAR_IDX_PATH = /data/tmp/annotation_pipelines/Human/hg19/STAR_gencode/
+STAR_OPTS = --runThreadN 8 --outSAMtype BAM SortedByCoordinate --runMode alignReads --outFilterMismatchNmax 6 --outFilterMultimapNmax 20 --outSAMmultNmax 20 --outSAMprimaryFlag OneBestScore
+
+TOPHAT2_IDX_PATH = /data/tmp/annotation_pipelines/Human/hg19/STAR_gencode/bowtie2_indexes/
+TOPHAT2_OPTS =  --b2-sensitive -p 6 -g 1 -N 2 --no-coverage-search
+
+HTSEQ_OPTS = -f bam -i gene_id -a 10 -t exon -r name 
+FEATURECOUNTS_OPTS = -t exon -C -T 8 -p
+
+########################################################################
+## Annotation files
+########################################################################
+
+R_RNA_FASTA=/data/tmp/annotation_pipelines/Human/rRNA/rRNA_human_complete.fa
+TRANSCRIPTS_GTF=/data/tmp/annotation_pipelines/Human/hg19/gtf/gencode.v19.annotation.gtf
+GENE_BED=/data/annotations/Human/hg19/hg19refGene.bed

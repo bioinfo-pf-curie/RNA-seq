@@ -1,0 +1,51 @@
+***********************************
+CHANGES IN VERSION 0.0.3
+
+NEW FEATURES
+
+   o Integrate the METADATA file into the md report
+
+SIGNIFICANT USER-VISIBLE CHANGES
+
+   o Use the Centos version of Picard tools (issue #1)
+
+***********************************
+CHANGES IN VERSION 0.0.2
+
+NEW FEATURES
+
+  o Add RSeQC to check to library type
+
+  o Add the number of duplicates
+
+SIGNIFICANT USER-VISIBLE CHANGES
+
+   o Manage logs
+
+   o change SAMPLE_PLAN
+
+BUG FIXES
+
+   o Fix the bug - remove file type and replace by regular expression
+
+   o Fix the bug in the count of reads overlapping exon/intron/inter
+
+
+***********************************
+CHANGES IN VERSION 0.0.1
+
+NEW FEATURES
+
+   o Add step to remove rRNA based on bowtie mapping on rRNA fasta reference
+
+   o Add quality controls based on annotation
+
+   o Export count table and descriptive statistics
+
+SIGNIFICANT USER-VISIBLE CHANGES
+
+   o change number format
+
+BUG FIXES
+
+
