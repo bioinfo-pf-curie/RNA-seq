@@ -46,3 +46,6 @@ Generate the Markdown report
 ### Run the pipeline on a list of sample, using a cluster :
 
 ./bin/RNApip_cluster -i /data/tmp/testdataset_pipelines/RNA-seq/SAMPLE_PLAN -o /data/tmp/test_star_p -c CONFIG_Mouse 
+
+
+## end
