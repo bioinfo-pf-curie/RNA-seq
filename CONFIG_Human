@@ -50,7 +50,7 @@ STRANDED = "no"
 BOWTIE_RRNA_IDX = /data/tmp/annotation_pipelines/Human/rRNA/rRNA_human_complete
 BOWTIE_OPTS = -v 2 -a -m 1 --best --strata --nomaqround -y
 
-STAR_IDX_PATH = /data/tmp/annotation_pipelines/Human/hg19/STAR_gencode/
+STAR_IDX_PATH = /data/tmp/annotation_pipelines/Human/hg19/STAR_gencode_indexes/
 STAR_OPTS = --runThreadN 8 --outSAMtype BAM SortedByCoordinate --runMode alignReads --outFilterMismatchNmax 6 --outFilterMultimapNmax 20 --outSAMmultNmax 20 --outSAMprimaryFlag OneBestScore
 
 TOPHAT2_IDX_PATH = /data/tmp/annotation_pipelines/Human/hg19/STAR_gencode/bowtie2_indexes/
