@@ -38,7 +38,7 @@ The following dependencies are required :
 
 *Run the analysis worflow  
  ./bin/RNApip -f /data/tmp/testdataset_pipelines/RNA-seq/Gendrel2012/SRR1106775_1M_1.fastq.gz \
-	-r /data/tmp/testdataset_pipelines/RNA-seq/Gendrel2012/SRR1106775_1M_2.fastq.gz -o /data/tmp/testrnapip$$ -c CONFIG_star -s TEST_SAMPLE
+	-r /data/tmp/testdataset_pipelines/RNA-seq/Gendrel2012/SRR1106775_1M_2.fastq.gz -o /data/tmp/testrnapip$$ -c CONFIG_Mouse -s TEST_SAMPLE
 
 *Generate the Markdown report  
 ./bin/makeRNAreport -i /data/tmp/test_star -c CONFIG

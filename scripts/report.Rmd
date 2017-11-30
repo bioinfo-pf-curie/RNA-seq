@@ -163,7 +163,7 @@ dataPlot$type <- factor(dataPlot$type, levels=c("Aligned reads (unique-hits)", "
 p_unmapped <- paste0(round(dataPlot[which(dataPlot$type=="Unmapped reads"),"n_read"] /     sapply(unique(dataPlot$sample),function(i){sum(dataPlot[which(dataPlot$sample==i),"n_read"])})*100,2),"%")
 dataPlot$percent <- c(statsFile$p_u_aligned, statsFile$p_m_aligned, statsFile$p_rrna, p_unmapped)
 
-gg <- ggplot(dataPlot, aes(x=sample, y=n_read, fill=type, text=percent)) + geom_bar(stat="identity") + scale_fill_manual(name = "", values=c("orange", "darkorange", "red", "gray")) + labs(title = "Mapping statitics per sample", x = "Sample(s)", y = "Number of reads") + theme(axis.text.x = element_text(angle = 45, hjust = 1), axis.title.x = element_text(size = 13), axis.title.y = element_text(size = 13))
+gg <- ggplot(dataPlot, aes(x=sample, y=n_read, fill=type, text=percent)) + geom_bar(stat="identity") + scale_fill_manual(name = "", values=c("orange", "darkorange", "red", "gray")) + labs(title = "Mapping statistics per sample", x = "Sample(s)", y = "Number of reads") + theme(axis.text.x = element_text(angle = 45, hjust = 1), axis.title.x = element_text(size = 13), axis.title.y = element_text(size = 13))
 
 ggly_b <- plotly_build(gg)
 ggly_b <- plotly_margins(ggly_b)

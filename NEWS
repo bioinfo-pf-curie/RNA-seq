@@ -1,4 +1,17 @@
 ***********************************
+CHANGES IN VERSION 0.0.4
+
+NEW FEATURES
+
+   o Add option -n to makeRNAreport to specify the run ID
+
+SIGNIFICANT USER-VISIBLE CHANGES
+
+BUG FIXES
+
+   o Fix typo in report
+
+***********************************
 CHANGES IN VERSION 0.0.3
 
 NEW FEATURES

@@ -9,10 +9,10 @@
 
                                                                    
 SOFT="RNApip_cluster"
-VERSION="0.0.2_devel"
+VERSION="0.0.4_devel"
 
 function usage {
-    echo -e "usage : $SOFT -i SAMPLE_PLAN -o OUTPUT -c CONFIG [-m METADATA] [-h] [-v]"
+    echo -e "usage : $SOFT -i SAMPLE_PLAN -o OUTPUT -c CONFIG [-m METADATA] [-n RUN_ID] [-h] [-v]"
     echo -e "Use option -h|--help for more information"
 }
 
@@ -27,6 +27,7 @@ function help {
     echo "   -o|--output OUTPUT: output folder"
     echo "   -c|--conf CONFIG: configuration file for RNA processing"
     echo "   [-m|--meta] METADATA: Metada related to sequencing run"
+    echo "   [-n|--run] RUNID: Id of the run - used as a prefix of the report name"
     echo "   [-h|--help]: help"
     exit;
 }
@@ -45,18 +46,21 @@ for arg in "$@"; do
       "--output") set -- "$@" "-o" ;;
       "--conf")   set -- "$@" "-c" ;;
       "--meta")   set -- "$@" "-m" ;;
+      "--run")   set -- "$@" "-n" ;;
       "--help")   set -- "$@" "-h" ;;
       *)        set -- "$@" "$arg"
   esac
 done
 
-while getopts "i:o:c:m:h" OPT
+RUNID="__"
+while getopts "i:o:c:m:n:h" OPT
 do
     case $OPT in
         i) SPLAN=$OPTARG;;
 	o) ODIR=$OPTARG;;
 	c) CONF=$OPTARG;;
 	m) META=$OPTARG;;
+	n) RUNID=$OPTARG;;
 	h) help ;;
 	\?)
 	    echo "Invalid option: -$OPTARG" >&2
@@ -99,9 +103,9 @@ jobidarray=${pid%%.*}
 
 ## Run the report
 if [[ -z $META ]]; then
-    pid=$(echo "${ABS_BIN_PATH}/makeRNAreport -i ${ODIR} -c ${CONF}" | qsub -m ae -j oe -N RNApip_report -l "nodes=1:ppn=1,mem=2gb,walltime=01:00:00" -W depend=afterokarray:${jobidarray})
+    pid=$(echo "${ABS_BIN_PATH}/makeRNAreport -i ${ODIR} -c ${CONF} -n ${RUNID}" | qsub -m ae -j oe -N RNApip_report -l "nodes=1:ppn=1,mem=2gb,walltime=01:00:00" -W depend=afterokarray:${jobidarray})
 else
     META=$(realpath $META)
-    pid=$(echo "${ABS_BIN_PATH}/makeRNAreport -i ${ODIR} -c ${CONF} -m ${META}" | qsub -m ae -j oe -N RNApip_report -l "nodes=1:ppn=1,mem=2gb,walltime=01:00:00" -W depend=afterokarray:${jobidarray})
+    pid=$(echo "${ABS_BIN_PATH}/makeRNAreport -i ${ODIR} -c ${CONF} -m ${META} -n ${RUNID}" | qsub -m ae -j oe -N RNApip_report -l "nodes=1:ppn=1,mem=2gb,walltime=01:00:00" -W depend=afterokarray:${jobidarray})
 fi
 echo "Job(s) submitted to the cluster !"
