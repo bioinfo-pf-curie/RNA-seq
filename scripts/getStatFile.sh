@@ -165,7 +165,7 @@ fi
 MDUP_BAM=$(echo $BAM | sed -e 's/.bam$/_markdup.bam/')
 ndup=NA
 if [ -e ${MDUP_BAM} ]; then
-    ndup=$(samtools view -f 1024 /data/tmp/testrnapipstar/mapping/SRR1106775_1M_1_norRNA_1_markdup.bam | wc -l)
+    ndup=$(${SAMTOOLS_PATH}/samtools view -f 1024 ${MDUP_BAM} | wc -l)
 fi
 
 
