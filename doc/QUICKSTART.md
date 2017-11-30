@@ -5,7 +5,7 @@ date: "7 septembre 2016"
 output: html_document
 ---
 
-# RNA-seq
+# RNA-seq pipeline
 
 ## Quick start guide
 
