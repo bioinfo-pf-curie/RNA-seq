@@ -6,6 +6,7 @@ output: html_document
 ---
 
 # RNA-seq pipeline
+# v1.0.0
 
 ## Quick start guide
 
