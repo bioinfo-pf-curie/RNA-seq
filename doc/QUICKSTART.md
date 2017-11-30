@@ -5,9 +5,12 @@ date: "7 septembre 2016"
 output: html_document
 ---
 
+# RNA-seq
+
 ## Quick start guide
 
-This pipeline is bioinformatics worflow to process RNA sequencing reads regardless the protocol used (mRNA or total RNA).
+This pipeline is a bioinformatics worflow to process RNA sequencing reads regardless the protocol used (mRNA or total RNA).
+The current version is gene-based oriented and do not include any transcript based analysis.
 It is designed to take the raw sequence ouput from a set of experiments (a sequencing run) or a single sample, and to processed the data up to the final read counts per gene.
 It will also produce a set of metrics and a report that can be used to assess the quality of the data.
 
