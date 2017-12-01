@@ -81,7 +81,8 @@ read_config $CONF
 
 ## sampleID
 if [ ! -z ${REVERSE} ]; then
-    fastqID=$(basename $(printf "%s\n%s\n" "${FORWARD}}" "${REVERSE}" | sed -e 'N;s/^\(.*\).*\n\1.*$/\1/' | sed -e 's/_norRNA\(_\)*//'))
+    ## Get common part of R1/R2 + remove norRNA suffix + remove .R(1/2) suffix
+    fastqID=$(basename $(printf "%s\n%s\n" "${FORWARD}}" "${REVERSE}" | sed -e 'N;s/^\(.*\).*\n\1.*$/\1/' | sed -e 's/_norRNA\(_\)*//' | sed -e 's/\.R$//'))
 else
     fastqID=$(basename ${FORWARD} | sed -e 's/.fastq\(.gz\)//' | sed -e 's/_norRNA\(_\)*//')
 fi

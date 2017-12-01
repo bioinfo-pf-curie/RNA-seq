@@ -1,3 +1,4 @@
-A000T01,sample1,/data/tmp/test_dataset_rnapip/Gendrel2012/SRR1106775_1M_1.fastq.gz,
-A000T02,sample2,/data/tmp/test_dataset_rnapip/Gendrel2012/SRR1106775_1M_2.fastq.gz,
-A000T03,sample3,/data/tmp/test_dataset_rnapip/Gendrel2012/SRR1106776_1M_1.fastq.gz,/data/tmp/test_dataset_rnapip/Gendrel2012/SRR1106776_1M_2.fastq.gz
+L81T1,A1-21043,/data/kdi_dev/.kdi/dataset_backup_0/2002024/export/user/FastqForAllSamples/L81T1.R1.fastq.gz,/data/kdi_dev/.kdi/dataset_backup_0/2002024/export/user/FastqForAllSamples/L81T1.R2.fastq.gz
+L81T2,B1-21764,/data/kdi_dev/.kdi/dataset_backup_0/2002024/export/user/FastqForAllSamples/L81T2.R1.fastq.gz,/data/kdi_dev/.kdi/dataset_backup_0/2002024/export/user/FastqForAllSamples/L81T2.R2.fastq.gz
+L81T3,C1-22044,/data/kdi_dev/.kdi/dataset_backup_0/2002024/export/user/FastqForAllSamples/L81T3.R1.fastq.gz,/data/kdi_dev/.kdi/dataset_backup_0/2002024/export/user/FastqForAllSamples/L81T3.R2.fastq.gz
+L81T4,D1-22228,/data/kdi_dev/.kdi/dataset_backup_0/2002024/export/user/FastqForAllSamples/L81T4.R1.fastq.gz,/data/kdi_dev/.kdi/dataset_backup_0/2002024/export/user/FastqForAllSamples/L81T4.R2.fastq.gz

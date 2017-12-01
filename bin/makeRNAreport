@@ -122,6 +122,13 @@ fi
 output_path=${IDIR}/report
 mkdir -p $output_path
 
+## copy configuration file into the report folder
+cmd="cp ${CONF} ${output_path}/config.txt"
+echo $cmd
+eval $cmd
+
+
+
 ## Combine all statistics
 statfiles=$(find ${IDIR} -maxdepth 3 -name '*stats' -type f)
 cmd="${PYTHON_PATH}/python ${SCRIPTS_PATH}/fullStats.py -i $statfiles -o ${output_path} -r ${PROJNAME}"

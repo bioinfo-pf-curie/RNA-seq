@@ -7,9 +7,17 @@ NEW FEATURES
 
 SIGNIFICANT USER-VISIBLE CHANGES
 
+   o Hover option of HTML report has been disable for the moment because of non-expected behavior
+ 
+   o Configuration file has been added in the output files
+
+   o A short text describing the annotation process has been added
+
 BUG FIXES
 
    o Fix typo in report
+
+   o Sample name in the R plots have been fixed
 
 ***********************************
 CHANGES IN VERSION 0.0.3

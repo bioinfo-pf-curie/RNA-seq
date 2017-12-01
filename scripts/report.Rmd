@@ -124,7 +124,7 @@ if (file.exists(meta)){
 
 | <font size="5">Species: `r species`</font> | <font size="5">Build: `r build`</font> |
 | :------------- | -------------: |
-| <font size="5">`r paste("<a href='", statsXLS, "'>Stats file</a>")`</font> | <font size="5">`r paste("<a href='", file.path("./config.yaml'"), "'>Config file</a>")`</font> |
+| <font size="5">`r paste("<a href='", statsXLS, "'>Stats file</a>")`</font> | <font size="5">`r paste("<a href='", file.path("./config.txt'"), "'>Config file</a>")`</font> |
 
 
 <!--| <font size="5">`r paste("<a href='", file.path("./general_graph.svg'"), "target='_blank'>Rule graph</a>")`</font> | <font size="5">`r paste("<a href='", file.path("./sample_graph.svg'"), "target='_blank'>Sample graph</a>")`</font> |-->
@@ -163,9 +163,13 @@ dataPlot$type <- factor(dataPlot$type, levels=c("Aligned reads (unique-hits)", "
 p_unmapped <- paste0(round(dataPlot[which(dataPlot$type=="Unmapped reads"),"n_read"] /     sapply(unique(dataPlot$sample),function(i){sum(dataPlot[which(dataPlot$sample==i),"n_read"])})*100,2),"%")
 dataPlot$percent <- c(statsFile$p_u_aligned, statsFile$p_m_aligned, statsFile$p_rrna, p_unmapped)
 
-gg <- ggplot(dataPlot, aes(x=sample, y=n_read, fill=type, text=percent)) + geom_bar(stat="identity") + scale_fill_manual(name = "", values=c("orange", "darkorange", "red", "gray")) + labs(title = "Mapping statistics per sample", x = "Sample(s)", y = "Number of reads") + theme(axis.text.x = element_text(angle = 45, hjust = 1), axis.title.x = element_text(size = 13), axis.title.y = element_text(size = 13))
+gg <- ggplot(dataPlot, aes(x=sample, y=n_read, fill=type, text=percent)) + geom_bar(stat="identity") + scale_fill_manual(name = "", values=c("orange", "darkorange", "red", "gray")) + 
+   theme_minimal() +
+   labs(title = "Mapping statistics per sample", x = "Sample(s)", y = "Number of reads") + 
+   theme(axis.text.x = element_text(angle = 45, hjust = 1, size=11), axis.title.x = element_text(size = 13, face="bold"), axis.title.y = element_text(size = 13, face="bold"))
 
 ggly_b <- plotly_build(gg)
+ggly_b <- style(ggly_b, hoverinfo="none")
 ggly_b <- plotly_margins(ggly_b)
 
 ggly_b
@@ -190,7 +194,11 @@ percents <- paste(percents, "%", sep="")
 percents <- c(as.character(statsFile$percentOfDuplicates), percents)
 dataPlot$percents <- percents
 
-gg <- ggplot(dataPlot, aes(x=sample, y=n_read, fill=type, text=percents)) + geom_bar(stat="identity") + scale_fill_manual(name = "", values=c("gray", "orange")) + labs(title = "Duplicate reads per sample", x = "Sample", y = "Number of reads") + theme(axis.text.x = element_text(angle = 45, hjust = 1), axis.title.x = element_text(size = 13), axis.title.y = element_text(size = 13))
+gg <- ggplot(dataPlot, aes(x=sample, y=n_read, fill=type, text=percents)) + geom_bar(stat="identity") + 
+   scale_fill_manual(name = "", values=c("gray", "orange")) + 
+   theme_minimal() +   
+   labs(title = "Duplicate reads per sample", x = "Sample", y = "Number of reads") + 
+   theme(axis.text.x = element_text(angle = 45, hjust = 1, size=11), axis.title.x = element_text(size = 13, face="bold"), axis.title.y = element_text(size = 13, face="bold"))
 
 ggly_b <- plotly_build(gg)
 ggly_b <- plotly_margins(ggly_b)
@@ -207,7 +215,8 @@ ggly_b
 | :------------- | -------------: |
 |<font size="5">`r paste("<a href='", file.path(input_path,"report/tablecounts_raw.csv"), "'>Raw Count Table</a>")`</font> | <font size="5">`r paste0("<a href='", file.path(input_path,"report/tablecounts_tpm.csv"), "'>TPM Count Table</a>")`</font> |
 
-
+<font size="2"> Reads have been annotated using known genes annotation. Spanning reads have been prioritized : exon >> intron >> intergenic >> non-annotated.<br>Non-annotated regions mainly correspond to DNA contigs without any gene annotations.</font>
+<br>
 ```{r table3, eval=TRUE}
 
 datatable(format(statsFile[,c('inputID', 'sampleID', 'n_u_aligned', 'n_exons', 'p_exons', 'n_introns', 'p_introns', 'n_inter', 'p_inter')], big.mark=",",scientific=FALSE), colnames =c('Sample', 'Biosample', 'Number of uniquely mapped reads', 'Number of exonic reads', 'Percent of exonic reads', 'Number of intronic reads', 'Percent of intronic reads', 'Number of intergenic reads', 'Percent of intergenic reads'), rownames = FALSE, filter = 'top', caption = 'Annotation results', options = list(columnDefs = list(list(className = 'dt-center', targets = 2:5))))
@@ -224,15 +233,24 @@ dataPlot <- statsFile %>%
 	mutate(., nonannot=(uniqueHits - exons - introns - inter )) %>%  
   gather(., key="type", value="n_read", -sample, -uniqueHits)
 
+dataPlot$percent <-  round(dataPlot$n_read/rep(statsFile$n_u_aligned, 4)*100, 2)
+
 
 dataPlot$type=verboseannot[dataPlot$type]
 dataPlot$type <- factor(dataPlot$type, levels=c("Exonic reads", "Intronic reads", "Intergenic reads", "Non-annotated"))
 
-dataPlot$percent <- paste0(c(statsFile$percent_exonic, statsFile$percent_intronic, statsFile$percent_intergenic, dataPlot$n_read[4]/sum(dataPlot$n_read) * 100),"%")
-
-gg <- ggplot(dataPlot, aes(x=sample, y=n_read, fill=type, test=percent)) + geom_bar(stat="identity") + scale_fill_manual(name = "", values=c("#E41A1C", "#377EB8", "#4DAF4A", "gray")) + labs(title = "Annotation of uniquely aligned reads", x = "Sample(s)", y = "Number of reads") + theme(axis.text.x = element_text(angle = 45, hjust = 1), axis.title.x = element_text(size = 13), axis.title.y = element_text(size = 13))
+gg <- ggplot(dataPlot, aes(x=sample, y=n_read, fill=type, text = paste("--Sample: ",sample,"<br>","Percent: ",percent,"%<br>","n_read: ",n_read))) + 
+   geom_bar(stat="identity") + scale_fill_manual(name = "", values=c("#E41A1C", "#377EB8", "#4DAF4A", "gray")) + 
+   theme_minimal() +
+   labs(title = "Annotation of uniquely aligned reads", x = "Sample(s)", y = "Number of reads") + 
+   theme(axis.text.x = element_text(angle = 45, hjust = 1, size=11), axis.title.x = element_text(size = 13, face="bold"), axis.title.y = element_text(size = 13, face="bold"))
 
 ggly_b <- plotly_build(gg)
+#for (i in 1:length(ggly_b$x$data)){
+#     ggly_b$x$data[[i]]$text <- sapply(strsplit(ggly_b$x$data[[i]]$text, split="--"),"[[",2)
+#}
+
+ggly_b <- style(ggly_b, hoverinfo="none")
 ggly_b <- plotly_margins(ggly_b)
 
 ggly_b
@@ -248,10 +266,14 @@ idx <- which(rowSums(counts.tpm)>0)
 counts.tpm <- counts.tpm[idx,,drop=FALSE]
 
 n_expressed <- apply(counts.tpm, 2, function(x){length(which(x>1))})
-gg <- ggplot(melt(data.frame(x=names(n_expressed), y=n_expressed)), aes(x=x, y=value)) + geom_bar(stat="identity") + xlab("") + labs(title="", x="Sample(s)", 
-y="Expressed genes (TPM>1)") + theme(axis.text.x = element_text(angle = 45, hjust = 1), axis.title.x = element_text(size = 13), axis.title.y = element_text(size = 13))
+gg <- ggplot(melt(data.frame(x=names(n_expressed), y=n_expressed)), aes(x=x, y=value)) + 
+   geom_bar(stat="identity") +
+   theme_minimal() + 
+   xlab("") + labs(title="", x="Sample(s)", y="Expressed genes (TPM>1)") + 
+   theme(axis.text.x = element_text(angle = 45, hjust = 1, size=11), axis.title.x = element_text(size = 13, face="bold"), axis.title.y = element_text(size = 13, face="bold"))
 
 ggly_b <- plotly_build(gg)
+ggly_b <- style(ggly_b, hoverinfo="none")
 ggly_b <- plotly_margins(ggly_b)
 
 ggly_b
