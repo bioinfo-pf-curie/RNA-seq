@@ -1,9 +1,12 @@
 ---
 title: "NGS Report"
+author: "Institut Curie Bioinformatics Platform"
 output: 
   html_document:
     toc: true
     depth: 3
+  pdf_document:
+    toc: true
 ---
 
 ```{r setup, include=FALSE}
@@ -26,7 +29,6 @@ h2 {
 ```
 
 ```{r config, include=FALSE}
-
 stopifnot(require(ggplot2))
 stopifnot(require(reshape2))
 stopifnot(require(plotly))
@@ -34,21 +36,14 @@ stopifnot(require(dplyr))
 stopifnot(require(magrittr))
 stopifnot(require(tidyr))
 stopifnot(require(DT))
+stopifnot(require(rtracklayer))
+stopifnot(require(RColorBrewer))
 
 ```
 
 ```{r arguments, include=FALSE}
-
 args <- commandArgs()
 print(args)
-
-#input_path <- "/data/tmp/test_star_p"
-#output_path <- "/data/tmp/test_star_p"
-#run <- "TEST"
-#type <- "ZZZ"
-#species <- "Human"
-#build <- "hg19"
-
 ```
 
 ```{r function}
@@ -75,6 +70,13 @@ fastqc_url <- function(input_path){
   }else{
   return(NA) 
  }     
+}
+
+inactivate_hover <- function(x){ 
+   for (i in 1:length(ggly_b$x$data)){
+       x$x$data[[i]]$hoverinfo <- "none"
+   }
+   x
 }
 
 ```
@@ -169,7 +171,7 @@ gg <- ggplot(dataPlot, aes(x=sample, y=n_read, fill=type, text=percent)) + geom_
    theme(axis.text.x = element_text(angle = 45, hjust = 1, size=11), axis.title.x = element_text(size = 13, face="bold"), axis.title.y = element_text(size = 13, face="bold"))
 
 ggly_b <- plotly_build(gg)
-ggly_b <- style(ggly_b, hoverinfo="none")
+ggly_b <- inactivate_hover(ggly_b)
 ggly_b <- plotly_margins(ggly_b)
 
 ggly_b
@@ -215,8 +217,7 @@ ggly_b
 | :------------- | -------------: |
 |<font size="5">`r paste("<a href='", file.path(input_path,"report/tablecounts_raw.csv"), "'>Raw Count Table</a>")`</font> | <font size="5">`r paste0("<a href='", file.path(input_path,"report/tablecounts_tpm.csv"), "'>TPM Count Table</a>")`</font> |
 
-<font size="2"> Reads have been annotated using known genes annotation. Spanning reads have been prioritized : exon >> intron >> intergenic >> non-annotated.<br>Non-annotated regions mainly correspond to DNA contigs without any gene annotations.</font>
-<br>
+
 ```{r table3, eval=TRUE}
 
 datatable(format(statsFile[,c('inputID', 'sampleID', 'n_u_aligned', 'n_exons', 'p_exons', 'n_introns', 'p_introns', 'n_inter', 'p_inter')], big.mark=",",scientific=FALSE), colnames =c('Sample', 'Biosample', 'Number of uniquely mapped reads', 'Number of exonic reads', 'Percent of exonic reads', 'Number of intronic reads', 'Percent of intronic reads', 'Number of intergenic reads', 'Percent of intergenic reads'), rownames = FALSE, filter = 'top', caption = 'Annotation results', options = list(columnDefs = list(list(className = 'dt-center', targets = 2:5))))
@@ -246,18 +247,20 @@ gg <- ggplot(dataPlot, aes(x=sample, y=n_read, fill=type, text = paste("--Sample
    theme(axis.text.x = element_text(angle = 45, hjust = 1, size=11), axis.title.x = element_text(size = 13, face="bold"), axis.title.y = element_text(size = 13, face="bold"))
 
 ggly_b <- plotly_build(gg)
-#for (i in 1:length(ggly_b$x$data)){
-#     ggly_b$x$data[[i]]$text <- sapply(strsplit(ggly_b$x$data[[i]]$text, split="--"),"[[",2)
-#}
-
-ggly_b <- style(ggly_b, hoverinfo="none")
+for (i in 1:length(ggly_b$x$data)){
+     #ggly_b$x$data[[i]]$text <- sapply(strsplit(ggly_b$x$data[[i]]$text, split="--"),"[[",2)
+     ggly_b$x$data[[i]]$hoverinfo <- "none"
+}
+ggly_b <- inactivate_hover(ggly_b)
 ggly_b <- plotly_margins(ggly_b)
-
 ggly_b
 
 ```
+<font size="2"> Reads have been annotated using known genes annotation. Reads spanning several annotation have been prioritized such as exon >> intron >> intergenic >> non-annotated.Non-annotated regions mainly correspond to DNA contigs without any gene annotations.</font>
+<br>
+<hr>
 
-```{r anaexp, fig.width=8, fig.height=7, eval=TRUE, message=FALSE, warning=FALSE}
+```{r annot, fig.width=10, fig.height=7, eval=TRUE, message=FALSE, warning=FALSE}
 
 counts.tpm <- read.csv(file.path(input_path,"report/tablecounts_tpm.csv"), row.names=1)
 
@@ -265,18 +268,36 @@ counts.tpm <- read.csv(file.path(input_path,"report/tablecounts_tpm.csv"), row.n
 idx <- which(rowSums(counts.tpm)>0)
 counts.tpm <- counts.tpm[idx,,drop=FALSE]
 
-n_expressed <- apply(counts.tpm, 2, function(x){length(which(x>1))})
-gg <- ggplot(melt(data.frame(x=names(n_expressed), y=n_expressed)), aes(x=x, y=value)) + 
-   geom_bar(stat="identity") +
+## gene annotation
+gtf <- rtracklayer::import(gtf)
+my_genes <- gtf[gtf$type == "gene"]
+mcols(my_genes) <- mcols(my_genes)[c("gene_id", "gene_type","gene_name")]
+n_items <- 5
+d2p <- apply(counts.tpm, 2, function(x){
+	    n_ex <- length(which(x>1))
+	    ids <- sapply(strsplit(rownames(counts.tpm)[which(x>1)], "\\|"), "[[", 1)
+	    dt <- table(my_genes$gene_type[match(ids, my_genes$gene_id)])
+	    dt <- sort(dt, decreasing=TRUE)
+	    c(total=n_ex, dt[1:4], others=sum(dt[5:length(dt)]))
+})
+
+
+gg <- ggplot(melt(d2p), aes(x=Var2, y=value, fill=Var1)) + 
+   geom_bar(stat="identity", position=position_dodge()) +
    theme_minimal() + 
-   xlab("") + labs(title="", x="Sample(s)", y="Expressed genes (TPM>1)") + 
+   scale_fill_manual(values=c("gray", brewer.pal(n_items, "Set2"))) +
+   xlab("") + labs(title="Genes annotation", x="Sample(s)", y="Expressed genes (TPM>1)") + 
+   theme(legend.title=element_blank(), legend.position="bottom") +
    theme(axis.text.x = element_text(angle = 45, hjust = 1, size=11), axis.title.x = element_text(size = 13, face="bold"), axis.title.y = element_text(size = 13, face="bold"))
 
 ggly_b <- plotly_build(gg)
-ggly_b <- style(ggly_b, hoverinfo="none")
+ggly_b <- inactivate_hover(ggly_b)
 ggly_b <- plotly_margins(ggly_b)
 
 ggly_b
 
 ```
+<br><font size="2"> Genes with a TPM value > 1 are considered as expressed. The number of expressed genes per sample was splitted into the 5 most abundant classes following the known gene annotations.</font><br>
+
+
 <a href="#">Back to top</a>

@@ -127,8 +127,6 @@ cmd="cp ${CONF} ${output_path}/config.txt"
 echo $cmd
 eval $cmd
 
-
-
 ## Combine all statistics
 statfiles=$(find ${IDIR} -maxdepth 3 -name '*stats' -type f)
 cmd="${PYTHON_PATH}/python ${SCRIPTS_PATH}/fullStats.py -i $statfiles -o ${output_path} -r ${PROJNAME}"
@@ -144,3 +142,8 @@ eval $cmd
 cmd="${R_PATH}/R --no-save --no-restore -e \"input_path='${IDIR}'; output_path='${output_path}'; species='${ORG}'; build='${BUILD}'; gtf='${TRANSCRIPTS_GTF}'; meta='${META}'; rmarkdown::render('${SCRIPTS_PATH}/report.Rmd', intermediates_dir='${output_path}', output_file='${output_path}/report.html')\"" 
 echo $cmd
 eval $cmd
+
+cmd="${R_PATH}/R --no-save --no-restore -e \"input_path='${IDIR}'; output_path='${output_path}'; species='${ORG}'; build='${BUILD}'; gtf='${TRANSCRIPTS_GTF}'; meta='${META}'; rmarkdown::render('${SCRIPTS_PATH}/report.Rmd', intermediates_dir='${output_path}', output_file='${output_path}/report.pdf', output_format='pdf_document')\""
+#echo $cmd
+#eval $cmd
+#render("input.Rmd", "all")

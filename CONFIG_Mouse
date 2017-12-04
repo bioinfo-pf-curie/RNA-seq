@@ -12,7 +12,7 @@ BOWTIE2_PATH = /bioinfo/local/build/Centos/bowtie2/bowtie2-2.2.9
 STAR_PATH = /bioinfo/local/build/Centos/STAR/STAR-2.5.3a/bin/Linux_x86_64
 SAMTOOLS_PATH = /bioinfo/local/build/Centos/samtools/samtools-1.3/bin
 HTSEQ_PATH = /bioinfo/local/build/HTSeq-0.6.1/bin
-FEATURECOUNTS_PATH = /bioinfo/local/build/subread-1.5.1/bin
+FEATURECOUNTS_PATH = /bioinfo/local/build/Centos/subread/subread-1.5.1-Linux-x86_64/bin/
 BEDTOOLS_PATH = /bioinfo/local/build/Centos/bedtools/bedtools-2.25.0/bin
 R_PATH = /bioinfo/local/build/Centos/R/R-3.3.2_centos/bin
 PYTHON_PATH = /bioinfo/local/build/Centos/python/python-2.7.11/bin
@@ -34,7 +34,7 @@ BUILD = mm9
 MAPPING_TOOL = STAR
 
 ## STAR or HTSEQ or FEATURECOUNTS
-COUNT_TOOL = STAR
+COUNT_TOOL = FEATURECOUNTS
 
 #########################################################################
 ## Data
@@ -51,12 +51,12 @@ BOWTIE_RRNA_IDX = /data/tmp/annotation_pipelines/Mouse/rRNA/rRNA_mouse_complete
 BOWTIE_OPTS = -v 2 -a -m 1 --best --strata --nomaqround -y
 
 STAR_IDX_PATH = /data/tmp/annotation_pipelines/Mouse/mm9/STAR_gencode_indexes/
-STAR_OPTS = --runThreadN 8 --outSAMtype BAM SortedByCoordinate --runMode alignReads --outFilterMismatchNmax 6 --outFilterMultimapNmax 20 --outSAMmultNmax 20 --outSAMprimaryFlag OneBestScore
+STAR_OPTS = --runThreadN 8 --outSAMtype BAM SortedByCoordinate --runMode alignReads --outFilterType BySJout --outFilterMultimapNmax 20 --alignSJoverhangMin 8 --alignSJDBoverhangMin 1 --outFilterMismatchNmax 999 --outFilterMismatchNoverLmax 0.04 --alignIntronMin 20 --alignIntronMax 1000000 --alignMatesGapMax 1000000 --outSAMprimaryFlag OneBestScore --outMultimapperOrder Random
 
 TOPHAT2_IDX_PATH = /data/tmp/annotation_pipelines/Mouse/mm9/bowtie2_indexes/mm9
 TOPHAT2_OPTS =  --b2-sensitive -p 6 -g 1 -N 2 --no-coverage-search
 
-HTSEQ_OPTS = -f bam -i gene_id -a 10 -t exon -r name 
+HTSEQ_OPTS = -f bam -a 10 -t exon -r name 
 FEATURECOUNTS_OPTS = -t exon -C -T 8 -p
 
 ########################################################################

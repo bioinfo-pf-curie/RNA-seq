@@ -138,6 +138,22 @@ mkdir -p ${LOGDIR}
 ## WORFLOW
 ###################
 
+## 0- echo
+echo -e"--------------------"
+echo -e "Running ${SOFT} v${VERSION} ..."
+when=$(date +%Y-%m-%d)
+echo -e "When=${when}"
+where=$(hostname)
+echo -e "Where=${where}"
+echo -e "Input=${FORWARD} ${REVERSE}"
+echo -e "Ouput=${ODIR}"
+echo -e "Config=${CONF}"
+if [[ ! -z $SAMPLE_ID ]]; then
+    echo -e "SampleID=${SAMPLE_ID}"
+fi
+echo -e "--------------------"
+echo 
+
 ## 1- FASTQC
 
 fastqc_func "${FORWARD} ${REVERSE}" ${ODIR} ${LOGDIR}

@@ -35,8 +35,8 @@ echo "forward=${forward}"
 if [ ! -z "$reverse" ]; then
     echo "Run ${id} in PE mode ..."
     echo "--$reverse--"
-    ${BIN_PATH}/RNApip -f ${forward} -r ${reverse} -o ${ODIR}/${id} -c ${CONFIG} -s ${id}
+    ${BIN_PATH}/RNApip -f ${forward} -r ${reverse} -o ${ODIR}/${id} -c ${CONFIG} -s ${id} > ${ODIR}/${id}/rnapip.log 
 else
     echo "Run ${id} in SE mode ..."
-    ${BIN_PATH}/RNApip -f ${forward} -o ${ODIR}/${id} -c ${CONFIG} -s ${id}
+    ${BIN_PATH}/RNApip -f ${forward} -o ${ODIR}/${id} -c ${CONFIG} -s ${id} > ${ODIR}/${id}/rnapip.log
 fi

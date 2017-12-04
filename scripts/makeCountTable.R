@@ -8,14 +8,29 @@
 #}
 
 source("lib_expan_rnaseq.R")
+require(rtracklayer)
 
-print(count_tool)
+## Note cannot replace the gene_id by the gene_name because some genes are duplicated (with the same gene_name)
+ensembl2symbol <- function(x, gtf.in){
+  dgtf <- rtracklayer::import(gtf.in)
+  my_genes <- dgtf[dgtf$type == "gene"]
+  mcols(my_genes) <- mcols(my_genes)[c("gene_id", "gene_type","gene_name")]
+  m <- match(rownames(x), my_genes$gene_id)
+  if(length(!is.na(m)) != dim(x)[1]){
+    warning("Unable to convert ENSEMBL to SYMBOL gene names ! ")
+    return(x)
+  }else{
+    rownames(x) <- paste(my_genes$gene_id[m], my_genes$gene_name[m], sep="|")
+    return(x)
+  }
+}
+
+
 
 if (count_tool == "STAR"){
   ## Load STAR data
     message("loading STAR gene counts ...")
     exprs.in <- list.files(path=input_path, pattern="ReadsPerGene.out.tab", full.names=TRUE, recursive=TRUE)
-    print(exprs.in)
     prefix <- gsub("_norRNAReadsPerGene.out.tab$","",basename(exprs.in))
     counts.exprs <- lapply(exprs.in, read.csv, sep="\t", header=FALSE, row.names=1)
     if (stranded == "reverse"){
@@ -46,8 +61,9 @@ if (count_tool == "STAR"){
 }
 
 ## export count table(s)
-write.csv(counts.exprs, file=file.path(odir, "tablecounts_raw.csv"))
+write.csv(ensembl2symbol(counts.exprs, gtf), file=file.path(odir, "tablecounts_raw.csv"))
 
+## TPM
 exonic.gene.sizes <- getExonicGeneSize(gtf)
 dtpm <- getTPM(counts.exprs, exonic.gene.size=exonic.gene.sizes)
-write.csv(dtpm, file=file.path(odir, "tablecounts_tpm.csv"))
+write.csv(ensembl2symbol(dtpm, gtf), file=file.path(odir, "tablecounts_tpm.csv"))

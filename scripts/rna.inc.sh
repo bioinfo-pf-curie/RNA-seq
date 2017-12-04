@@ -103,7 +103,6 @@ rRNA_mapping_func()
     
     ## clean
     rm -f ${bowtie_sam}
-
 }
 
 ## $1 = input files
@@ -143,7 +142,7 @@ star_func()
 {
     echo -e "Running STAR mapping ..."
     local log=$3/star.log
-    local cmd="${STAR_PATH}/STAR --genomeDir ${STAR_IDX_PATH}"
+    local cmd="${STAR_PATH}/STAR --genomeDir ${STAR_IDX_PATH} --sjdbGTFfile ${TRANSCRIPTS_GTF} --sjdbOverhang 151"
 
     ## input type
     inputs=($1)
