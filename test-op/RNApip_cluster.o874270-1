@@ -1,0 +1,8 @@
+SAMPLE_PLAN=SAMPLE_PLAN_B249
+ODIR=/data/tmp/RNAPIP_0006
+CONFIG=/bioinfo/users/nservant/GitLab/RNA-seq/test-op/CONFIG_Human
+id=B249T11
+reverse=/data/kdi_prod/dataset_all/2004437/export/user/FastqForAllSamples/B249T11.R2.fastq.gz
+forward=/data/kdi_prod/dataset_all/2004437/export/user/FastqForAllSamples/B249T11.R1.fastq.gz
+Run B249T11 in PE mode ...
+--/data/kdi_prod/dataset_all/2004437/export/user/FastqForAllSamples/B249T11.R2.fastq.gz--

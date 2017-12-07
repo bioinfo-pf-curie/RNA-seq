@@ -139,7 +139,7 @@ mkdir -p ${LOGDIR}
 ###################
 
 ## 0- echo
-echo -e"--------------------"
+echo -e "--------------------"
 echo -e "Running ${SOFT} v${VERSION} ..."
 when=$(date +%Y-%m-%d)
 echo -e "When=${when}"
@@ -215,5 +215,5 @@ fi
 ## 7 - QC/Stats
 
 mapping_stat "${FORWARD} ${REVERSE}" ${CONF} ${BAM_INPUT} ${R_RNA_BAM} ${ODIR} ${LOGDIR}
-
+echo
 echo -e "Done ! Results are available in ${ODIR}"

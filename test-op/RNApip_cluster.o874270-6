@@ -1,0 +1,7 @@
+SAMPLE_PLAN=SAMPLE_PLAN_B249
+ODIR=/data/tmp/RNAPIP_0006
+CONFIG=/bioinfo/users/nservant/GitLab/RNA-seq/test-op/CONFIG_Human
+id=
+reverse=
+forward=
+Run  in SE mode ...

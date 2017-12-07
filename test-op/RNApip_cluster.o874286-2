@@ -1,0 +1,7 @@
+SAMPLE_PLAN=SAMPLE_PLAN_Gendrel
+ODIR=/data/tmp/RNAPIP_Gendrel
+CONFIG=/bioinfo/users/nservant/GitLab/RNA-seq/test-op/CONFIG_Mouse
+id=A000T02
+reverse=
+forward=/data/tmp/testdataset_pipelines/RNA-seq/Gendrel2012/SRR1106775_1M_2.fastq.gz
+Run A000T02 in SE mode ...

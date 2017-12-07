@@ -7,6 +7,8 @@ NEW FEATURES
 
 SIGNIFICANT USER-VISIBLE CHANGES
 
+   o Add test-op folder
+
    o Counts are always generated with gene_id. These IDs are then converted into gene_name regardless the countinh method
 
    o Update STAR indexes. The GTF file is now provided within the command line, and no longer during the indexes generation

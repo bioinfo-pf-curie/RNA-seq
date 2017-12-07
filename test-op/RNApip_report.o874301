@@ -1,0 +1,350 @@
+cp /bioinfo/users/nservant/GitLab/RNA-seq/test-op/CONFIG_Mouse /data/tmp/RNAPIP_Gendrel/report/config.txt
+/bioinfo/local/build/Centos/python/python-2.7.11/bin/python /data/users/nservant/GitLab/RNA-seq/bin/../scripts//fullStats.py -i /data/tmp/RNAPIP_Gendrel/A000T02/stats/SRR1106775_1M_2.stats /data/tmp/RNAPIP_Gendrel/A000T03/stats/SRR1106776_1M_1.stats /data/tmp/RNAPIP_Gendrel/A000T01/stats/SRR1106775_1M_1.stats -o /data/tmp/RNAPIP_Gendrel/report -r testop_Gendrel
+/data/tmp/RNAPIP_Gendrel/A000T02/stats/SRR1106775_1M_2.stats
+/data/tmp/RNAPIP_Gendrel/A000T03/stats/SRR1106776_1M_1.stats
+/data/tmp/RNAPIP_Gendrel/A000T01/stats/SRR1106775_1M_1.stats
+/bioinfo/local/build/Centos/R/R-3.3.2_centos/bin/R --no-save --no-restore -e "input_path='/data/tmp/RNAPIP_Gendrel'; gtf='/data/tmp/annotation_pipelines/Mouse/mm9/gtf/gencode.vM1.annotation.gtf'; count_tool='FEATURECOUNTS'; stranded='no'; odir='/data/tmp/RNAPIP_Gendrel/report'; source('/data/users/nservant/GitLab/RNA-seq/bin/../scripts//makeCountTable.R', chdir=TRUE)"
+
+R version 3.3.2 (2016-10-31) -- "Sincere Pumpkin Patch"
+Copyright (C) 2016 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> input_path='/data/tmp/RNAPIP_Gendrel'; gtf='/data/tmp/annotation_pipelines/Mouse/mm9/gtf/gencode.vM1.annotation.gtf'; count_tool='FEATURECOUNTS'; stranded='no'; odir='/data/tmp/RNAPIP_Gendrel/report'; source('/data/users/nservant/GitLab/RNA-seq/bin/../scripts//makeCountTable.R', chdir=TRUE)
+Loading required package: rtracklayer
+Loading required package: GenomicRanges
+Loading required package: stats4
+Loading required package: BiocGenerics
+Loading required package: parallel
+
+Attaching package: ‘BiocGenerics’
+
+The following objects are masked from ‘package:parallel’:
+
+    clusterApply, clusterApplyLB, clusterCall, clusterEvalQ,
+    clusterExport, clusterMap, parApply, parCapply, parLapply,
+    parLapplyLB, parRapply, parSapply, parSapplyLB
+
+The following objects are masked from ‘package:stats’:
+
+    IQR, mad, xtabs
+
+The following objects are masked from ‘package:base’:
+
+    anyDuplicated, append, as.data.frame, cbind, colnames, do.call,
+    duplicated, eval, evalq, Filter, Find, get, grep, grepl, intersect,
+    is.unsorted, lapply, lengths, Map, mapply, match, mget, order,
+    paste, pmax, pmax.int, pmin, pmin.int, Position, rank, rbind,
+    Reduce, rownames, sapply, setdiff, sort, table, tapply, union,
+    unique, unsplit, which, which.max, which.min
+
+Loading required package: S4Vectors
+
+Attaching package: ‘S4Vectors’
+
+The following objects are masked from ‘package:base’:
+
+    colMeans, colSums, expand.grid, rowMeans, rowSums
+
+Loading required package: IRanges
+Loading required package: GenomeInfoDb
+Loading required package: GenomicFeatures
+Loading required package: AnnotationDbi
+Loading required package: Biobase
+Welcome to Bioconductor
+
+    Vignettes contain introductory material; view with
+    'browseVignettes()'. To cite Bioconductor, see
+    'citation("Biobase")', and for packages 'citation("pkgname")'.
+
+Import genomic features from the file as a GRanges object ... OK
+Prepare the 'metadata' data frame ... OK
+Make the TxDb object ... OK
+> 
+> 
+/bioinfo/local/build/Centos/R/R-3.3.2_centos/bin/R --no-save --no-restore -e "input_path='/data/tmp/RNAPIP_Gendrel'; output_path='/data/tmp/RNAPIP_Gendrel/report'; species='Mouse'; build='mm10'; gtf='/data/tmp/annotation_pipelines/Mouse/mm9/gtf/gencode.vM1.annotation.gtf'; meta=''; rmarkdown::render('/data/users/nservant/GitLab/RNA-seq/bin/../scripts//report.Rmd', intermediates_dir='/data/tmp/RNAPIP_Gendrel/report', output_file='/data/tmp/RNAPIP_Gendrel/report/report.html')"
+
+R version 3.3.2 (2016-10-31) -- "Sincere Pumpkin Patch"
+Copyright (C) 2016 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> input_path='/data/tmp/RNAPIP_Gendrel'; output_path='/data/tmp/RNAPIP_Gendrel/report'; species='Mouse'; build='mm10'; gtf='/data/tmp/annotation_pipelines/Mouse/mm9/gtf/gencode.vM1.annotation.gtf'; meta=''; rmarkdown::render('/data/users/nservant/GitLab/RNA-seq/bin/../scripts//report.Rmd', intermediates_dir='/data/tmp/RNAPIP_Gendrel/report', output_file='/data/tmp/RNAPIP_Gendrel/report/report.html')
+
+
+processing file: report.Rmd
+  |                                                                         |                                                                 |   0%  |                                                                         |..                                                               |   3%
+  ordinary text without R code
+
+  |                                                                         |....                                                             |   7%
+label: setup (with options) 
+List of 1
+ $ include: logi FALSE
+
+  |                                                                         |.......                                                          |  10%
+  ordinary text without R code
+
+  |                                                                         |.........                                                        |  14%
+label: unnamed-chunk-1 (with options) 
+List of 2
+ $ results: chr "asis"
+ $ echo   : logi FALSE
+
+  |                                                                         |...........                                                      |  17%
+  ordinary text without R code
+
+  |                                                                         |.............                                                    |  21%
+label: config (with options) 
+List of 1
+ $ include: logi FALSE
+
+Loading required package: ggplot2
+Loading required package: reshape2
+Loading required package: plotly
+
+Attaching package: 'plotly'
+
+The following object is masked from 'package:ggplot2':
+
+    last_plot
+
+The following object is masked from 'package:stats':
+
+    filter
+
+The following object is masked from 'package:graphics':
+
+    layout
+
+Loading required package: dplyr
+
+Attaching package: 'dplyr'
+
+The following objects are masked from 'package:stats':
+
+    filter, lag
+
+The following objects are masked from 'package:base':
+
+    intersect, setdiff, setequal, union
+
+Loading required package: magrittr
+Loading required package: tidyr
+
+Attaching package: 'tidyr'
+
+The following object is masked from 'package:magrittr':
+
+    extract
+
+The following object is masked from 'package:reshape2':
+
+    smiths
+
+Loading required package: DT
+Loading required package: rtracklayer
+Loading required package: GenomicRanges
+Loading required package: stats4
+Loading required package: BiocGenerics
+Loading required package: parallel
+
+Attaching package: 'BiocGenerics'
+
+The following objects are masked from 'package:parallel':
+
+    clusterApply, clusterApplyLB, clusterCall, clusterEvalQ,
+    clusterExport, clusterMap, parApply, parCapply, parLapply,
+    parLapplyLB, parRapply, parSapply, parSapplyLB
+
+The following objects are masked from 'package:dplyr':
+
+    combine, intersect, setdiff, union
+
+The following objects are masked from 'package:stats':
+
+    IQR, mad, xtabs
+
+The following objects are masked from 'package:base':
+
+    anyDuplicated, append, as.data.frame, cbind, colnames,
+    do.call, duplicated, eval, evalq, Filter, Find, get, grep,
+    grepl, intersect, is.unsorted, lapply, lengths, Map, mapply,
+    match, mget, order, paste, pmax, pmax.int, pmin, pmin.int,
+    Position, rank, rbind, Reduce, rownames, sapply, setdiff,
+    sort, table, tapply, union, unique, unsplit, which, which.max,
+    which.min
+
+Loading required package: S4Vectors
+
+Attaching package: 'S4Vectors'
+
+The following object is masked from 'package:tidyr':
+
+    expand
+
+The following objects are masked from 'package:dplyr':
+
+    first, rename
+
+The following object is masked from 'package:plotly':
+
+    rename
+
+The following objects are masked from 'package:base':
+
+    colMeans, colSums, expand.grid, rowMeans, rowSums
+
+Loading required package: IRanges
+
+Attaching package: 'IRanges'
+
+The following objects are masked from 'package:dplyr':
+
+    collapse, desc, regroup, slice
+
+The following object is masked from 'package:plotly':
+
+    slice
+
+Loading required package: GenomeInfoDb
+
+Attaching package: 'rtracklayer'
+
+The following object is masked from 'package:plotly':
+
+    export
+
+Loading required package: RColorBrewer
+  |                                                                         |................                                                 |  24%
+  ordinary text without R code
+
+  |                                                                         |..................                                               |  28%
+label: arguments (with options) 
+List of 1
+ $ include: logi FALSE
+
+  |                                                                         |....................                                             |  31%
+  ordinary text without R code
+
+  |                                                                         |......................                                           |  34%
+label: function
+  |                                                                         |.........................                                        |  38%
+   inline R code fragments
+
+  |                                                                         |...........................                                      |  41%
+label: statsFile (with options) 
+List of 2
+ $ results: chr "asis"
+ $ eval   : logi TRUE
+
+  |                                                                         |.............................                                    |  45%
+  ordinary text without R code
+
+  |                                                                         |...............................                                  |  48%
+label: meta
+  |                                                                         |..................................                               |  52%
+   inline R code fragments
+
+  |                                                                         |....................................                             |  55%
+label: table1 (with options) 
+List of 1
+ $ eval: logi TRUE
+
+  |                                                                         |......................................                           |  59%
+  ordinary text without R code
+
+  |                                                                         |........................................                         |  62%
+label: table2 (with options) 
+List of 1
+ $ eval: logi TRUE
+
+  |                                                                         |...........................................                      |  66%
+  ordinary text without R code
+
+  |                                                                         |.............................................                    |  69%
+label: mappedReadsPlot (with options) 
+List of 4
+ $ fig.width : num 10
+ $ fig.height: num 7
+ $ echo      : logi FALSE
+ $ eval      : logi TRUE
+
+  |                                                                         |...............................................                  |  72%
+  ordinary text without R code
+
+  |                                                                         |.................................................                |  76%
+label: duplicateReadsPlot (with options) 
+List of 4
+ $ fig.width : num 10
+ $ fig.height: num 4
+ $ echo      : logi FALSE
+ $ eval      : logi FALSE
+
+  |                                                                         |....................................................             |  79%
+   inline R code fragments
+
+  |                                                                         |......................................................           |  83%
+label: table3 (with options) 
+List of 1
+ $ eval: logi TRUE
+
+  |                                                                         |........................................................         |  86%
+  ordinary text without R code
+
+  |                                                                         |..........................................................       |  90%
+label: annotPlot (with options) 
+List of 4
+ $ fig.width : num 10
+ $ fig.height: num 7
+ $ echo      : logi FALSE
+ $ eval      : logi TRUE
+
+  |                                                                         |.............................................................    |  93%
+  ordinary text without R code
+
+  |                                                                         |...............................................................  |  97%
+label: annot (with options) 
+List of 5
+ $ fig.width : num 10
+ $ fig.height: num 7
+ $ eval      : logi TRUE
+ $ message   : logi FALSE
+ $ warning   : logi FALSE
+
+  |                                                                         |.................................................................| 100%
+  ordinary text without R code
+
+
+output file: /data/tmp/RNAPIP_Gendrel/report/report.knit.md
+
+/usr/bin/pandoc +RTS -K512m -RTS /data/tmp/RNAPIP_Gendrel/report/report.utf8.md --to html --from markdown+autolink_bare_uris+ascii_identifiers+tex_math_single_backslash --output /data/tmp/RNAPIP_Gendrel/report/report.html --smart --email-obfuscation none --self-contained --standalone --section-divs --table-of-contents --toc-depth 3 --template /bioinfo/local/build/R/R-3.3.2_centos/lib64/R/library/rmarkdown/rmd/h/default.html --no-highlight --variable highlightjs=1 --variable 'theme:bootstrap' --include-in-header /scratch/874301.torque6.curie.fr/RtmpXVKt1p/rmarkdown-str3ab421cde673.html --mathjax --variable 'mathjax-url:https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML' 
+
+Output created: /data/tmp/RNAPIP_Gendrel/report/report.html
+> 
+> 
