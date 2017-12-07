@@ -1,4 +1,12 @@
 ***********************************
+CHANGES IN VERSION 0.0.5
+
+NEW FEATURES
+
+   o Add option -v to RNApip_cluster
+
+
+***********************************
 CHANGES IN VERSION 0.0.4
 
 NEW FEATURES
@@ -7,7 +15,7 @@ NEW FEATURES
 
 SIGNIFICANT USER-VISIBLE CHANGES
 
-   Add standalone folder for production compatibility
+   o Add standalone folder for production compatibility
 
    o Add test-op folder
 

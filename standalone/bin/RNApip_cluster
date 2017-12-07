@@ -9,7 +9,7 @@
 
                                                                    
 SOFT="RNApip_cluster"
-VERSION="0.0.4_devel"
+VERSION=$(bash RNApip -v)
 
 function usage {
     echo -e "usage : $SOFT -i SAMPLE_PLAN -o OUTPUT -c CONFIG [-m METADATA] [-n RUN_ID] [-h] [-v]"
@@ -32,6 +32,12 @@ function help {
     exit;
 }
 
+function version {
+    echo -e "$VERSION"
+    exit
+}
+
+
 if [ $# -lt 1 ]
 then
     usage
@@ -47,13 +53,14 @@ for arg in "$@"; do
       "--conf")   set -- "$@" "-c" ;;
       "--meta")   set -- "$@" "-m" ;;
       "--run")   set -- "$@" "-n" ;;
+      "--version")   set -- "$@" "-v" ;;
       "--help")   set -- "$@" "-h" ;;
       *)        set -- "$@" "$arg"
   esac
 done
 
 RUNID="__"
-while getopts "i:o:c:m:n:h" OPT
+while getopts "i:o:c:m:n:vh" OPT
 do
     case $OPT in
         i) SPLAN=$OPTARG;;
@@ -61,6 +68,7 @@ do
 	c) CONF=$OPTARG;;
 	m) META=$OPTARG;;
 	n) RUNID=$OPTARG;;
+	v) version ;;
 	h) help ;;
 	\?)
 	    echo "Invalid option: -$OPTARG" >&2
