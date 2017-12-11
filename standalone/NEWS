@@ -5,6 +5,10 @@ NEW FEATURES
 
    o Add option -v to RNApip_cluster
 
+BUG FIXES
+
+   o Fix bug in report.html (issue #14)
+
 
 ***********************************
 CHANGES IN VERSION 0.0.4

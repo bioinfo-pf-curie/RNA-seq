@@ -273,13 +273,13 @@ gtf <- rtracklayer::import(gtf)
 my_genes <- gtf[gtf$type == "gene"]
 mcols(my_genes) <- mcols(my_genes)[c("gene_id", "gene_type","gene_name")]
 n_items <- 5
-d2p <- apply(counts.tpm, 2, function(x){
+d2p <- as.matrix(as.data.frame(lapply(as.list(counts.tpm), function(x){
 	    n_ex <- length(which(x>1))
 	    ids <- sapply(strsplit(rownames(counts.tpm)[which(x>1)], "\\|"), "[[", 1)
 	    dt <- table(my_genes$gene_type[match(ids, my_genes$gene_id)])
 	    dt <- sort(dt, decreasing=TRUE)
 	    c(total=n_ex, dt[1:4], others=sum(dt[5:length(dt)]))
-})
+})))
 
 
 gg <- ggplot(melt(d2p), aes(x=Var2, y=value, fill=Var1)) + 
