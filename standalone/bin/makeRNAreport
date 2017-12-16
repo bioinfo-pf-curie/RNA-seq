@@ -55,7 +55,7 @@ fi
 
 ## Init optional values
 META=""
-PROJNAME="out"
+PROJNAME="__"
 
 # Transform long options to short ones
 for arg in "$@"; do

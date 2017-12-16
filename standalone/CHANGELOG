@@ -7,6 +7,8 @@ NEW FEATURES
 
 BUG FIXES
 
+   o Improve genes annotation in report and deal with specific cases
+
    o Fix bug in report.html (issue #14)
 
 

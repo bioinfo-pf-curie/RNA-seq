@@ -89,6 +89,7 @@ inactivate_hover <- function(x){
 
 ```{r statsFile, results="asis", eval=TRUE}
 statsIn <- list.files(file.path(input_path, "report"), pattern=".fullStatFile.txt", full.names=TRUE)
+stopifnot(length(statsIn)==1)
 statsXLS <- list.files(file.path(input_path, "report"), pattern=".fullStatFile.xls", full.names=TRUE)
 if(length(statsIn)==0) stop("fullStatFile not found !")
 statsFile <- read.csv(statsIn, row.names=NULL)
@@ -276,11 +277,18 @@ n_items <- 5
 d2p <- as.matrix(as.data.frame(lapply(as.list(counts.tpm), function(x){
 	    n_ex <- length(which(x>1))
 	    ids <- sapply(strsplit(rownames(counts.tpm)[which(x>1)], "\\|"), "[[", 1)
-	    dt <- table(my_genes$gene_type[match(ids, my_genes$gene_id)])
-	    dt <- sort(dt, decreasing=TRUE)
-	    c(total=n_ex, dt[1:4], others=sum(dt[5:length(dt)]))
+	    dt <- table(factor(my_genes$gene_type[match(ids, my_genes$gene_id)], levels=unique(sort(my_genes$gene_type))))
+	    c(total=n_ex, dt)
 })))
 
+## remove zero values and sort by counts
+d2p <- d2p[-which(rowSums(d2p)==0),]
+d2p <- d2p[order(rowSums(d2p), decreasing=TRUE),]
+
+## reduce
+if (nrow(d2p) > (n_items + 1)){
+   d2p <- rbind(d2p[1:n_items,], others=colSums(d2p[(n_items+1):nrow(d2p), ]))
+}
 
 gg <- ggplot(melt(d2p), aes(x=Var2, y=value, fill=Var1)) + 
    geom_bar(stat="identity", position=position_dodge()) +

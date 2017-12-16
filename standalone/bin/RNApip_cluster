@@ -9,7 +9,8 @@
 
                                                                    
 SOFT="RNApip_cluster"
-VERSION=$(bash RNApip -v)
+PWD=$(dirname $0)
+VERSION=$(bash $PWD/RNApip -v)
 
 function usage {
     echo -e "usage : $SOFT -i SAMPLE_PLAN -o OUTPUT -c CONFIG [-m METADATA] [-n RUN_ID] [-h] [-v]"
