@@ -1,5 +1,5 @@
 ***********************************
-CHANGES IN VERSION 0.0.5
+CHANGES IN VERSION 0.0.6
 
 NEW FEATURES
 
@@ -8,6 +8,14 @@ NEW FEATURES
 BUG FIXES
 
    o Improve genes annotation in report and deal with specific cases
+
+   o Fix bug in report.html (issue #14)
+
+
+***********************************
+CHANGES IN VERSION 0.0.5
+
+BUG FIXES
 
    o Fix bug in report.html (issue #14)
 
@@ -28,11 +36,11 @@ SIGNIFICANT USER-VISIBLE CHANGES
    o Counts are always generated with gene_id. These IDs are then converted into gene_name regardless the countinh method
 
    o Update STAR indexes. The GTF file is now provided within the command line, and no longer during the indexes generation
- 
+
    o Update STAR options to follow the ENCODE guidelines
 
    o Hover option of HTML report has been disable for the moment because of non-expected behavior
- 
+
    o Configuration file has been added in the output files
 
    o A short text describing the annotation process has been added
