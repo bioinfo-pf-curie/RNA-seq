@@ -8,7 +8,7 @@
 ## Public License, either Version 2, June 1991 or Version 3, June 2007.
 
 SOFT="RNApip"
-VERSION="0.0.6"
+VERSION="0.0.7"
 
 function usage {
     echo -e "usage : $SOFT -f FORWARD -o OUTPUT -c CONFIG [-r REVERSE][-s SAMPLE_ID] [-d] [-h] [-v]"
@@ -162,13 +162,13 @@ fastqc_func "${FORWARD} ${REVERSE}" ${ODIR} ${LOGDIR}
 
 rRNA_mapping_func "${FORWARD} ${REVERSE}" ${ODIR} ${LOGDIR}
 
-R_RNA_BAM=${ODIR}/rRNA_mapping/$(basename ${FORWARD} | sed -e 's/.fastq\(.gz\)*/.bam/')
+R_RNA_BAM=${ODIR}/rRNA_mapping/$(basename ${FORWARD} | sed -e 's/[\._]*R*[12]*.fastq\(.gz\)*/.bam/')
 
 # rename unmapped read output (bowtie automatically adds _1 and _2 for PE reads
 if [[ -z ${REVERSE} ]]; then
-    FORWARD_RRNA=${ODIR}/rRNA_mapping/$(basename ${FORWARD} | sed -e 's/.fastq/_norRNA.fastq/')
+    FORWARD_RRNA=${ODIR}/rRNA_mapping/$(basename ${FORWARD} | sed -e 's/[\._]*R*[12]*.fastq/_norRNA.fastq/')
 else
-    FORWARD_RRNA=${ODIR}/rRNA_mapping/$(basename ${FORWARD} | sed -e 's/.fastq/_norRNA_1.fastq/')
+    FORWARD_RRNA=${ODIR}/rRNA_mapping/$(basename ${FORWARD} | sed -e 's/[\._]*R*[12]*.fastq/_norRNA_1.fastq/')
     REVERSE_RRNA=${ODIR}/rRNA_mapping/$(basename ${FORWARD_RRNA} | sed -e 's/_1.fastq/_2.fastq/')
 fi
 
@@ -184,7 +184,7 @@ else
     die "Mapping tool not supported !"
 fi
 
-BAM_INPUT=${ODIR}/mapping/$(basename $FORWARD_RRNA | sed -e 's/.fastq\(.gz\)*/.bam/')
+BAM_INPUT=${ODIR}/mapping/$(basename $FORWARD_RRNA | sed -e 's/[\._]*R*[12]*.fastq\(.gz\)*/.bam/')
 
 ## 4 - Check data type
 

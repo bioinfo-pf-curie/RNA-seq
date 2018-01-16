@@ -14,7 +14,7 @@ set -o errexit   ## set -e : exit the script if any statement returns a non-true
 ## $3 = log dir
 fastqc_func()
 {
-    echo -e "Running STAR mapping ..."
+    echo -e "Running FastQC ..."
     
     local out=$2/fastqc
     local log=$3/fastqc.log
@@ -41,8 +41,8 @@ rRNA_mapping_func()
     mkdir -p ${out}
 
     #need to figure out --sam output ${bowtie_sam}
-    bowtie_sam=${out}/$(basename $1 | sed -e 's/.fastq\(.gz\)*/.sam/')
-    bowtie_bam=${out}/$(basename $1 | sed -e 's/.fastq\(.gz\)*/.bam/')
+    bowtie_sam=${out}/$(basename $1 | sed -e 's/[\._]*R*[12]*.fastq\(.gz\)*/.sam/')
+    bowtie_bam=${out}/$(basename $1 | sed -e 's/[\._]*R*[12]*.fastq\(.gz\)*/.bam/')
 
     inputs=($1)
     if [[ ${#inputs[@]} -eq 1 ]]; then
@@ -53,14 +53,11 @@ rRNA_mapping_func()
         else
             die "ERROR : Wrong file type in input for Bowtie1; file: ${inputs[0]}"
         fi
-        local unmapped=$(basename ${inputs[0]} | sed -e 's/.fastq\(.gz\)*/_norRNA.fastq/')
+        local unmapped=$(basename ${inputs[0]} | sed -e 's/[\._]*R*[12]*.fastq\(.gz\)*/_norRNA.fastq/')
         cmd_un="--un ${out}/${unmapped}"
     
     elif [[ ${#inputs[@]} -eq 2 ]]; then
-    
-        file_type_2=$(file ${inputs[1]})
-        
-	if [[ ${inputs[0]} =~ \.gz ]]; then
+    	if [[ ${inputs[0]} =~ \.gz ]]; then
             if [[ ${inputs[1]} =~ \.gz ]];then
                 cmd_in="-1 <(gzip -cd ${inputs[0]}) -2 <(gzip -cd ${inputs[1]})"
             elif [[  ${inputs[1]} =~ \.fastq ]];then
@@ -80,10 +77,10 @@ rRNA_mapping_func()
             die "ERROR : Wrong file type in input for Bowtie1; file: ${inputs[0]}"
         fi
         
-	local unmapped=$(basename ${inputs[0]} | sed -e 's/.fastq\(.gz\)*/_norRNA.fastq/')
+	local unmapped=$(basename ${inputs[0]} | sed -e 's/[\._]*R*[12]*.fastq\(.gz\)*/_norRNA.fastq/')
         cmd_un="--un ${out}/${unmapped}"
-	local fq1_out="${out}/$(basename ${unmapped} | sed -e 's/.fastq/_1.fastq/')"
-	local fq2_out="${out}/$(basename ${unmapped} | sed -e 's/.fastq/_2.fastq/')"
+	#local fq1_out="${out}/$(basename ${unmapped} | sed -e 's/.fastq/_1.fastq/')"
+	#local fq2_out="${out}/$(basename ${unmapped} | sed -e 's/.fastq/_2.fastq/')"
     else
 	die "Bowtie1 -  found more than two input files !"
     fi
@@ -126,7 +123,7 @@ tophat2_func()
     local out=$2/mapping
     mkdir -p ${out}
     inputs=($1)
-    local out_mapped=$(basename ${inputs[0]} | sed -e 's/.fastq\(.gz\)*/.bam/')
+    local out_mapped=$(basename ${inputs[0]} | sed -e 's/[\._]*R*[12]*.fastq\(.gz\)*/.bam/') 
 
     local cmd="${TOPHAT2_PATH}/tophat2 ${TOPHAT2_OPTS} --GTF ${TRANSCRIPTS_GTF} ${stranded_opt} -o ${out} ${TOPHAT2_IDX_PATH} $1"
     exec_cmd ${cmd} 2> $log 
@@ -172,7 +169,7 @@ star_func()
 
     local out=$2/mapping
     mkdir -p ${out}
-    local out_mapped=$(basename ${inputs[0]} | sed -e 's/.fastq\(.gz\)*//')
+    local out_mapped=$(basename ${inputs[0]} | sed -e 's/[\._]*R*[12]*.fastq\(.gz\)*//')
 
     cmd="$cmd $cmd_in --outFileNamePrefix ${out}/${out_mapped} ${STAR_OPTS}"
     exec_cmd ${cmd} 2> $log
@@ -308,7 +305,7 @@ mapping_stat(){
 
     fi
 
-    outfile=$(basename ${inputs[0]} | sed -e 's/.fastq\(.gz\)*/.stats/')
+    outfile=$(basename ${inputs[0]} | sed -e 's/[\._]*R*[12]*.fastq\(.gz\)*/.stats/')
 
     if [ ! -z ${SAMPLE_ID} ]; then
 	cmd="bash ${SCRIPTS_PATH}/getStatFile.sh $cmd_input -c $2 -b $3 -x $4 -g $TRANSCRIPTS_GTF -s ${SAMPLE_ID} > $output/$outfile"

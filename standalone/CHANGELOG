@@ -1,4 +1,29 @@
 ***********************************
+CHANGES IN VERSION 0.0.7
+
+NEW FEATURES
+
+   o Add saturation curves
+
+SIGNIFICANT USER-VISIBLE CHANGES
+
+   o makeRNAreport now requires the SAMPLE_PLAN to deal with biological ids
+
+   o Change annotation plot visualization and add the count table
+
+   o Fix bugs in sample names in report
+
+   o Remove links to HTML report
+
+   o Annotation on exons/intron/intergenic are now run on full BAM (not only unique hits)
+
+BUG FIXES
+
+   o Fix bug in report regarding sample names
+
+   o Fix bug in report.html in annotation table
+
+***********************************
 CHANGES IN VERSION 0.0.6
 
 NEW FEATURES

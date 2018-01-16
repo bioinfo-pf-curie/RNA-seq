@@ -38,7 +38,7 @@ stopifnot(require(tidyr))
 stopifnot(require(DT))
 stopifnot(require(rtracklayer))
 stopifnot(require(RColorBrewer))
-
+source("lib_rnaseq.R")
 ```
 
 ```{r arguments, include=FALSE}
@@ -87,6 +87,15 @@ inactivate_hover <- function(x){
 
 #RNA-SEQ ANALYSIS
 
+```{r splan}
+##Load sample plan                         
+splan <- read.csv(splan, header=FALSE)
+fids <- gsub("[._]*R*[12]*.fastq(.gz)*", "", basename(as.character(splan[,3])), perl=TRUE)
+bioids <- as.character(splan[,2])
+names(bioids) <- fids
+```
+
+
 ```{r statsFile, results="asis", eval=TRUE}
 statsIn <- list.files(file.path(input_path, "report"), pattern=".fullStatFile.txt", full.names=TRUE)
 stopifnot(length(statsIn)==1)
@@ -125,10 +134,7 @@ if (file.exists(meta)){
 
 ##Data processing
 
-| <font size="5">Species: `r species`</font> | <font size="5">Build: `r build`</font> |
-| :------------- | -------------: |
-| <font size="5">`r paste("<a href='", statsXLS, "'>Stats file</a>")`</font> | <font size="5">`r paste("<a href='", file.path("./config.txt'"), "'>Config file</a>")`</font> |
-
+*Species: `r species` - Build: `r build`*
 
 <!--| <font size="5">`r paste("<a href='", file.path("./general_graph.svg'"), "target='_blank'>Rule graph</a>")`</font> | <font size="5">`r paste("<a href='", file.path("./sample_graph.svg'"), "target='_blank'>Sample graph</a>")`</font> |-->
 
@@ -153,7 +159,7 @@ verbosetype <- c("Aligned reads (unique-hits)", "Aligned reads (multi-hits)", "r
 names(verbosetype) <- c("uniqueHits","multiHits","rRNA","unmapped")
 
 dataPlot <- statsFile %>%
-	select(., inputID, n_reads, n_u_aligned, n_m_aligned, n_rrna) %>% 
+	select(., sampleID, n_reads, n_u_aligned, n_m_aligned, n_rrna) %>% 
 	set_colnames(., c("sample", "totalReads", "uniqueHits", "multiHits", "rRNA")) %>% 
 	mutate(., unmapped=(totalReads-rRNA-uniqueHits-multiHits)) %>%  
   gather(., key="type", value="n_read", -sample, -totalReads)
@@ -181,47 +187,39 @@ ggly_b
 
 <a href="#">Back to top</a>
 
-<!--###Duplicate reads
+##Saturation Curves
 
-```{r duplicateReadsPlot, fig.width=10, fig.height=4,echo=FALSE,eval=FALSE}
+```{r satcurves, fig.width=10, fig.height=7, echo=FALSE, eval=TRUE}
+counts <- read.csv(file.path(input_path,"report/tablecounts_raw.csv"), row.names=1)
+colnames(counts) <- bioids[colnames(counts)]
+sat <- estimate_saturation(counts=counts, ndepths=10, nreps=1, extend.lines=TRUE)
 
-dataPlot <- statsFile %>%
-	select(., sample, numberOfMappedReadsQCPassed, numberOfDuplicates) %>% 
-	set_colnames(., c("sample", "mapped", "duplicates")) %>% 
-	mutate(., noduplicates=mapped-duplicates) %>%  
-	gather(., key="type", value="n_read", -sample, -mapped)
+d2p <-  melt(sat, id.vars=c("depths", "sat.estimates", "sat.var.estimates"))
+d2p <- d2p[which(!is.na(d2p$sat.estimates)),]
 
-percents <- as.numeric(gsub( "%", "", statsFile$percentOfDuplicates))
-percents <- 100-percents
-percents <- paste(percents, "%", sep="")
-percents <- c(as.character(statsFile$percentOfDuplicates), percents)
-dataPlot$percents <- percents
+selcol <-  colorRampPalette(brewer.pal(9, "Set1"))(length(sat))
 
-gg <- ggplot(dataPlot, aes(x=sample, y=n_read, fill=type, text=percents)) + geom_bar(stat="identity") + 
-   scale_fill_manual(name = "", values=c("gray", "orange")) + 
-   theme_minimal() +   
-   labs(title = "Duplicate reads per sample", x = "Sample", y = "Number of reads") + 
-   theme(axis.text.x = element_text(angle = 45, hjust = 1, size=11), axis.title.x = element_text(size = 13, face="bold"), axis.title.y = element_text(size = 13, face="bold"))
+gg <- ggplot(d2p) + geom_point(aes(x=depths, y=sat.estimates), color="darkgray", shape=3, size=2) + geom_path(aes(x=depths, y=sat.estimates, color=L1)) +
+  theme_classic() + theme(legend.position="bottom", legend.title=element_blank()) +
+  labs(x="Sequencing depth", y="Number of detected genes (>=1 CPM)") + theme(axis.title = element_text(face="bold", colour="black", size=12)) +
+  scale_color_manual(values=selcol, guide=guide_legend(nrow=ceiling(length(sat)/6)))
 
 ggly_b <- plotly_build(gg)
+ggly_b <- inactivate_hover(ggly_b)
 ggly_b <- plotly_margins(ggly_b)
 
 ggly_b
-
 ```
 
 <a href="#">Back to top</a>
--->
 
 ##Gene-based Annotation
-| <font size="5">Reference: `r basename(gtf)`</font> | <font size="5"></font> |
-| :------------- | -------------: |
-|<font size="5">`r paste("<a href='", file.path(input_path,"report/tablecounts_raw.csv"), "'>Raw Count Table</a>")`</font> | <font size="5">`r paste0("<a href='", file.path(input_path,"report/tablecounts_tpm.csv"), "'>TPM Count Table</a>")`</font> |
 
+Reference: `r basename(gtf)`
 
 ```{r table3, eval=TRUE}
 
-datatable(format(statsFile[,c('inputID', 'sampleID', 'n_u_aligned', 'n_exons', 'p_exons', 'n_introns', 'p_introns', 'n_inter', 'p_inter')], big.mark=",",scientific=FALSE), colnames =c('Sample', 'Biosample', 'Number of uniquely mapped reads', 'Number of exonic reads', 'Percent of exonic reads', 'Number of intronic reads', 'Percent of intronic reads', 'Number of intergenic reads', 'Percent of intergenic reads'), rownames = FALSE, filter = 'top', caption = 'Annotation results', options = list(columnDefs = list(list(className = 'dt-center', targets = 2:5))))
+datatable(format(statsFile[,c('inputID', 'sampleID', 'n_u_aligned', 'n_exons', 'p_exons', 'n_introns', 'p_introns', 'n_inter', 'p_inter')], big.mark=",",scientific=FALSE), colnames =c('Sample', 'Biosample', 'Number of uniquely mapped reads', 'Number of exonic reads', 'Percent of exonic reads', 'Number of intronic reads', 'Percent of intronic reads', 'Number of intergenic reads', 'Percent of intergenic reads'), rownames = FALSE, filter = 'top', caption = 'Reads annotation', options = list(columnDefs = list(list(className = 'dt-center', targets = 2:5))))
 
 ```
 
@@ -230,7 +228,7 @@ verboseannot <- c("Exonic reads", "Intronic reads", "Intergenic reads", "Non-ann
 names(verboseannot) <- c("exons","introns","inter","nonannot")
 
 dataPlot <- statsFile %>%
-	select(., inputID, n_u_aligned, n_exons, n_introns, n_inter) %>% 
+	select(., sampleID, n_u_aligned, n_exons, n_introns, n_inter) %>% 
 	set_colnames(., c("sample", "uniqueHits", "exons", "introns", "inter")) %>% 
 	mutate(., nonannot=(uniqueHits - exons - introns - inter )) %>%  
   gather(., key="type", value="n_read", -sample, -uniqueHits)
@@ -244,7 +242,7 @@ dataPlot$type <- factor(dataPlot$type, levels=c("Exonic reads", "Intronic reads"
 gg <- ggplot(dataPlot, aes(x=sample, y=n_read, fill=type, text = paste("--Sample: ",sample,"<br>","Percent: ",percent,"%<br>","n_read: ",n_read))) + 
    geom_bar(stat="identity") + scale_fill_manual(name = "", values=c("#E41A1C", "#377EB8", "#4DAF4A", "gray")) + 
    theme_minimal() +
-   labs(title = "Annotation of uniquely aligned reads", x = "Sample(s)", y = "Number of reads") + 
+   labs(title = "Annotation of aligned reads", x = "Sample(s)", y = "Number of reads") + 
    theme(axis.text.x = element_text(angle = 45, hjust = 1, size=11), axis.title.x = element_text(size = 13, face="bold"), axis.title.y = element_text(size = 13, face="bold"))
 
 ggly_b <- plotly_build(gg)
@@ -257,13 +255,15 @@ ggly_b <- plotly_margins(ggly_b)
 ggly_b
 
 ```
+<br>
 <font size="2"> Reads have been annotated using known genes annotation. Reads spanning several annotation have been prioritized such as exon >> intron >> intergenic >> non-annotated.Non-annotated regions mainly correspond to DNA contigs without any gene annotations.</font>
 <br>
 <hr>
 
-```{r annot, fig.width=10, fig.height=7, eval=TRUE, message=FALSE, warning=FALSE}
+```{r annot, eval=TRUE, message=FALSE, warning=FALSE}
 
 counts.tpm <- read.csv(file.path(input_path,"report/tablecounts_tpm.csv"), row.names=1)
+colnames(counts.tpm) <- bioids[colnames(counts.tpm)]
 
 ## count number of expressed genes                                                       
 idx <- which(rowSums(counts.tpm)>0)
@@ -282,7 +282,10 @@ d2p <- as.matrix(as.data.frame(lapply(as.list(counts.tpm), function(x){
 })))
 
 ## remove zero values and sort by counts
-d2p <- d2p[-which(rowSums(d2p)==0),]
+line2remove <- which(rowSums(d2p)==0)
+if (length(line2remove) > 0 ){
+   d2p <- d2p[-line2remove,]
+}
 d2p <- d2p[order(rowSums(d2p), decreasing=TRUE),]
 
 ## reduce
@@ -290,8 +293,24 @@ if (nrow(d2p) > (n_items + 1)){
    d2p <- rbind(d2p[1:n_items,], others=colSums(d2p[(n_items+1):nrow(d2p), ]))
 }
 
+## Make beautiful names
+rownames(d2p) <- gsub("[_.-]"," ",gsub("(^|[[:space:]])([[:alpha:]])", "\\1\\U\\2", rownames(d2p), perl=TRUE))
+```
+
+
+```{r table4, eval=TRUE}
+
+datatable(format(t(d2p), big.mark=",",scientific=FALSE), colnames = rownames(d2p),
+ rownames = TRUE, filter = 'top', caption = 'Gene annotation', options = list(columnDefs = list(list(className = 'dt-center', targets = 1:6))))
+
+```
+
+##Gene types and Expression
+
+
+```{r annot_plot, fig.width=10, fig.height=7, eval=TRUE, message=FALSE, warning=FALSE}
 gg <- ggplot(melt(d2p), aes(x=Var2, y=value, fill=Var1)) + 
-   geom_bar(stat="identity", position=position_dodge()) +
+   geom_bar(stat="identity") +
    theme_minimal() + 
    scale_fill_manual(values=c("gray", brewer.pal(n_items, "Set2"))) +
    xlab("") + labs(title="Genes annotation", x="Sample(s)", y="Expressed genes (TPM>1)") + 

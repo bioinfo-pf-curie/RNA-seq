@@ -9,10 +9,10 @@
 
                                                                    
 SOFT="makeRNAreport"
-VERSION="0.0.1_devel"
+VERSION="0.0.7"
 
 function usage {
-    echo -e "usage : $SOFT -i INPUT_DIRECTORY -c CONFIG [-n PROJECT_NAME] [-m METADATA] [-h] [-v]"
+    echo -e "usage : $SOFT -i INPUT_DIRECTORY -c CONFIG -s SAMPLE_PLAN [-n PROJECT_NAME] [-m METADATA] [-h] [-v]"
     echo -e "Use option -h|--help for more information"
 }
 
@@ -24,6 +24,7 @@ function help {
     echo "OPTIONS"
     echo
     echo "   -i|--idir INPUT_DIRECTORY: input directory"
+    echo "   -s|--splan SAMPLE_PLAN: sample plan"
     echo "   -c|--conf CONFIG: configuration file for RNA processing"
     echo "   [-n|--name]: Project name"
     echo "   [-m|--meta]: Metadata of sequencing run"
@@ -62,6 +63,7 @@ for arg in "$@"; do
   shift
   case "$arg" in
       "--idir") set -- "$@" "-i" ;;
+      "--splan")   set -- "$@" "-s" ;;
       "--conf")   set -- "$@" "-c" ;;
       "--name")   set -- "$@" "-n" ;;
       "--meta")   set -- "$@" "-m" ;;
@@ -71,10 +73,11 @@ for arg in "$@"; do
   esac
 done
 
-while getopts "i:c:n:m:hv" OPT
+while getopts "i:s:c:n:m:hv" OPT
 do
     case $OPT in
         i) IDIR=$OPTARG;;
+	s) SPLAN=$OPTARG;;
 	c) CONF=$OPTARG;;
 	n) PROJNAME=$OPTARG;;
 	m) META=$OPTARG;;
@@ -94,7 +97,7 @@ do
 done
 
 ## STOPIFNOT
-if [[ -z $IDIR || -z $CONF ]]; then
+if [[ -z $IDIR || -z $CONF || -z $SPLAN ]]; then
     usage
     exit
 fi
@@ -139,11 +142,11 @@ echo $cmd
 eval $cmd
 
 ## Run RNA sequencing report
-cmd="${R_PATH}/R --no-save --no-restore -e \"input_path='${IDIR}'; output_path='${output_path}'; species='${ORG}'; build='${BUILD}'; gtf='${TRANSCRIPTS_GTF}'; meta='${META}'; rmarkdown::render('${SCRIPTS_PATH}/report.Rmd', intermediates_dir='${output_path}', output_file='${output_path}/report.html')\"" 
+cmd="${R_PATH}/R --no-save --no-restore -e \"input_path='${IDIR}'; output_path='${output_path}'; species='${ORG}'; build='${BUILD}'; gtf='${TRANSCRIPTS_GTF}'; meta='${META}'; splan='${SPLAN}'; rmarkdown::render('${SCRIPTS_PATH}/report.Rmd', intermediates_dir='${output_path}', output_file='${output_path}/report.html')\"" 
 echo $cmd
 eval $cmd
 
-cmd="${R_PATH}/R --no-save --no-restore -e \"input_path='${IDIR}'; output_path='${output_path}'; species='${ORG}'; build='${BUILD}'; gtf='${TRANSCRIPTS_GTF}'; meta='${META}'; rmarkdown::render('${SCRIPTS_PATH}/report.Rmd', intermediates_dir='${output_path}', output_file='${output_path}/report.pdf', output_format='pdf_document')\""
+#cmd="${R_PATH}/R --no-save --no-restore -e \"input_path='${IDIR}'; output_path='${output_path}'; species='${ORG}'; build='${BUILD}'; gtf='${TRANSCRIPTS_GTF}'; meta='${META}'; rmarkdown::render('${SCRIPTS_PATH}/report.Rmd', intermediates_dir='${output_path}', output_file='${output_path}/report.pdf', output_format='pdf_document')\""
 #echo $cmd
 #eval $cmd
 #render("input.Rmd", "all")

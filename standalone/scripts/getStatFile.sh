@@ -82,9 +82,9 @@ read_config $CONF
 ## sampleID
 if [ ! -z ${REVERSE} ]; then
     ## Get common part of R1/R2 + remove norRNA suffix + remove .R(1/2) suffix
-    fastqID=$(basename $(printf "%s\n%s\n" "${FORWARD}}" "${REVERSE}" | sed -e 'N;s/^\(.*\).*\n\1.*$/\1/' | sed -e 's/_norRNA\(_\)*//' | sed -e 's/\.R$//'))
+    fastqID=$(basename $(printf "%s\n%s\n" "${FORWARD}" "${REVERSE}" | sed -e 'N;s/^\(.*\).*\n\1.*$/\1/' | sed -e 's/[\._]*$//'))
 else
-    fastqID=$(basename ${FORWARD} | sed -e 's/.fastq\(.gz\)//' | sed -e 's/_norRNA\(_\)*//')
+    fastqID=$(basename ${FORWARD} | sed -e 's/.fastq\(.gz\)//' | sed -e 's/[\_.]*R*[12]*$//')
 fi
 
 ## #cluster
@@ -180,18 +180,18 @@ if  [ ! -z $GTF ]; then
     INTRON_BED=$(echo $GTF | sed -e 's/.gtf$/_intron.bed/')
     INTER_BED=$(echo $GTF | sed -e 's/.gtf$/_inter.bed/')
     
-    ## unique_hits_on_trs
+    ## hits_on_trs
     ## overlap the exons (at least 1-base)
     if [ -e ${EXON_BED} ]; then
-	nb_exon=$(${BEDTOOLS_PATH}/intersectBed -a ${UNIQUE_BAM} -b ${EXON_BED} | ${SAMTOOLS_PATH}/samtools view -c -)
+	nb_exon=$(${BEDTOOLS_PATH}/intersectBed -a ${BAM} -b ${EXON_BED} | ${SAMTOOLS_PATH}/samtools view -c -)
     fi
     ## overlap the introns but not the exons as they are already counted before
     if [ -e ${INTRON_BED} ]; then
-	nb_intron=$(${BEDTOOLS_PATH}/intersectBed -a ${UNIQUE_BAM} -b ${INTRON_BED} | ${BEDTOOLS_PATH}/intersectBed -a stdin -b ${EXON_BED} -v | ${SAMTOOLS_PATH}/samtools view -c -)
+	nb_intron=$(${BEDTOOLS_PATH}/intersectBed -a ${BAM} -b ${INTRON_BED} | ${BEDTOOLS_PATH}/intersectBed -a stdin -b ${EXON_BED} -v | ${SAMTOOLS_PATH}/samtools view -c -)
     fi
     ## are fully intergenic
     if [ -e ${INTER_BED} ]; then
-	nb_inter=$(${BEDTOOLS_PATH}/intersectBed -a ${UNIQUE_BAM} -b ${INTER_BED} -f 1 | ${SAMTOOLS_PATH}/samtools view -c -)
+	nb_inter=$(${BEDTOOLS_PATH}/intersectBed -a ${BAM} -b ${INTER_BED} -f 1 | ${SAMTOOLS_PATH}/samtools view -c -)
     fi
 else
     nb_exon=NA
