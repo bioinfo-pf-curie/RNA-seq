@@ -15,7 +15,7 @@ if (count_tool == "STAR"){
     }else{
         counts.exprs <- data.frame(lapply(counts.exprs, "[", 1))
     }    
-    colnames(counts.exprs) <- gsub("_norRNA", "", gsub("_ReadsPerGene.out.tab","",sapply(exprs.in, basename)))
+    colnames(counts.exprs) <- gsub("_norRNA", "", gsub("ReadsPerGene.out.tab","",sapply(exprs.in, basename)))
     ## remove first 4 lines
     counts.exprs <- counts.exprs[5:nrow(counts.exprs), , drop=FALSE]
 }else if (count_tool == "FEATURECOUNTS"){

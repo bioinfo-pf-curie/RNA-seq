@@ -309,10 +309,13 @@ datatable(format(t(d2p), big.mark=",",scientific=FALSE), colnames = rownames(d2p
 
 
 ```{r annot_plot, fig.width=10, fig.height=7, eval=TRUE, message=FALSE, warning=FALSE}
+## remove Total for plot
+d2p <- d2p[setdiff(rownames(d2p), "Total"),]
+
 gg <- ggplot(melt(d2p), aes(x=Var2, y=value, fill=Var1)) + 
    geom_bar(stat="identity") +
    theme_minimal() + 
-   scale_fill_manual(values=c("gray", brewer.pal(n_items, "Set2"))) +
+   scale_fill_manual(values=c(brewer.pal(n_items, "Set2"))) +
    xlab("") + labs(title="Genes annotation", x="Sample(s)", y="Expressed genes (TPM>1)") + 
    theme(legend.title=element_blank(), legend.position="bottom") +
    theme(axis.text.x = element_text(angle = 45, hjust = 1, size=11), axis.title.x = element_text(size = 13, face="bold"), axis.title.y = element_text(size = 13, face="bold"))
