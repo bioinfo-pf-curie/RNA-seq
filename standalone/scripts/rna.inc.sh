@@ -145,13 +145,15 @@ star_func()
     inputs=($1)
     if [[ ${#inputs[@]} -eq 1 ]]; then
 	if [[ ${inputs[0]} =~ \.gz ]]; then
-            cmd_in="--readFilesIn <(gzip -cd ${inputs[0]})"
+            #cmd_in="--readFilesIn <(gzip -cd ${inputs[0]})"
+            cmd_in="--readFilesIn ${inputs[0]} --readFilesCommand zcat"          
         else
             cmd_in="--readFilesIn $1"
         fi
     elif [[ ${#inputs[@]} -eq 2 ]]; then
 	if [[ ${inputs[0]} =~ \.gz ]]; then
-		cmd_in="--readFilesIn <(gzip -cd ${inputs[0]}) <(gzip -cd ${inputs[1]})"
+		#cmd_in="--readFilesIn <(gzip -cd ${inputs[0]}) <(gzip -cd ${inputs[1]})"
+		cmd_in="--readFilesIn ${inputs[0]} ${inputs[1]} --readFilesCommand zcat"
 	else
 		cmd_in="--readFilesIn $1 $2"
 	fi
@@ -171,7 +173,7 @@ star_func()
     mkdir -p ${out}
     local out_mapped=$(basename ${inputs[0]} | sed -e 's/[\._]*R*[12]*.fastq\(.gz\)*//')
 
-    cmd="$cmd $cmd_in --outFileNamePrefix ${out}/${out_mapped} ${STAR_OPTS}"
+    cmd="$cmd $cmd_in --outFileNamePrefix ${out}/${out_mapped} --outTmpDir ${out}/tmp ${STAR_OPTS}"
     exec_cmd ${cmd} 2> $log
 
     cmd="mv ${out}/${out_mapped}Aligned.sortedByCoord.out.bam ${out}/${out_mapped}.bam"
