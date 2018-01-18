@@ -7,6 +7,8 @@ NEW FEATURES
 
 SIGNIFICANT USER-VISIBLE CHANGES
 
+   o Change default config file for STAR option / R path
+
    o Back to zcat command for gzip file during STAR mapping
 
    o makeRNAreport now requires the SAMPLE_PLAN to deal with biological ids
