@@ -19,9 +19,9 @@ SIGNIFICANT USER-VISIBLE CHANGES
 
    o Remove links to HTML report
 
-   o Annotation on exons/intron/intergenic are now run on full BAM (not only unique hits)
-
 BUG FIXES
+
+   o Remove emply line from SAMPLE_PLAN
 
    o Fix bug in report regarding sample names
 

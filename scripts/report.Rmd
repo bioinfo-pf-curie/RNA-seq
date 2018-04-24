@@ -169,10 +169,10 @@ dataPlot$type=verbosetype[dataPlot$type]
 dataPlot$type <- factor(dataPlot$type, levels=c("Aligned reads (unique-hits)", "Aligned reads (multi-hits)", "rRNA reads", "Unmapped reads"))
 
 ## Calculate percent
-p_unmapped <- paste0(round(dataPlot[which(dataPlot$type=="Unmapped reads"),"n_read"] /     sapply(unique(dataPlot$sample),function(i){sum(dataPlot[which(dataPlot$sample==i),"n_read"])})*100,2),"%")
+p_unmapped <- paste0(round(dataPlot[which(dataPlot$type=="Unmapped reads"),"n_read"] / sapply(unique(dataPlot$sample),function(i){sum(dataPlot[which(dataPlot$sample==i),"n_read"])})*100,2),"%")
 dataPlot$percent <- c(statsFile$p_u_aligned, statsFile$p_m_aligned, statsFile$p_rrna, p_unmapped)
 
-gg <- ggplot(dataPlot, aes(x=sample, y=n_read, fill=type, text=percent)) + geom_bar(stat="identity") + scale_fill_manual(name = "", values=c("orange", "darkorange", "red", "gray")) + 
+gg <- ggplot(dataPlot, aes(x=sample, y=n_read, fill=type, text=percent)) + geom_bar(stat="identity") + scale_fill_manual(name = "", values=c("orange", "darkorange4", "red3", "gray")) + 
    theme_minimal() +
    labs(title = "Mapping statistics per sample", x = "Sample(s)", y = "Number of reads") + 
    theme(axis.text.x = element_text(angle = 45, hjust = 1, size=11), axis.title.x = element_text(size = 13, face="bold"), axis.title.y = element_text(size = 13, face="bold"))
@@ -219,7 +219,7 @@ Reference: `r basename(gtf)`
 
 ```{r table3, eval=TRUE}
 
-datatable(format(statsFile[,c('inputID', 'sampleID', 'n_u_aligned', 'n_exons', 'p_exons', 'n_introns', 'p_introns', 'n_inter', 'p_inter')], big.mark=",",scientific=FALSE), colnames =c('Sample', 'Biosample', 'Number of uniquely mapped reads', 'Number of exonic reads', 'Percent of exonic reads', 'Number of intronic reads', 'Percent of intronic reads', 'Number of intergenic reads', 'Percent of intergenic reads'), rownames = FALSE, filter = 'top', caption = 'Reads annotation', options = list(columnDefs = list(list(className = 'dt-center', targets = 2:5))))
+datatable(format(statsFile[,c('inputID', 'sampleID', 'n_u_aligned', 'n_exons', 'p_exons', 'n_introns', 'p_introns', 'n_inter', 'p_inter')], big.mark=",",scientific=FALSE), colnames =c('Sample', 'Biosample', 'Number of mapped reads', 'Number of exonic reads', 'Percent of exonic reads', 'Number of intronic reads', 'Percent of intronic reads', 'Number of intergenic reads', 'Percent of intergenic reads'), rownames = FALSE, filter = 'top', caption = 'Reads annotation', options = list(columnDefs = list(list(className = 'dt-center', targets = 2:5))))
 
 ```
 
@@ -235,14 +235,13 @@ dataPlot <- statsFile %>%
 
 dataPlot$percent <-  round(dataPlot$n_read/rep(statsFile$n_u_aligned, 4)*100, 2)
 
-
 dataPlot$type=verboseannot[dataPlot$type]
 dataPlot$type <- factor(dataPlot$type, levels=c("Exonic reads", "Intronic reads", "Intergenic reads", "Non-annotated"))
 
 gg <- ggplot(dataPlot, aes(x=sample, y=n_read, fill=type, text = paste("--Sample: ",sample,"<br>","Percent: ",percent,"%<br>","n_read: ",n_read))) + 
    geom_bar(stat="identity") + scale_fill_manual(name = "", values=c("#E41A1C", "#377EB8", "#4DAF4A", "gray")) + 
    theme_minimal() +
-   labs(title = "Annotation of aligned reads", x = "Sample(s)", y = "Number of reads") + 
+   labs(title = "Annotation of uniquely aligned reads", x = "Sample(s)", y = "Number of reads") + 
    theme(axis.text.x = element_text(angle = 45, hjust = 1, size=11), axis.title.x = element_text(size = 13, face="bold"), axis.title.y = element_text(size = 13, face="bold"))
 
 ggly_b <- plotly_build(gg)
@@ -265,7 +264,7 @@ ggly_b
 counts.tpm <- read.csv(file.path(input_path,"report/tablecounts_tpm.csv"), row.names=1)
 colnames(counts.tpm) <- bioids[colnames(counts.tpm)]
 
-## count number of expressed genes                                                       
+## count number of expressed genes
 idx <- which(rowSums(counts.tpm)>0)
 counts.tpm <- counts.tpm[idx,,drop=FALSE]
 
@@ -304,9 +303,7 @@ datatable(format(t(d2p), big.mark=",",scientific=FALSE), colnames = rownames(d2p
  rownames = TRUE, filter = 'top', caption = 'Gene annotation', options = list(columnDefs = list(list(className = 'dt-center', targets = 1:6))))
 
 ```
-
 ##Gene types and Expression
-
 
 ```{r annot_plot, fig.width=10, fig.height=7, eval=TRUE, message=FALSE, warning=FALSE}
 ## remove Total for plot

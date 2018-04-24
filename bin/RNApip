@@ -123,14 +123,15 @@ if [ ! -z "$CONF" ]; then
     fi
 fi
 
-## TODO - check all paths before starting
+## Create output directory
+mkdir -p ${ODIR}
 
 ## LOGS
-if [[ -z $SAMPLE_ID ]]; then 
-    LOGDIR=${ODIR}/logs/
-else
-    LOGDIR=${ODIR}/logs/${SAMPLE_ID}
-fi
+#if [[ -z $SAMPLE_ID ]]; then 
+LOGDIR=${ODIR}/logs/
+#else
+#    LOGDIR=${ODIR}/logs/${SAMPLE_ID}
+#fi
 mkdir -p ${LOGDIR}
 
 

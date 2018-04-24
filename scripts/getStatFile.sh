@@ -183,15 +183,15 @@ if  [ ! -z $GTF ]; then
     ## hits_on_trs
     ## overlap the exons (at least 1-base)
     if [ -e ${EXON_BED} ]; then
-	nb_exon=$(${BEDTOOLS_PATH}/intersectBed -a ${BAM} -b ${EXON_BED} | ${SAMTOOLS_PATH}/samtools view -c -)
+	nb_exon=$(${BEDTOOLS_PATH}/intersectBed -a ${UNIQUE_BAM} -b ${EXON_BED} | ${SAMTOOLS_PATH}/samtools view -c -)
     fi
     ## overlap the introns but not the exons as they are already counted before
     if [ -e ${INTRON_BED} ]; then
-	nb_intron=$(${BEDTOOLS_PATH}/intersectBed -a ${BAM} -b ${INTRON_BED} | ${BEDTOOLS_PATH}/intersectBed -a stdin -b ${EXON_BED} -v | ${SAMTOOLS_PATH}/samtools view -c -)
+	nb_intron=$(${BEDTOOLS_PATH}/intersectBed -a ${UNIQUE_BAM} -b ${INTRON_BED} | ${BEDTOOLS_PATH}/intersectBed -a stdin -b ${EXON_BED} -v | ${SAMTOOLS_PATH}/samtools view -c -)
     fi
     ## are fully intergenic
     if [ -e ${INTER_BED} ]; then
-	nb_inter=$(${BEDTOOLS_PATH}/intersectBed -a ${BAM} -b ${INTER_BED} -f 1 | ${SAMTOOLS_PATH}/samtools view -c -)
+	nb_inter=$(${BEDTOOLS_PATH}/intersectBed -a ${UNIQUE_BAM} -b ${INTER_BED} -f 1 | ${SAMTOOLS_PATH}/samtools view -c -)
     fi
 else
     nb_exon=NA
