@@ -1,11 +1,19 @@
 ***********************************
-CHANGES IN VERSION 0.0.7
+CHANGES IN VERSION 0.1.0
 
 NEW FEATURES
 
    o Add saturation curves
 
+   o Strandness is now automatically detected before mapping if STRANDED is not set
+
+   o Generate Index of BAM files
+
 SIGNIFICANT USER-VISIBLE CHANGES
+
+   o FastQC step is not optional
+
+   o Update logs reporting for clority reasons
 
    o Change default config file for STAR option / R path
 

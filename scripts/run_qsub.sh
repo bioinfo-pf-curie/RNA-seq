@@ -11,6 +11,8 @@ cd $PBS_O_WORKDIR
 SCRIPTS_PATH=`dirname $0`
 ABS_SCRIPTS_PATH=`cd "$SCRIPTS_PATH"; pwd`
 BIN_PATH="$ABS_SCRIPTS_PATH/../bin/"
+VERSION=$(bash ${BIN_PATH}/RNApip -v)
+
 
 if [[ -z ${SAMPLE_PLAN} || -z ${ODIR} || -z ${CONFIG} ]];then
     echo -e "Error - Missing parameter(s). Stop."
@@ -24,18 +26,27 @@ reverse=$(awk -F"," -v i=${PBS_ARRAYID} 'NR==i{print $4}' ${SAMPLE_PLAN})
 
 mkdir -p ${ODIR}/${id}
 
-echo "SAMPLE_PLAN=${SAMPLE_PLAN}"
-echo "ODIR=${ODIR}"
-echo "CONFIG=${CONFIG}"
-echo "id=${id}"
-echo "reverse=${reverse}"
-echo "forward=${forward}"
+
+echo -e "--------------------"
+echo -e "Running RNA pipeline cluster mode (v${VERSION})"
+when=$(date +%Y-%m-%d)
+echo -e "Date: ${when}"
+where=$(hostname)
+echo -e "Host: ${where}"
+echo
+echo -e "Id: ${id}"
+echo -e "Sample_id: ${bioid}"
+echo -e "Forward: ${forward}"
+echo -e "Reverse:  ${reverse}"
+echo -e "Ouput: ${ODIR}"
+echo -e "Config: ${CONFIG}"
+echo -e "Log: ${ODIR}/${id}/rnapip.log"
+echo -e "--------------------"
+echo
 
 ## Run RNA pipeline per sample
 if [ ! -z "$reverse" ]; then
-    echo "Run ${id} in PE mode ..."
     bash ${BIN_PATH}/RNApip -f ${forward} -r ${reverse} -o ${ODIR}/${id} -c ${CONFIG} -s ${bioid} > ${ODIR}/${id}/rnapip.log 
 else
-    echo "Run ${id} in SE mode ..."
     bash ${BIN_PATH}/RNApip -f ${forward} -o ${ODIR}/${id} -c ${CONFIG} -s ${bioid} > ${ODIR}/${id}/rnapip.log
 fi

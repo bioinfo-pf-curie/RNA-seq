@@ -9,7 +9,7 @@
 
                                                                    
 SOFT="makeRNAreport"
-VERSION="0.0.7"
+VERSION="0.1.0"
 
 function usage {
     echo -e "usage : $SOFT -i INPUT_DIRECTORY -c CONFIG -s SAMPLE_PLAN [-n PROJECT_NAME] [-m METADATA] [-h] [-v]"
@@ -30,7 +30,7 @@ function help {
     echo "   [-m|--meta]: Metadata of sequencing run"
     echo "   [-h|--help]: help"
     echo "   [-v|--version]: version"
-    exit;
+    exit
 }
 
 function version {
@@ -96,7 +96,6 @@ do
     esac
 done
 
-## STOPIFNOT
 if [[ -z $IDIR || -z $CONF || -z $SPLAN ]]; then
     usage
     exit
@@ -112,7 +111,6 @@ SPLAN=$(realpath $SPLAN)
 
 ## Load functions file
 . $SCRIPTS_PATH/utils.inc.sh
-. $SCRIPTS_PATH/rna.inc.sh
 
 ## Check Config file
 if [ -e "$CONF" ]; then
@@ -125,27 +123,51 @@ fi
 ## output
 output_path=${IDIR}/report
 mkdir -p $output_path
+logdir=${IDIR}/report/logs
+mkdir -p ${logdir}
 
-## copy configuration file into the report folder
+## Init log
+echo -e "--------------------"
+echo -e "RNAreport"
+when=$(date +%Y-%m-%d)
+echo -e "Date: ${when}"
+where=$(hostname)
+echo -e "Host: ${where}"
+echo -e "Input_directory: ${IDIR}"
+echo -e "Project_name: ${PROJNAME}"
+echo -e "Sample_plan: ${SPLAN}"
+echo -e "Config: ${CONF}"
+if [[ ! -z $META ]]; then
+    echo -e "Meta: ${META}"
+fi
+echo -e "--------------------"
+echo 
+
+
+## copy configuration file into the report folder and combine stats
+echo -e "Combine stats from multiple samples ..."
+echo -e "Logs: ${logdir}/getstat.log"
+echo
 cmd="cp ${CONF} ${output_path}/config.txt"
-echo $cmd
-eval $cmd
+exec_cmd ${cmd} > $logdir/getstat.log 2>&1
 
-## Combine all statistics
 statfiles=$(find ${IDIR} -maxdepth 3 -name '*stats' -type f)
 cmd="${PYTHON_PATH}/python ${SCRIPTS_PATH}/fullStats.py -i $statfiles -o ${output_path} -r ${PROJNAME}"
-echo $cmd
-eval $cmd
+exec_cmd ${cmd} >> $logdir/getstat.log 2>&1
 
 ## Generate merged table count
+echo -e "Combine merged table counts ..."
+echo -e "Logs: ${logdir}/makeCountTable.log"
+echo
 cmd="${R_PATH}/R --no-save --no-restore -e \"input_path='${IDIR}'; gtf='${TRANSCRIPTS_GTF}'; count_tool='${COUNT_TOOL}'; stranded='${STRANDED}'; odir='${output_path}'; source('${SCRIPTS_PATH}/makeCountTable.R', chdir=TRUE)\"" 
-echo $cmd
-eval $cmd
+exec_cmd ${cmd} > $logdir/makeCountTable.log 2>&1
 
 ## Run RNA sequencing report
+echo -e "Generate report ..."
+echo -e "Logs: ${logdir}/report.log"
+echo
 cmd="${R_PATH}/R --no-save --no-restore -e \"input_path='${IDIR}'; output_path='${output_path}'; species='${ORG}'; build='${BUILD}'; gtf='${TRANSCRIPTS_GTF}'; meta='${META}'; splan='${SPLAN}'; rmarkdown::render('${SCRIPTS_PATH}/report.Rmd', intermediates_dir='${output_path}', output_file='${output_path}/report.html')\"" 
-echo $cmd
-eval $cmd
+exec_cmd ${cmd} > $logdir/report.log 2>&1
 
 #cmd="${R_PATH}/R --no-save --no-restore -e \"input_path='${IDIR}'; output_path='${output_path}'; species='${ORG}'; build='${BUILD}'; gtf='${TRANSCRIPTS_GTF}'; meta='${META}'; rmarkdown::render('${SCRIPTS_PATH}/report.Rmd', intermediates_dir='${output_path}', output_file='${output_path}/report.pdf', output_format='pdf_document')\""
 #echo $cmd

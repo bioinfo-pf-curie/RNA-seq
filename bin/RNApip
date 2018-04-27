@@ -8,7 +8,7 @@
 ## Public License, either Version 2, June 1991 or Version 3, June 2007.
 
 SOFT="RNApip"
-VERSION="0.0.7"
+VERSION="0.1.0"
 
 function usage {
     echo -e "usage : $SOFT -f FORWARD -o OUTPUT -c CONFIG [-r REVERSE][-s SAMPLE_ID] [-d] [-h] [-v]"
@@ -39,6 +39,7 @@ function version {
 }
 
 function set_dry_run {
+    echo -e "Dry run mode"
     DRY_RUN=1
 }
 
@@ -110,6 +111,26 @@ SCRIPTS_PATH="$ABS_BIN_PATH/../scripts/"
 . $SCRIPTS_PATH/rna.inc.sh
 
 #####################
+## Init log file
+#####################
+
+
+echo -e "--------------------"
+echo -e "Running ${SOFT} v${VERSION}"
+when=$(date +%Y-%m-%d)
+echo -e "Date: ${when}"
+where=$(hostname)
+echo -e "Host: ${where}"
+echo -e "Input: ${FORWARD} ${REVERSE}"
+echo -e "Ouput: ${ODIR}"
+echo -e "Config: ${CONF}"
+if [[ ! -z $SAMPLE_ID ]]; then
+    echo -e "SampleID: ${SAMPLE_ID}"
+fi
+echo -e "--------------------"
+echo 
+
+#####################
 ## Check Config file
 #####################
 
@@ -123,15 +144,26 @@ if [ ! -z "$CONF" ]; then
     fi
 fi
 
+## Check mapping indexes
+echo -n "Checking index files ... "
+if [ ${MAPPING_TOOL} == "STAR" ]; then
+    file_exists ${STAR_IDX_PATH}
+elif [ ${MAPPING_TOOL} == "TOPHAT2" ]; then
+    file_exists $(dirname ${TOPHAT2_IDX_PATH})
+fi
+echo -e "OK"
+
+## Annotation
+echo -n "Checking annotation files ... "
+if [ ! -z ${R_RNA_FASTA} ]; then file_exists ${R_RNA_FASTA}; fi
+if [ ! -z ${TRANSCRIPTS_GTF} ]; then file_exists ${TRANSCRIPTS_GTF}; fi
+if [ ! -z ${GENE_BED} ]; then file_exists ${GENE_BED}; fi
+echo -e "OK"
+echo
+
 ## Create output directory
 mkdir -p ${ODIR}
-
-## LOGS
-#if [[ -z $SAMPLE_ID ]]; then 
-LOGDIR=${ODIR}/logs/
-#else
-#    LOGDIR=${ODIR}/logs/${SAMPLE_ID}
-#fi
+LOGDIR=${ODIR}/logs
 mkdir -p ${LOGDIR}
 
 
@@ -139,42 +171,50 @@ mkdir -p ${LOGDIR}
 ## WORFLOW
 ###################
 
-## 0- echo
-echo -e "--------------------"
-echo -e "Running ${SOFT} v${VERSION} ..."
-when=$(date +%Y-%m-%d)
-echo -e "When=${when}"
-where=$(hostname)
-echo -e "Where=${where}"
-echo -e "Input=${FORWARD} ${REVERSE}"
-echo -e "Ouput=${ODIR}"
-echo -e "Config=${CONF}"
-if [[ ! -z $SAMPLE_ID ]]; then
-    echo -e "SampleID=${SAMPLE_ID}"
+## FASTQC
+if [ ${RUN_FASTQC} == 1 ]; then
+    fastqc_func "${FORWARD} ${REVERSE}" ${ODIR} ${LOGDIR}
 fi
-echo -e "--------------------"
-echo 
 
-## 1- FASTQC
-
-fastqc_func "${FORWARD} ${REVERSE}" ${ODIR} ${LOGDIR}
-
-## 2- Mapping - remove rRNA
-
-rRNA_mapping_func "${FORWARD} ${REVERSE}" ${ODIR} ${LOGDIR}
-
-R_RNA_BAM=${ODIR}/rRNA_mapping/$(basename ${FORWARD} | sed -e 's/[\._]*R*[12]*.fastq\(.gz\)*/.bam/')
-
-# rename unmapped read output (bowtie automatically adds _1 and _2 for PE reads
-if [[ -z ${REVERSE} ]]; then
-    FORWARD_RRNA=${ODIR}/rRNA_mapping/$(basename ${FORWARD} | sed -e 's/[\._]*R*[12]*.fastq/_norRNA.fastq/')
+## Rseqc - infer experiment
+if [ -z $STRANDED ]; then
+    rseqc_func "${FORWARD} ${REVERSE}" ${ODIR} ${LOGDIR}
+    rseq_output=$(basename ${FORWARD} | sed -e 's/.fastq\(.gz\)*//').rseqc
+    libtype=$(parse_rseqc_output ${ODIR}/strand_check/${rseq_output})
+    
+    if [[ ${libtype} == "undetermined" ]]; then
+	die "Cannot determined library type. Please set the STRANDED parameter in the configuration file"
+    else
+	echo -e "Info: RSeqQC detected stranded='${libtype}' ..."
+	echo -e
+	STRANDED=${libtype}
+    fi
 else
-    FORWARD_RRNA=${ODIR}/rRNA_mapping/$(basename ${FORWARD} | sed -e 's/[\._]*R*[12]*.fastq/_norRNA_1.fastq/')
-    REVERSE_RRNA=${ODIR}/rRNA_mapping/$(basename ${FORWARD_RRNA} | sed -e 's/_1.fastq/_2.fastq/')
+    echo -e "Info: STRANDED parameter detected - skipping Rseqqc ..."
+    echo -e "Info: stranded='$STRANDED' ..."
 fi
 
-## 3 - Mapping
+## Mapping - remove rRNA
+if [ ! -z ${BOWTIE_RRNA_IDX} ]; then
+    file_exists $(dirname ${BOWTIE_RRNA_IDX})
+    rRNA_mapping_func "${FORWARD} ${REVERSE}" ${ODIR} ${LOGDIR}
+    R_RNA_BAM=${ODIR}/rRNA_mapping/$(basename ${FORWARD} | sed -e 's/[\._]*R*[12]*.fastq\(.gz\)*/.bam/')
 
+    # Rename unmapped read output (bowtie automatically adds _1 and _2 for PE reads
+    if [[ -z ${REVERSE} ]]; then
+	FORWARD_RRNA=${ODIR}/rRNA_mapping/$(basename ${FORWARD} | sed -e 's/[\._]*R*[12]*.fastq/_norRNA.fastq/')
+    else
+	FORWARD_RRNA=${ODIR}/rRNA_mapping/$(basename ${FORWARD} | sed -e 's/[\._]*R*[12]*.fastq/_norRNA_1.fastq/')
+	REVERSE_RRNA=${ODIR}/rRNA_mapping/$(basename ${FORWARD_RRNA} | sed -e 's/_1.fastq/_2.fastq/')
+    fi
+else
+    echo -e "Info: BOWTIE_RRNA_IDX not set - skipping rRNA mapping ..."
+    echo
+    FORWARD_RRNA=${FORWARD}
+    REVERSE_RRNA=${REVERSE}
+fi
+
+## Mapping on genome
 if [ ${MAPPING_TOOL} == "TOPHAT2" ]; then
     tophat2_func "${FORWARD_RRNA} ${REVERSE_RRNA}" ${ODIR} ${LOGDIR}
     
@@ -187,24 +227,27 @@ fi
 
 BAM_INPUT=${ODIR}/mapping/$(basename $FORWARD_RRNA | sed -e 's/[\._]*R*[12]*.fastq\(.gz\)*/.bam/')
 
-## 4 - Check data type
+## index BAM file
+bamindex_func ${BAM_INPUT} ${LOGDIR}
 
-rseqc_func "${BAM_INPUT}" ${ODIR} ${LOGDIR}
+## Check data type
+#rseqc_func ${BAM_INPUT} ${ODIR} ${LOGDIR}
 
-## 5 - Check number of duplicates
+## Run Saturation curves with preseq
+preseq_func ${BAM_INPUT} ${ODIR} ${LOGDIR}
 
-markdup "${BAM_INPUT}" ${LOGDIR}
+## Check number of duplicates
+markdup ${BAM_INPUT} ${LOGDIR}
 
-## 6 - Count per transcripts
-
+##  Count per transcripts
 if [ ${COUNT_TOOL} == "HTSEQ" ]; then
-    htseq_func "${BAM_INPUT}" ${ODIR} ${LOGDIR}
+    htseq_func ${BAM_INPUT} ${ODIR} ${LOGDIR}
 
 elif [ ${COUNT_TOOL} == "FEATURECOUNTS" ]; then
-    featurecounts_func "${BAM_INPUT}" ${ODIR} ${LOGDIR}
+    featurecounts_func ${BAM_INPUT} ${ODIR} ${LOGDIR}
 
 elif [[ ${COUNT_TOOL} == "STAR" && ${MAPPING_TOOL} == "STAR" ]]; then
-    starcounts_func "${BAM_INPUT}" ${ODIR} ${LOGDIR}
+    starcounts_func ${BAM_INPUT} ${ODIR} ${LOGDIR}
 
 elif [[ ${COUNT_TOOL} == "STAR" && ${MAPPING_TOOL} != "STAR" ]]; then
     die "Invalid parameter - STAR cannot be used !"
@@ -213,8 +256,10 @@ elif [[ ${COUNT_TOOL} != "STAR" ]]; then
     die "$COUNT_TOOL is not supported !"
 fi
 
-## 7 - QC/Stats
+## QC/Stats
+mapping_stat "${FORWARD} ${REVERSE}" ${CONF} ${BAM_INPUT} ${ODIR} ${LOGDIR} ${R_RNA_BAM}
 
-mapping_stat "${FORWARD} ${REVERSE}" ${CONF} ${BAM_INPUT} ${R_RNA_BAM} ${ODIR} ${LOGDIR}
 echo
-echo -e "Done ! Results are available in ${ODIR}"
+echo -e "Completed ! Results are available in ${ODIR}"
+echo
+

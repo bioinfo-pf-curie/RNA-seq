@@ -6,8 +6,35 @@
 ## This software is distributed without any guarantee under the terms of the BSD-3 licence.
 ## See the LICENCE file for details
 
-set -o pipefail  # trace ERR through pipes                                                                                                                                                                 
-set -o errexit   ## set -e : exit the script if any statement returns a non-true return value
+###########################
+## trap handler
+###########################
+function trap_error()
+{
+    
+    echo "Error: $1 - line $2 - exit status of last command: $?. Exit" >&2
+    exit 1
+}
+
+function trap_exit()
+{
+    ##Since bash-4.0 $LINENO is reset to 1 when the trap is triggered
+    if [ "$?" != "0" ]; then
+	echo "Error: exit status detected. Exit." >&2
+    fi
+
+    if [ -e ${ODIR}/mapping/tmp ]; then 
+	echo -e "Cleaning temporary folders ..." >&2
+	/bin/rm -rf ${ODIR}/mapping/tmp; 
+    fi
+}
+
+trap 'trap_error "$0" "$LINENO"' ERR
+trap 'trap_exit' 0 1 2 3
+
+set -E ## export trap to functions
+set -o pipefail  ## trace ERR through pipes         
+#set -o errexit   ## set -e : exit the script if any statement returns a non-true return value
 
 ###########################
 ## Subroutine for pipelines
@@ -15,7 +42,7 @@ set -o errexit   ## set -e : exit the script if any statement returns a non-true
 
 die() 
 { 
-    echo "Exit: $@" 
+    echo "Exit: $@" >&2
     exit 1
 }
 
@@ -47,4 +74,19 @@ read_config()
 is_in_path()
 {
     type -P $1 > /dev/null && echo 1 || echo 0
+}
+
+
+file_exists()
+{
+
+    if [ ! -e $1 ]; then
+ 	echo -e "Error: The file ${1} was not found. Exit" >&2
+ 	echo
+ 	exit 1
+    elif [ ! -s $1 ]; then
+ 	echo -e "Error: The file ${1} was found but is empty. Exit" >&2
+ 	echo
+ 	exit 1
+    fi
 }
