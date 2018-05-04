@@ -51,6 +51,7 @@ All options used during the processing can be defined in a CONFIGURATION file.
 In this case, simply copy the CONFIG file from the installation folder to your local folder, and edit it.
 
 PARAMETERS | DESCRIPTION 
+--- | ---
 ORG | Organism
 BUILD | Version of reference genome
 RUN_FASTQC | Run Fastq for quality controls; 0=no, 1=yes (default: no)
