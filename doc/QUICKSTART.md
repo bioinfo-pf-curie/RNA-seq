@@ -15,18 +15,23 @@ The current version is gene-based oriented and do not include any transcript-bas
 It is designed to take the raw sequence files (fastq) from a set of experiments (a sequencing run) or a single sample, and to process the data up to the final read counts per gene.  
 A report with RNA-seq quality metrics is also generated.
 
+## Contacts and bug reports
+
+This pipeline is free for internal usage to all Institut Curie.  
+In case of bugs or idea, you can open a GIT issue at https://gitlab.curie.fr/data-analysis/RNA-seq/issues or contact nicolas.servant@curie.fr
+
 ### Main features
 
 The RNA-seq pipeline is based on the following workflow :
 
-![RNA-seq worflow][RNApip-wkf.png]
+![RNA-seq worflow](RNApip-wkf.png)
 
 ### Dependancies
 
 The current version is designed to run on the Centos cluster.  
-By default, the current dependencies (and paths) are used :
+By default, the following tools and paths are used:
 
-Tools | Path on cluster 
+TOOLS | PATHS 
 --- | --- 
 FASTQC_PATH | /bioinfo/local/build/Centos/FastQC/FastQC_v0.11.5
 JAVA_PATH | /bioinfo/local/build/Centos/java/jre1.8.0_101/bin
@@ -47,7 +52,7 @@ PRESEQ_PATH | /bioinfo/local/build/Centos/preseq/preseq_v2.0/
 
 ### Setting the configuration files
 
-All options used during the processing can be defined in a CONFIGURATION file.
+All options used during the processing can be defined in a CONFIG file.  
 In this case, simply copy the CONFIG file from the installation folder to your local folder, and edit it.
 
 PARAMETERS | DESCRIPTION 
