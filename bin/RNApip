@@ -194,6 +194,9 @@ else
     echo -e "Info: stranded='$STRANDED' ..."
 fi
 
+## Save STANDED parameter
+echo -e "STRANDED=$STRANDED" > ${ODIR}/strand_check/strandness.info
+
 ## Mapping - remove rRNA
 if [ ! -z ${BOWTIE_RRNA_IDX} ]; then
     file_exists $(dirname ${BOWTIE_RRNA_IDX})
