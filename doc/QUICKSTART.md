@@ -1,7 +1,7 @@
 ---
-title: "MANUAL"
+title: "RNA-seq pipeline"
 author: "Nicolas Servant"
-date: "7 septembre 2016"
+date: "4th May 2018"
 output: html_document
 ---
 
