@@ -261,8 +261,9 @@ fi
 
 ## QC/Stats
 mapping_stat "${FORWARD} ${REVERSE}" ${CONF} ${BAM_INPUT} ${ODIR} ${LOGDIR} ${R_RNA_BAM}
+when=$(date +%Y-%m-%d)
 
 echo
-echo -e "Completed ! Results are available in ${ODIR}"
+echo -e "Completed on ${when}! Results are available in ${ODIR}"
 echo
 
