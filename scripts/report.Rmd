@@ -301,8 +301,8 @@ idx <- which(rowSums(counts.tpm)>0)
 counts.tpm <- counts.tpm[idx,,drop=FALSE]
 
 ## gene annotation
-gtf <- rtracklayer::import(gtf)
-my_genes <- gtf[gtf$type == "gene"]
+d.gtf <- rtracklayer::import(gtf)
+my_genes <- d.gtf[d.gtf$type == "gene"]
 mcols(my_genes) <- mcols(my_genes)[c("gene_id", "gene_type","gene_name")]
 n_items <- 5
 d2p <- as.matrix(as.data.frame(lapply(as.list(counts.tpm), function(x){
