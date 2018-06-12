@@ -144,7 +144,7 @@ tophat2_func()
 star_func()
 {
     local log=$3/star.log
-    local cmd="${STAR_PATH}/STAR --genomeDir ${STAR_IDX_PATH} --sjdbGTFfile ${TRANSCRIPTS_GTF} --sjdbOverhang 151"
+    local cmd="${STAR_PATH}/STAR --genomeDir ${STAR_IDX_PATH} --sjdbGTFfile ${TRANSCRIPTS_GTF}"
 
     ## logs
     echo -e "Running STAR mapping ..."
@@ -158,14 +158,14 @@ star_func()
             #cmd_in="--readFilesIn <(gzip -cd ${inputs[0]})"
             cmd_in="--readFilesIn ${inputs[0]} --readFilesCommand zcat"          
         else
-            cmd_in="--readFilesIn $1"
+            cmd_in="--readFilesIn ${intputs[0]}"
         fi
     elif [[ ${#inputs[@]} -eq 2 ]]; then
 	if [[ ${inputs[0]} =~ \.gz ]]; then
 		#cmd_in="--readFilesIn <(gzip -cd ${inputs[0]}) <(gzip -cd ${inputs[1]})"
 		cmd_in="--readFilesIn ${inputs[0]} ${inputs[1]} --readFilesCommand zcat"
 	else
-		cmd_in="--readFilesIn $1 $2"
+		cmd_in="--readFilesIn ${inputs[0]} ${inputs[1]}"
 	fi
     fi
 

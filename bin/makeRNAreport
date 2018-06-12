@@ -12,7 +12,7 @@ SOFT="makeRNAreport"
 VERSION="0.1.0"
 
 function usage {
-    echo -e "usage : $SOFT -i INPUT_DIRECTORY -c CONFIG -s SAMPLE_PLAN [-n PROJECT_NAME] [-m METADATA] [-h] [-v]"
+    echo -e "usage : $SOFT -i INPUT_DIRECTORY -c CONFIG -s SAMPLE_PLAN [-o OUTPUT] [-n PROJECT_NAME] [-m METADATA] [-d] [-h] [-v]"
     echo -e "Use option -h|--help for more information"
 }
 
@@ -26,8 +26,10 @@ function help {
     echo "   -i|--idir INPUT_DIRECTORY: input directory"
     echo "   -s|--splan SAMPLE_PLAN: sample plan"
     echo "   -c|--conf CONFIG: configuration file for RNA processing"
+    echo "   [-o|--odir OUTPUT_DIR: output folder. Default is INPUT_DIRECTORY/report"
     echo "   [-n|--name]: Project name"
     echo "   [-m|--meta]: Metadata of sequencing run"
+    echo "   [-d|--dryrun]: dry run mode"
     echo "   [-h|--help]: help"
     echo "   [-v|--version]: version"
     exit
@@ -66,6 +68,7 @@ for arg in "$@"; do
       "--splan")   set -- "$@" "-s" ;;
       "--conf")   set -- "$@" "-c" ;;
       "--name")   set -- "$@" "-n" ;;
+      "--odir")   set -- "$@" "-o" ;;
       "--meta")   set -- "$@" "-m" ;;
       "--help")   set -- "$@" "-h" ;;
       "--version")   set -- "$@" "-v" ;;
@@ -73,14 +76,16 @@ for arg in "$@"; do
   esac
 done
 
-while getopts "i:s:c:n:m:hv" OPT
+while getopts "i:s:c:o:n:m:dhv" OPT
 do
     case $OPT in
         i) IDIR=$OPTARG;;
 	s) SPLAN=$OPTARG;;
 	c) CONF=$OPTARG;;
+	o) ODIR=$OPTARG;;
 	n) PROJNAME=$OPTARG;;
 	m) META=$OPTARG;;
+	d) set_dry_run ;;
 	v) version ;;
 	h) help ;;
 	\?)
@@ -121,10 +126,16 @@ else
 fi
 
 ## output
-output_path=${IDIR}/report
-mkdir -p $output_path
-logdir=${IDIR}/report/logs
+if [ -z ${ODIR} ];then
+    output_path=${IDIR}/report
+else
+    output_path=${ODIR}
+fi
+
+logdir=${output_path}/logs
+mkdir -p ${output_path}
 mkdir -p ${logdir}
+
 
 ## Init log
 echo -e "--------------------"
@@ -152,6 +163,7 @@ cmd="cp ${CONF} ${output_path}/config.txt"
 exec_cmd ${cmd} > $logdir/getstat.log 2>&1
 
 statfiles=$(find ${IDIR} -maxdepth 3 -name '*stats' -type f)
+if [[ $statfiles == "" ]]; then die "Not *stats files detected. Exit."; fi
 cmd="${PYTHON_PATH}/python ${SCRIPTS_PATH}/fullStats.py -i $statfiles -o ${output_path} -r ${PROJNAME}"
 exec_cmd ${cmd} >> $logdir/getstat.log 2>&1
 

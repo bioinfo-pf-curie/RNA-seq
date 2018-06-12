@@ -11,6 +11,10 @@ NEW FEATURES
 
 SIGNIFICANT USER-VISIBLE CHANGES
 
+   o Deal with non Human/Mouse references, and no gene_type information
+
+   o Add --sjdbOverhang from STAR in the config file
+
    o FastQC step is not optional
 
    o Update logs reporting for clority reasons
@@ -34,6 +38,22 @@ BUG FIXES
    o Fix bug in report regarding sample names
 
    o Fix bug in report.html in annotation table
+
+
+***********************************
+CHANGES IN VERSION 0.0.9
+
+HOTFIX
+
+   o  Fix bug in HTML report
+
+***********************************
+CHANGES IN VERSION 0.0.8
+
+HOTFIX
+
+   o  Fix bug to support other annotation/species. Tested on Drosophila
+
 
 ***********************************
 CHANGES IN VERSION 0.0.6

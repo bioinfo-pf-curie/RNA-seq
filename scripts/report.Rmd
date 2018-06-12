@@ -201,22 +201,25 @@ ggly_b
 ###Reads-based saturation
 ```{r preseq, echo=FALSE, eval=TRUE}
 preseq.in <- list.files(input_path, pattern=".preseq", recursive=TRUE, full.names=TRUE)	
-preseq.info <- lapply(preseq.in, read.table, header=TRUE)
-names(preseq.info) <- bioids[basename(sub("preseq","",dirname(preseq.in)))]
-d2p <-  melt(preseq.info, id.vars=c("total_reads","distinct_reads"))
-selcol <-  colorRampPalette(brewer.pal(9, "Set1"))(length(preseq.info))
+if (length(preseq.in) > 0){
+   preseq.info <- lapply(preseq.in, read.table, header=TRUE)
+   names(preseq.info) <- bioids[basename(sub("preseq","",dirname(preseq.in)))]
+   d2p <-  melt(preseq.info, id.vars=c("total_reads","distinct_reads"))
+   selcol <-  colorRampPalette(brewer.pal(9, "Set1"))(length(preseq.info))
 
-gg <- ggplot(d2p) + geom_point(aes(x=total_reads, y=distinct_reads), color="darkgray", shape=3, size=2) + geom_path(aes(x=total_reads, y=distinct_reads, color=L1)) +
-  theme_classic() + theme(legend.position="bottom", legend.title=element_blank()) +
-  labs(x="Total Reads Number", y="Distinct Reads Number") + theme(axis.title = element_text(face="bold", colour="black", size=12)) +
-  scale_color_manual(values=selcol, guide=guide_legend(nrow=ceiling(length(preseq.info)/6)))
+   gg <- ggplot(d2p) + geom_point(aes(x=total_reads, y=distinct_reads), color="darkgray", shape=3, size=2) + geom_path(aes(x=total_reads, y=distinct_reads, color=L1)) +
+      theme_classic() + theme(legend.position="bottom", legend.title=element_blank()) +
+      labs(x="Total Reads Number", y="Distinct Reads Number") + theme(axis.title = element_text(face="bold", colour="black", size=12)) +
+      scale_color_manual(values=selcol, guide=guide_legend(nrow=ceiling(length(preseq.info)/6)))
 
-ggly_b <- plotly_build(gg)
-ggly_b <- inactivate_hover(ggly_b)
-ggly_b <- plotly_margins(ggly_b)
+   ggly_b <- plotly_build(gg)
+   ggly_b <- inactivate_hover(ggly_b)
+   ggly_b <- plotly_margins(ggly_b)
 
-ggly_b
-
+   ggly_b
+}else{
+   warning("Preseq output files not found !")
+}
 ```
 
 ###Gene-based saturation
@@ -303,21 +306,30 @@ counts.tpm <- counts.tpm[idx,,drop=FALSE]
 ## gene annotation
 d.gtf <- rtracklayer::import(gtf)
 my_genes <- d.gtf[d.gtf$type == "gene"]
-mcols(my_genes) <- mcols(my_genes)[c("gene_id", "gene_type","gene_name")]
-n_items <- 5
-d2p <- as.matrix(as.data.frame(lapply(as.list(counts.tpm), function(x){
+
+if (is.element("gene_type", colnames(elementMetadata(my_genes)))){
+   mcols(my_genes) <- mcols(my_genes)[c("gene_id", "gene_type","gene_name")]
+   n_items <- 5
+   d2p <- as.matrix(as.data.frame(lapply(as.list(counts.tpm), function(x){
 	    n_ex <- length(which(x>1))
 	    ids <- sapply(strsplit(rownames(counts.tpm)[which(x>1)], "\\|"), "[[", 1)
 	    dt <- table(factor(my_genes$gene_type[match(ids, my_genes$gene_id)], levels=unique(sort(my_genes$gene_type))))
 	    c(total=n_ex, dt)
-})))
+	    })))
+}else{
+    n_items <- 1
+    d2p <-  as.matrix(as.data.frame(lapply(as.list(counts.tpm), function(x){
+            n_ex <- length(which(x>1))
+            c(total=n_ex)
+            })))
+}
 
 ## remove zero values and sort by counts
 line2remove <- which(rowSums(d2p)==0)
 if (length(line2remove) > 0 ){
    d2p <- d2p[-line2remove,]
 }
-d2p <- d2p[order(rowSums(d2p), decreasing=TRUE),]
+d2p <- d2p[order(rowSums(d2p), decreasing=TRUE),,drop=FALSE]
 
 ## reduce
 if (nrow(d2p) > (n_items + 1)){
@@ -343,15 +355,28 @@ Reference: `r basename(gtf)`
 
 
 ```{r annot_plot, eval=TRUE, message=FALSE, warning=FALSE}
-## remove Total for plot
-d2p <- d2p[setdiff(rownames(d2p), "Total"),]
-gg <- ggplot(melt(d2p), aes(x=Var2, y=value, fill=Var1)) + 
-   geom_bar(stat="identity") +
-   theme_minimal() + 
-   scale_fill_manual(values=c(brewer.pal(n_items, "Set2"))) +
-   xlab("") + labs(title="Genes annotation", x="Sample(s)", y="Expressed genes (TPM>1)") + 
-   theme(legend.title=element_blank(), legend.position="bottom") +
-   theme(axis.text.x = element_text(angle = 45, hjust = 1, size=11), axis.title.x = element_text(size = 13, face="bold"), axis.title.y = element_text(size = 13, face="bold"))
+if (nrow(d2p) > 1){
+   ## remove Total for plot
+   d2p <- d2p[setdiff(rownames(d2p), "Total"),]
+   gg <- ggplot(melt(d2p), aes(x=Var2, y=value, fill=Var1)) + 
+      geom_bar(stat="identity") +
+      theme_minimal() + 
+      scale_fill_manual(values=c(brewer.pal(n_items, "Set2"))) +
+      xlab("") + labs(title="Genes annotation", x="Sample(s)", y="Expressed genes (TPM>1)") + 
+      theme(legend.title=element_blank(), legend.position="bottom") +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1, size=11), axis.title.x = element_text(size = 13, face="bold"), axis.title.y = element_text(size = 13, face="bold"))
+}else{
+   rownames(d2p) <- "All Genes"
+   gg <- ggplot(melt(d2p), aes(x=Var2, y=value, fill=Var1)) +
+      geom_bar(stat="identity") +
+      theme_minimal() +
+      scale_fill_manual(values=c(brewer.pal(n_items, "Set2"))) +
+      xlab("") + labs(title="Genes annotation", x="Sample(s)", y="Expressed genes (TPM>1)") +
+      theme(legend.title=element_blank(), legend.position="bottom") +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1, size=11), axis.title.x = element_text(size = 13, face="bold"), axis.title.y = element_text(size = 13, face="bold"))
+
+}
+
 
 ggly_b <- plotly_build(gg)
 ggly_b <- inactivate_hover(ggly_b)

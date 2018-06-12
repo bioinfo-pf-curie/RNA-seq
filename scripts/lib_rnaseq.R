@@ -159,17 +159,39 @@ estimate_saturation <- function(counts, max_reads=Inf, ndepths=6, nreps=1, minco
 ##ensembl2symbol
 ## x : a count matrix with gene name as rownames
 ## gtf.in : GTF file used for annotation with ENSEMBL as gene_id and SYMBOL as gene_name (i.e GENCODE GTF)
-ensembl2symbol <- function(x, gtf.in){
-  stopifnot(require(rtracklayer))
+
+ensembl2symbol <- function(x, gtf.in, lab.in="gene_id", lab.out=c("gene_name", "gene_symbol")){
   dgtf <- rtracklayer::import(gtf.in)
   my_genes <- dgtf[dgtf$type == "gene"]
-  mcols(my_genes) <- mcols(my_genes)[c("gene_id", "gene_type","gene_name")]
-  m <- match(rownames(x), my_genes$gene_id)
+
+  ## Check input label (gene_id by default)
+  if (is.element(lab.in, colnames(elementMetadata(my_genes)))){
+    colsOfInterest <- lab.in
+  }else{
+    warning("Unable to convert ID to SYMBOL gene names ! Input label not found !")
+    return(x)
+  }
+
+  ## Try all output labels
+  for (lab in lab.out){
+    if (is.element(lab, colnames(elementMetadata(my_genes)))){
+      colsOfInterest <- c(colsOfInterest, lab)
+      break
+    }
+  }
+  if(length(colsOfInterest) != 2){
+    warning("Unable to convert ID to SYMBOL gene names ! Output label not found !")
+    return(x)
+  }
+
+  mcols(my_genes) <- mcols(my_genes)[colsOfInterest]
+  m <- match(rownames(x),  elementMetadata(my_genes)[,lab.in])
   if(length(!is.na(m)) != dim(x)[1]){
     warning("Unable to convert ENSEMBL to SYMBOL gene names ! ")
     return(x)
   }else{
-    rownames(x) <- paste(my_genes$gene_id[m], my_genes$gene_name[m], sep="|")
+    rownames(x) <- paste(elementMetadata(my_genes)[,lab.in][m], elementMetadata(my_genes)[,colsOfInterest[2]][m], sep="|")
     return(x)
   }
 }
+
