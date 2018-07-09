@@ -29,7 +29,7 @@ function trap_exit()
     fi
 
     if [ -e ${ODIR}/mapping/tmp ]; then 
-	echo -e "Cleaning temporary folders ..." >&2
+	echo -e "Trap exit statuts. Cleaning temporary folders ..." >&2
 	/bin/rm -rf ${ODIR}/mapping/tmp; 
     fi
 }

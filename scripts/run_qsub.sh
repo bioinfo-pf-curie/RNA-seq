@@ -28,7 +28,7 @@ mkdir -p ${ODIR}/${id}
 
 
 echo -e "--------------------"
-echo -e "Running RNA pipeline cluster mode (v${VERSION})"
+echo -e "Running RNA pipeline cluster mode (${VERSION})"
 when=$(date +%Y-%m-%d)
 echo -e "Date: ${when}"
 where=$(hostname)

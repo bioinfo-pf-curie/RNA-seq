@@ -71,7 +71,7 @@ done
 
 if [[ -z $CONF  || -z $FORWARD || -z $BAM ]]; then
     usage
-    exit
+    exit 1
 fi
 
 ## Load config file

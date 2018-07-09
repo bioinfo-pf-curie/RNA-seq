@@ -322,9 +322,8 @@ rseqc_func()
     local out=$2/strand_check
     local n=200000
 
-    echo -e "Running RSeqc ..."
+    echo -e "Running RSeQC ..."
     echo -e "Logs: ${log}"
-    echo
 
     mkdir -p ${out}
     mkdir -p ${out}/tmp
@@ -469,8 +468,8 @@ mapping_stat(){
 
     fi
 
+    opts="-b $3 -c $2"
     outfile=$(basename ${inputs[0]} | sed -e 's/[\._]*R*[12]*.fastq\(.gz\)*/.stats/')
-    
     if [ ! -z $ANNOT_DIR ]; then opts="${opts} -g ${ANNOT_DIR}";fi
     if [ ! -z $6 ]; then opts="${opts} -x $6"; fi
     if [ ! -z ${SAMPLE_ID} ]; then opts="$opts -s ${SAMPLE_ID}"; fi 

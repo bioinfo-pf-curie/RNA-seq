@@ -140,7 +140,7 @@ if [ ! -z "$CONF" ]; then
         read_config $CONF
     else
         echo "Error - config file '$CONF' not found"
-        exit
+        exit 1
     fi
 fi
 

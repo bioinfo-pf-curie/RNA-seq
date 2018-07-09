@@ -111,10 +111,10 @@ jobidarray=${pid%%.*}
 
 ## Run the report
 if [[ -z $META ]]; then
-    pid=$(echo "bash ${ABS_BIN_PATH}/makeRNAreport -i ${ODIR} -c ${CONF} -s ${SPLAN} -n ${RUNID}" | qsub -m ae -j oe -N RNApip_report -l "nodes=1:ppn=1,mem=2gb,walltime=01:00:00" -W depend=afterokarray:${jobidarray})
+    pid=$(echo "bash ${ABS_BIN_PATH}/makeRNAreport -i ${ODIR} -c ${CONF} -s ${SPLAN} -n ${RUNID}" | qsub -m ae -j oe -q batch -N RNApip_report -l "nodes=1:ppn=1,mem=2gb,walltime=01:00:00" -W depend=afterokarray:${jobidarray})
 else
     META=$(realpath $META)
-    pid=$(echo "bash ${ABS_BIN_PATH}/makeRNAreport -i ${ODIR} -c ${CONF} -s ${SPLAN} -m ${META} -n ${RUNID}" | qsub -m ae -j oe -N RNApip_report -l "nodes=1:ppn=1,mem=2gb,walltime=01:00:00" -W depend=afterokarray:${jobidarray})
+    pid=$(echo "bash ${ABS_BIN_PATH}/makeRNAreport -i ${ODIR} -c ${CONF} -s ${SPLAN} -m ${META} -n ${RUNID}" | qsub -m ae -j oe -q batch -N RNApip_report -l "nodes=1:ppn=1,mem=2gb,walltime=01:00:00" -W depend=afterokarray:${jobidarray})
 fi
 echo "Job(s) [$pid] submitted to the cluster !"
 exit 0
