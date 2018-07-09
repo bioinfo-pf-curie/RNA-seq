@@ -11,11 +11,13 @@ NEW FEATURES
 
 SIGNIFICANT USER-VISIBLE CHANGES
 
+   o Add new annotation model
+
    o Deal with non Human/Mouse references, and no gene_type information
 
    o Add --sjdbOverhang from STAR in the config file
 
-   o FastQC step is not optional
+   o FastQC step is now optional
 
    o Update logs reporting for clority reasons
 

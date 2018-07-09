@@ -471,7 +471,7 @@ mapping_stat(){
 
     outfile=$(basename ${inputs[0]} | sed -e 's/[\._]*R*[12]*.fastq\(.gz\)*/.stats/')
     
-    opts="-c $2 -b $3 -g $TRANSCRIPTS_GTF"
+    if [ ! -z $ANNOT_DIR ]; then opts="${opts} -g ${ANNOT_DIR}";fi
     if [ ! -z $6 ]; then opts="${opts} -x $6"; fi
     if [ ! -z ${SAMPLE_ID} ]; then opts="$opts -s ${SAMPLE_ID}"; fi 
     

@@ -13,7 +13,7 @@ STAR_PATH = /bioinfo/local/build/Centos/STAR/STAR-2.5.3a/bin/Linux_x86_64
 SAMTOOLS_PATH = /bioinfo/local/build/Centos/samtools/samtools-1.3/bin
 HTSEQ_PATH = /bioinfo/local/build/Centos/python/python-2.7.13/bin
 FEATURECOUNTS_PATH = /bioinfo/local/build/Centos/subread/subread-1.5.1-Linux-x86_64/bin
-BEDTOOLS_PATH = /bioinfo/local/build/Centos/bedtools/bedtools-2.25.0/bin
+BEDTOOLS_PATH = /bioinfo/local/build/Centos/bedtools/bedtools-2.27.1/bin
 R_PATH = /bioinfo/local/build/Centos/R/R-3.4.0/bin
 PYTHON_PATH = /bioinfo/local/build/Centos/python/python-2.7.11/bin
 RSEQC_PATH = /bioinfo/local/build/Centos/RSeQC/RSeQC-2.6.4/scripts
@@ -24,8 +24,8 @@ PRESEQ_PATH = /bioinfo/local/build/Centos/preseq/preseq_v2.0/
 ## GENOME
 #########################################################################
 
-ORG = Human
-BUILD = hg19
+ORG = Zebrafish
+BUILD = danRer10
 
 #########################################################################
 ## WORKFLOW
@@ -44,7 +44,8 @@ COUNT_TOOL = STAR
 ## Data
 #########################################################################
 
-# must be "no", "yes", or "reverse"
+# must be "", "no", "yes", or "reverse"                                                                                                                                                                        
+# if "", will be inferred using RSeQC                                                                                                                                                                          
 STRANDED = 
 
 #########################################################################
@@ -52,21 +53,22 @@ STRANDED =
 #########################################################################
 
 ## Mapping on rRNA - Do not set to skip
-BOWTIE_RRNA_IDX = /data/tmp/annotation_pipelines/Human/rRNA/rRNA_human_complete
-BOWTIE_OPTS = -v 2 -a -m 1 --best --strata --nomaqround -y
+BOWTIE_RRNA_IDX = 
+BOWTIE_OPTS = 
 
 ## Mapping on genome
-STAR_IDX_PATH = /data/tmp/annotation_pipelines/Human/hg19/STAR_indexes/
+STAR_IDX_PATH = /data/annotations/pipelines/Zebrafish/danRer10/indexes/STAR/
 STAR_OPTS = --runThreadN 8 --outSAMtype BAM SortedByCoordinate --runMode alignReads --outFilterType BySJout --outFilterMultimapNmax 20 --alignSJoverhangMin 8 --alignSJDBoverhangMin 1 --outFilterMismatchNmax 999 --outFilterMismatchNoverLmax 0.04 --alignIntronMin 20 --alignIntronMax 1000000 --alignMatesGapMax 1000000 --outSAMprimaryFlag OneBestScore --outMultimapperOrder Random --outSAMattributes All
 
-TOPHAT2_IDX_PATH = /data/tmp/annotation_pipelines/Human/hg19/bowtie2_indexes/hg19
+TOPHAT2_IDX_PATH = /data/annotations/pipelines/Zebrafish/danRer10/indexes/bowtie2/danRer10
 TOPHAT2_OPTS =  --b2-sensitive -p 6 -g 1 -N 2 --no-coverage-search
 
 ## Count gene expression
-TRANSCRIPTS_GTF=/data/tmp/annotation_pipelines/Human/hg19/gtf/gencode.v19.annotation.gtf
+ANNOT_DIR = /data/annotations/pipelines/Zebrafish/danRer10/gtf/parseGTFAnnotation/
+TRANSCRIPTS_GTF = /data/annotations/pipelines/Zebrafish/danRer10/gtf/danRer10_UCSC_RefGene.gtf
 HTSEQ_OPTS = -f bam -t exon -r pos 
 FEATURECOUNTS_OPTS = -t exon -C -T 8 -p
 
 ## RSeqQC
-BWT2_IDX_PATH = /data/tmp/annotation_pipelines/Mouse/mm10/bowtie2_indexes/mm10
-GENE_BED=/data/tmp/annotation_pipelines/Human/hg19/gtf/gencode.v19.annotation_gene.bed
+BWT2_IDX_PATH = /data/annotations/pipelines/Zebrafish/danRer10/indexes/bowtie2/danRer10
+GENE_BED = /data/annotations/pipelines/Zebrafish/danRer10/gtf/parseGTFAnnotation/danRer10_UCSC_RefGene_gene.bed

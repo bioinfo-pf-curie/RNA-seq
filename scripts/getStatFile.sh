@@ -14,7 +14,7 @@
 VERSION=0.0.1
 
 function usage {
-    echo -e "usage : ./getStatFile.sh -f FORWARD -b BAM -c CONFIG [-r REVERSE] [-x R_RNA_BAM] [-g GTF] [-s SAMPLE_ID]"
+    echo -e "usage : ./getStatFile.sh -f FORWARD -b BAM -c CONFIG [-r REVERSE] [-x R_RNA_BAM] [-g ANOT_DIR] [-s SAMPLE_ID]"
     echo -e "Use option -h|--help for more information"
 }
 
@@ -36,7 +36,7 @@ function help {
     echo "   -c CONFIG: configuration file for RNA processing"
     echo "   [-r INPUT]: input reverse fastq file"
     echo "   [-x R_RNA_BAM]: bam file of rRNA mapping"
-    echo "   [-g GTF]: transcriptome  gtf file"
+    echo "   [-g ANNOT_DIR]: Annotation folder. Results of parseGencodeAnntation.sh script"
     echo "   [-s SAMPLE_ID]: biosample ID"
     echo "   [-h]: help"
     echo "   [-v]: version"
@@ -51,7 +51,7 @@ do
 	c) CONF=$OPTARG;;
 	r) REVERSE=$OPTARG;;
         x) R_RNA_BAM=$OPTARG;;
-        g) GTF=$OPTARG;;
+        g) ANNOT_DIR=$OPTARG;;
 	s) SAMPLE_ID=$OPTARG;;
         v) version ;;
         h) help ;;
@@ -175,10 +175,10 @@ fi
 ## Annotations
 ##
 ##############
-if  [ ! -z $GTF ]; then
-    EXON_BED=$(echo $GTF | sed -e 's/.gtf$/_exon.bed/')
-    INTRON_BED=$(echo $GTF | sed -e 's/.gtf$/_intron.bed/')
-    INTER_BED=$(echo $GTF | sed -e 's/.gtf$/_inter.bed/')
+if  [ ! -z $ANNOT_DIR ]; then
+    EXON_BED=$(find $ANNOT_DIR -name '*exon.bed')
+    INTRON_BED=$(find $ANNOT_DIR -name '*intron.bed')
+    INTER_BED=$(find $ANNOT_DIR -name '*inter.bed')
     
     ## hits_on_trs
     ## overlap the exons (at least 1-base)

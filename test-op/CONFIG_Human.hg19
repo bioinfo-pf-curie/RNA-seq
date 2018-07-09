@@ -44,8 +44,8 @@ COUNT_TOOL = STAR
 ## Data
 #########################################################################
 
-# must be "", "no", "yes", or "reverse"
-# if "", will be inferred using RSeQC
+# must be "", "no", "yes", or "reverse"                                                                                                                                                                        
+# if "", will be inferred using RSeQC                                                                                                                                                                          
 STRANDED = 
 
 #########################################################################

@@ -24,8 +24,8 @@ PRESEQ_PATH = /bioinfo/local/build/Centos/preseq/preseq_v2.0/
 ## GENOME
 #########################################################################
 
-ORG = Human
-BUILD = hg19
+ORG = Mouse
+BUILD = mm9
 
 #########################################################################
 ## WORKFLOW
@@ -44,8 +44,8 @@ COUNT_TOOL = STAR
 ## Data
 #########################################################################
 
-# must be "", "no", "yes", or "reverse"
-# if "", will be inferred using RSeQC
+# must be "", "no", "yes", or "reverse"                                                                                                                                                                        
+# if "", will be inferred using RSeQC                                                                                                                                                                          
 STRANDED = 
 
 #########################################################################
@@ -53,22 +53,22 @@ STRANDED =
 #########################################################################
 
 ## Mapping on rRNA - Do not set to skip
-BOWTIE_RRNA_IDX = /data/annotations/pipelines/Human/rRNA/rRNA_human_complete
+BOWTIE_RRNA_IDX = /data/annotations/pipelines/Mouse/rRNA/rRNA_mouse_complete
 BOWTIE_OPTS = -v 2 -a -m 1 --best --strata --nomaqround -y
 
 ## Mapping on genome
-STAR_IDX_PATH = /data/annotations/pipelines/Human/hg19/indexes/STAR/
+STAR_IDX_PATH = /data/annotations/pipelines/Mouse/mm9/indexes/STAR/
 STAR_OPTS = --runThreadN 8 --outSAMtype BAM SortedByCoordinate --runMode alignReads --outFilterType BySJout --outFilterMultimapNmax 20 --alignSJoverhangMin 8 --alignSJDBoverhangMin 1 --outFilterMismatchNmax 999 --outFilterMismatchNoverLmax 0.04 --alignIntronMin 20 --alignIntronMax 1000000 --alignMatesGapMax 1000000 --outSAMprimaryFlag OneBestScore --outMultimapperOrder Random --outSAMattributes All
 
-TOPHAT2_IDX_PATH = /data/annotations/pipelines/Human/hg19/indexes/bowtie2/hg19
+TOPHAT2_IDX_PATH = /data/annotations/pipelines/Mouse/mm9/indexes/bowtie2/mm9
 TOPHAT2_OPTS =  --b2-sensitive -p 6 -g 1 -N 2 --no-coverage-search
 
 ## Count gene expression
-ANNOT_DIR = /data/annotations/pipelines/Human/hg19/gtf/parseGTFAnnotation/
-TRANSCRIPTS_GTF = /data/annotations/pipelines/Human/hg19/gtf/gencode.v19.annotation.gtf
+ANNOT_DIR = /data/annotations/pipelines/Mouse/mm9/gtf/parseGTFAnnotation/
+TRANSCRIPTS_GTF = /data/annotations/pipelines/Mouse/mm9/gtf/gencode.vM1.annotation.gtf
 HTSEQ_OPTS = -f bam -t exon -r pos 
 FEATURECOUNTS_OPTS = -t exon -C -T 8 -p
 
 ## RSeqQC
-BWT2_IDX_PATH = /data/annotations/pipelines/Human/hg19/indexes/bowtie2/hg19
-GENE_BED = /data/annotations/pipelines/Human/hg19/gtf/parseGTFAnnotation/gencode.v19.annotation_gene.bed
+BWT2_IDX_PATH = /data/annotations/pipelines/Mouse/mm9/indexes/bowtie2/mm9
+GENE_BED = /data/annotations/pipelines/Mouse/mm9/gtf/parseGTFAnnotation/gencode.vM1.annotation_gene.bed
