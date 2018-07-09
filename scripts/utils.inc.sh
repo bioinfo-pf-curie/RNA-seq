@@ -9,18 +9,23 @@
 ###########################
 ## trap handler
 ###########################
+
 function trap_error()
 {
-    
-    echo "Error: $1 - line $2 - exit status of last command: $?. Exit" >&2
+    exec >&3 2>&4
+    echo -e "Error: $(basename $0) exit with status: $3" >&2
+    echo -e "Command (line $1): $2" >&2
+    echo -e
+    echo -e "Please, look at the logs folder for more details." >&2
     exit 1
 }
 
 function trap_exit()
 {
+    exec >&3 2>&4
     ##Since bash-4.0 $LINENO is reset to 1 when the trap is triggered
     if [ "$?" != "0" ]; then
-	echo "Error: exit status detected. Exit." >&2
+	echo "Error: exit status detected." >&2
     fi
 
     if [ -e ${ODIR}/mapping/tmp ]; then 
@@ -29,7 +34,8 @@ function trap_exit()
     fi
 }
 
-trap 'trap_error "$0" "$LINENO"' ERR
+exec 3>&1 4>&2
+trap 'trap_error "$LINENO" "$BASH_COMMAND" "$?"' ERR
 trap 'trap_exit' 0 1 2 3
 
 set -E ## export trap to functions
@@ -50,14 +56,14 @@ exec_cmd()
 {
     echo $*
     if [ -z "$DRY_RUN" ]; then
-	eval "$@" || die 'Error'
+	eval "$@" ##|| die 'Error'
     fi
 }
 
 exec_ret()
 {
     if [ -z "$DRY_RUN" ]; then
-	eval "$@" || die 'Error'
+	eval "$@" ##|| die 'Error'
     fi
 }
 

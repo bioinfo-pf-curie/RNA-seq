@@ -327,13 +327,13 @@ if (is.element("gene_type", colnames(elementMetadata(my_genes)))){
 ## remove zero values and sort by counts
 line2remove <- which(rowSums(d2p)==0)
 if (length(line2remove) > 0 ){
-   d2p <- d2p[-line2remove,]
+   d2p <- d2p[-line2remove,,drop=FALSE]
 }
 d2p <- d2p[order(rowSums(d2p), decreasing=TRUE),,drop=FALSE]
 
 ## reduce
 if (nrow(d2p) > (n_items + 1)){
-   d2p <- rbind(d2p[1:n_items,], others=colSums(d2p[(n_items+1):nrow(d2p), ]))
+   d2p <- rbind(d2p[1:n_items,], others=colSums(d2p[(n_items+1):nrow(d2p), , drop=FALSE]))
 }
 
 ## Make beautiful names
@@ -357,7 +357,7 @@ Reference: `r basename(gtf)`
 ```{r annot_plot, eval=TRUE, message=FALSE, warning=FALSE}
 if (nrow(d2p) > 1){
    ## remove Total for plot
-   d2p <- d2p[setdiff(rownames(d2p), "Total"),]
+   d2p <- d2p[setdiff(rownames(d2p), "Total"),, drop=FALSE]
    gg <- ggplot(melt(d2p), aes(x=Var2, y=value, fill=Var1)) + 
       geom_bar(stat="identity") +
       theme_minimal() + 
@@ -376,7 +376,6 @@ if (nrow(d2p) > 1){
       theme(axis.text.x = element_text(angle = 45, hjust = 1, size=11), axis.title.x = element_text(size = 13, face="bold"), axis.title.y = element_text(size = 13, face="bold"))
 
 }
-
 
 ggly_b <- plotly_build(gg)
 ggly_b <- inactivate_hover(ggly_b)
