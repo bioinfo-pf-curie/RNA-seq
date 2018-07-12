@@ -19,7 +19,7 @@ SIGNIFICANT USER-VISIBLE CHANGES
 
    o FastQC step is now optional
 
-   o Update logs reporting for clority reasons
+   o Update logs reporting for clarity reasons
 
    o Change default config file for STAR option / R path
 
@@ -34,6 +34,8 @@ SIGNIFICANT USER-VISIBLE CHANGES
    o Remove links to HTML report
 
 BUG FIXES
+
+   o Fix bug when n=1
 
    o Remove emply line from SAMPLE_PLAN
 
