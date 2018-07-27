@@ -35,6 +35,8 @@ SIGNIFICANT USER-VISIBLE CHANGES
 
 BUG FIXES
 
+   o Fix bug for Zebrafish genome
+
    o Fix bug when n=1
 
    o Remove emply line from SAMPLE_PLAN

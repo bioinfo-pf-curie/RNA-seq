@@ -225,7 +225,7 @@ if (length(preseq.in) > 0){
 ###Gene-based saturation
 
 ```{r satcurves, echo=FALSE, eval=TRUE}
-counts <- read.csv(file.path(input_path,"report/tablecounts_raw.csv"), row.names=1)
+counts <- read.csv(file.path(input_path,"report/tablecounts_raw.csv"), row.names=1, check.names=FALSE)
 colnames(counts) <- bioids[colnames(counts)]
 sat <- estimate_saturation(counts=counts, ndepths=10, nreps=1, extend.lines=TRUE)
 
@@ -296,7 +296,7 @@ ggly_b
 
 ```{r annot, eval=TRUE, message=FALSE, warning=FALSE}
 
-counts.tpm <- read.csv(file.path(input_path,"report/tablecounts_tpm.csv"), row.names=1)
+counts.tpm <- read.csv(file.path(input_path,"report/tablecounts_tpm.csv"), row.names=1, check.names=FALSE)
 colnames(counts.tpm) <- bioids[colnames(counts.tpm)]
 
 ## count number of expressed genes
@@ -307,7 +307,7 @@ counts.tpm <- counts.tpm[idx,,drop=FALSE]
 d.gtf <- rtracklayer::import(gtf)
 my_genes <- d.gtf[d.gtf$type == "gene"]
 
-if (is.element("gene_type", colnames(elementMetadata(my_genes)))){
+if (length(my_genes) > 0 && is.element("gene_type", colnames(elementMetadata(my_genes)))){
    mcols(my_genes) <- mcols(my_genes)[c("gene_id", "gene_type","gene_name")]
    n_items <- 5
    d2p <- as.matrix(as.data.frame(lapply(as.list(counts.tpm), function(x){

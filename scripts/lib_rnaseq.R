@@ -61,7 +61,7 @@ getTPM <- function(x, exonic.gene.sizes=NULL, gtf.in=NULL){
   ## Calculate read per kilobase
   rpk <- x * 10^3/matrix(exonic.gene.sizes, nrow=nrow(x), ncol=ncol(x), byrow=FALSE)
   ## Then normalize by lib size
-  tpm <- rpk *  matrix(10^6 / colSums(rpk), nrow=nrow(rpk), ncol=ncol(rpk), byrow=TRUE)
+  tpm <- rpk *  matrix(10^6 / colSums(rpk, na.rm=TRUE), nrow=nrow(rpk), ncol=ncol(rpk), byrow=TRUE)
 
   return(round(tpm,2))
 }##getTPM
@@ -118,7 +118,7 @@ estimate_saturation <- function(counts, max_reads=Inf, ndepths=6, nreps=1, minco
   max_reads <- min(max(readsums), max_reads)
   depths <- round(seq(from=0, to=max_reads, length.out=ndepths+1))
   
-  saturation <- mclapply(1:ncol(counts), function(k){
+  saturation <- lapply(1:ncol(counts), function(k){
     message("Processing sample ", colnames(counts)[k], "...")
     x <- counts[,k]
     nreads <- sum(x)
