@@ -155,15 +155,15 @@ star_func()
     inputs=($1)
     if [[ ${#inputs[@]} -eq 1 ]]; then
 	if [[ ${inputs[0]} =~ \.gz ]]; then
-            #cmd_in="--readFilesIn <(gzip -cd ${inputs[0]})"
-            cmd_in="--readFilesIn ${inputs[0]} --readFilesCommand zcat"          
+            cmd_in="--readFilesIn <(gzip -cd ${inputs[0]})"
+            #cmd_in="--readFilesIn ${inputs[0]} --readFilesCommand zcat"          
         else
             cmd_in="--readFilesIn ${intputs[0]}"
         fi
     elif [[ ${#inputs[@]} -eq 2 ]]; then
 	if [[ ${inputs[0]} =~ \.gz ]]; then
-		#cmd_in="--readFilesIn <(gzip -cd ${inputs[0]}) <(gzip -cd ${inputs[1]})"
-		cmd_in="--readFilesIn ${inputs[0]} ${inputs[1]} --readFilesCommand zcat"
+		cmd_in="--readFilesIn <(gzip -cd ${inputs[0]}) <(gzip -cd ${inputs[1]})"
+		#cmd_in="--readFilesIn ${inputs[0]} ${inputs[1]} --readFilesCommand zcat"
 	else
 		cmd_in="--readFilesIn ${inputs[0]} ${inputs[1]}"
 	fi
