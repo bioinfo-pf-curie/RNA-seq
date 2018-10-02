@@ -19,6 +19,10 @@ if [[ -z ${SAMPLE_PLAN} || -z ${ODIR} || -z ${CONFIG} ]];then
     exit -1
 fi
 
+if [ -z ${PBS_ARRAYID} ]; then
+    PBS_ARRAYID=1
+fi
+
 id=$(awk -F"," -v i=${PBS_ARRAYID} 'NR==i{print $1}' ${SAMPLE_PLAN})
 bioid=$(awk -F"," -v i=${PBS_ARRAYID} 'NR==i{print $2}' ${SAMPLE_PLAN})
 forward=$(awk -F"," -v i=${PBS_ARRAYID} 'NR==i{print $3}' ${SAMPLE_PLAN})

@@ -19,6 +19,8 @@ PYTHON_PATH = /bioinfo/local/build/Centos/python/python-2.7.11/bin
 RSEQC_PATH = /bioinfo/local/build/Centos/RSeQC/RSeQC-2.6.4/scripts
 PICARD_PATH = /bioinfo/local/build/Centos/picard/2.6.0/picard.jar
 PRESEQ_PATH = /bioinfo/local/build/Centos/preseq/preseq_v2.0/
+GATK_JAR=/bioinfo/local/build/Centos/envs_conda/gatk4_4.0.2.1/share/gatk4-4.0.2.1-0/gatk-package-4.0.2.1-local.jar
+
 
 #########################################################################
 ## GENOME
@@ -72,3 +74,10 @@ FEATURECOUNTS_OPTS = -t exon -C -T 8 -p
 ## RSeqQC
 BWT2_IDX_PATH = /data/annotations/pipelines/Human/hg19/indexes/bowtie2/hg19
 GENE_BED = /data/annotations/pipelines/Human/hg19/gtf/parseGTFAnnotation/gencode.v19.annotation_gene.bed
+
+## Polym
+GEN_REF=/data/annotations/pipelines/Human/hg19/genome/hg19.fasta
+BED_POLYM=/bioinfo/local/curie/ngs-data-analysis/ewok_data/Files/44polyms.bed
+DP_MIN_POLYM=10
+
+

@@ -1,4 +1,12 @@
 ***********************************
+CHANGES IN VERSION 0.1.1
+
+BUG FIXES
+
+   o Fix bug in RSeQC infer_experiment interpretation for SE
+
+
+***********************************
 CHANGES IN VERSION 0.1.0
 
 NEW FEATURES

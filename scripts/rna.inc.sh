@@ -398,14 +398,18 @@ parse_rseqc_output()
     else
     ##SE
 	nb_fail=$(grep "failed" $rseqout | awk -F": " '{print $2}')
-	nb_ss=$(grep "++" $rseqout | awk -F": " '{print $2}') ## same strand = yes
-	nb_ds=$(grep "+-" $rseqout | awk -F": " '{print $2}') ## different strand
-	nb_d=$(echo "$nb_ss - $nb_ds > 0.8" | bc)
-	if [ $nb_d -eq 1 ]; then
-	    ret="yes"
-	else
-	    ret="no"
-	fi
+        nb_ss=$(grep "++" $rseqout | awk -F": " '{print $2}') ## fr-secondstrand = yes
+        nb_ds=$(grep "+-" $rseqout | awk -F": " '{print $2}') ## fr-firststrand = reverse
+        nb_yes=$(echo "$nb_ss - $nb_ds > 0.8" | bc)
+        nb_rev=$(echo "$nb_ss - $nb_ds < -0.8" | bc)
+	
+        if [ $nb_rev -eq 1 ]; then
+            ret="reverse"
+        elif [ $nb_yes -eq 1 ];then
+            ret="yes"
+        else
+            ret="no"
+        fi
     fi
     
     echo $ret
