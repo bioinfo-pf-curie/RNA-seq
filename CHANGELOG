@@ -5,6 +5,8 @@ BUG FIXES
 
    o Fix bug in RSeQC infer_experiment interpretation for SE
 
+   o Fix bug in report regarding sample names
+
 
 ***********************************
 CHANGES IN VERSION 0.1.0
