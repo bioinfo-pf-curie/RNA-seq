@@ -190,6 +190,7 @@ if [ -z $STRANDED ]; then
 	STRANDED=${libtype}
     fi
 else
+    mkdir -p ${ODIR}/strand_check
     echo -e "Info: STRANDED parameter detected - skipping Rseqqc ..."
     echo -e "Info: stranded='$STRANDED' ..."
 fi
@@ -232,9 +233,6 @@ BAM_INPUT=${ODIR}/mapping/$(basename $FORWARD_RRNA | sed -e 's/[\._]*R*[12]*.fas
 
 ## index BAM file
 bamindex_func ${BAM_INPUT} ${LOGDIR}
-
-## Check data type
-#rseqc_func ${BAM_INPUT} ${ODIR} ${LOGDIR}
 
 ## Run Saturation curves with preseq
 preseq_func ${BAM_INPUT} ${ODIR} ${LOGDIR}
