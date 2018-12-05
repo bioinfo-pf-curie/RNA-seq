@@ -112,15 +112,15 @@ if [[ ${N_SAMPLE} -gt 1 ]]; then
     dependcmd="afterokarray"
 fi
 
-pid=$(echo "bash ${SCRIPTS_PATH}/run_qsub.sh" | qsub  -m ae -j oe -q batch -N RNApip_cluster -l "nodes=1:ppn=4,mem=50gb,walltime=24:00:00" ${arraycmd} -v SAMPLE_PLAN="${SPLAN}",ODIR="${ODIR}",CONFIG="${CONF}")
+pid=$(echo "bash ${SCRIPTS_PATH}/run_qsub.sh" | qsub  -m ae -j oe -q ${SUB_QUEUE} -N ${SOFT} -l "nodes=1:ppn="${NB_PROC}",mem="${SUB_MEM}",walltime="${SUB_WALLTIME} ${arraycmd} -v SAMPLE_PLAN="${SPLAN}",ODIR="${ODIR}",CONFIG="${CONF}")
 jobidarray=${pid%%.*}
 
 ## Run the report
 if [[ -z $META ]]; then
-    pid=$(echo "bash ${ABS_BIN_PATH}/makeRNAreport -i ${ODIR} -c ${CONF} -s ${SPLAN} -n ${RUNID}" | qsub -m ae -j oe -q batch -N RNApip_report -l "nodes=1:ppn=1,mem=2gb,walltime=01:00:00" -W depend=${dependcmd}:${jobidarray})
+    pid=$(echo "bash ${ABS_BIN_PATH}/makeRNAreport -i ${ODIR} -c ${CONF} -s ${SPLAN} -n ${RUNID}" | qsub -m ae -j oe -q ${SUB_QUEUE} -N ${SOFT} -l "nodes=1:ppn=1,mem=2gb,walltime=01:00:00" -W depend=${dependcmd}:${jobidarray})
 else
     META=$(realpath $META)
-    pid=$(echo "bash ${ABS_BIN_PATH}/makeRNAreport -i ${ODIR} -c ${CONF} -s ${SPLAN} -m ${META} -n ${RUNID}" | qsub -m ae -j oe -q batch -N RNApip_report -l "nodes=1:ppn=1,mem=2gb,walltime=01:00:00" -W depend=${dependcmd}:${jobidarray})
+    pid=$(echo "bash ${ABS_BIN_PATH}/makeRNAreport -i ${ODIR} -c ${CONF} -s ${SPLAN} -m ${META} -n ${RUNID}" | qsub -m ae -j oe -q ${SUB_QUEUE} -N ${SOFT} -l "nodes=1:ppn=1,mem=2gb,walltime=01:00:00" -W depend=${dependcmd}:${jobidarray})
 fi
 echo "Job(s) [$pid] submitted to the cluster !"
 exit 0

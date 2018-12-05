@@ -6,12 +6,27 @@
 ## Contact: nicolas.servant@curie.fr
 ## This software is distributed without any guarantee under the terms of the BSD-3 licence.
 ## See the LICENCE file for details
+##
+##
+##
+##
+## GLOBAL VARIABLE ARE WRITTEN IN UPPER CASE
+## local variable are written in lower case
+
+check_env()
+{
+    if [ -z ${NB_PROC} ]; then
+        export NB_PROC=4
+    fi
+}
+
 
 ## $1 = input file(s)
 ## $2 = output path
 ## $3 = log dir
 fastqc_func()
 {
+    check_env
     local out=$2/fastqc
     local log=$3/fastqc.log
     mkdir -p ${out}
@@ -20,7 +35,7 @@ fastqc_func()
     echo -e "Logs: ${log}"
     echo
 
-    local cmd="${FASTQC_PATH}/fastqc -t 4 -j ${JAVA_PATH}/java -o ${out} $1 2> $log"
+    local cmd="${FASTQC_PATH}/fastqc -t ${NB_PROC} -j ${JAVA_PATH}/java -o ${out} $1 2> $log"
     exec_cmd ${cmd} > ${log} 2>&1
 }
 
@@ -30,6 +45,7 @@ fastqc_func()
 ## $3 = log dir
 rRNA_mapping_func()
 {
+    check_env
     if [[ -z ${BOWTIE_RRNA_IDX} ]]; then
 	die "rRNA indexes file not set. Exit"
     fi
@@ -88,10 +104,10 @@ rRNA_mapping_func()
 	die "Bowtie1 -  found more than two input files. Exit"
     fi
 
-    local cmd="${BOWTIE_PATH}/bowtie ${BOWTIE_OPTS} -p 4 ${cmd_un} --sam ${BOWTIE_RRNA_IDX} ${cmd_in} ${bowtie_sam}"
+    local cmd="${BOWTIE_PATH}/bowtie ${BOWTIE_OPTS} -p ${NB_PROC} ${cmd_un} --sam ${BOWTIE_RRNA_IDX} ${cmd_in} ${bowtie_sam}"
     exec_cmd ${cmd} > $log 2>&1
 
-    local cmd="${SAMTOOLS_PATH}/samtools view -bS ${bowtie_sam} > ${bowtie_bam}"
+    local cmd="${SAMTOOLS_PATH}/samtools view -@ ${NB_PROC} -bS ${bowtie_sam} > ${bowtie_bam}"
     exec_cmd ${cmd} >> $log 2>&1
 
     ## zip output file
@@ -102,14 +118,15 @@ rRNA_mapping_func()
     done
     
     ## clean
-    /bin/rm -f ${bowtie_sam}
+    cmd="/bin/rm -f ${bowtie_sam}"
+    exec_cmd ${cmd} >> $log 2>&1
 }
 
 ## $1 = input files
 ## $2 = output dir
 tophat2_func()
 {
-
+    check_env
     local log=$3/tophat2.log
     local out=$2/mapping
     mkdir -p ${out}
@@ -119,6 +136,17 @@ tophat2_func()
     echo -e "Logs: $log"
     echo
 
+    if [ -z ${TRANSCRIPTS_GTF} ]; then
+        die "TRANSCRIPT_GTF not defined - cannot run Tophat2 !"
+    fi
+
+    ## Check if bowtie2 is in the path
+    which bowtie2 > /dev/null
+    if [ $? != "0" ]; then
+        die "Tophat2 launcher - Bowtie2 is not the $PATH !"
+    fi
+
+    local cmd="${TOPHAT2_PATH}/tophat2 -p ${NB_PROC}"
     if [[ $STRANDED == "reverse" ]]; then
 	local stranded_opt="--library-type fr-firststrand"
     elif [[ $STRANDED == "yes" ]]; then
@@ -129,85 +157,105 @@ tophat2_func()
 	die "Unknown STRANDED parameter ; must be reverse/yes/no"
     fi
 
-    local out_mapped=$(basename ${inputs[0]} | sed -e 's/[\._]*R*[12]*.fastq\(.gz\)*/.bam/') 
+    ## sample id
+    if [[ ! -z ${SAMPLE_ID} ]]; then
+        cmd="$cmd --rg-id ${SAMPLE_ID} --rg-sample ${SAMPLE_ID} --rg-library Illumina --rg-platform Illumina --rg-platform-unit ${SAMPLE_ID}"
+    fi
 
-    local cmd="${TOPHAT2_PATH}/tophat2 ${TOPHAT2_OPTS} --GTF ${TRANSCRIPTS_GTF} ${stranded_opt} -o ${out} ${TOPHAT2_IDX_PATH} $1"
+    local out_prefix=${out}/$(get_fastq_prefix ${inputs[0]})
+
+    local cmd="$cmd ${TOPHAT2_OPTS} --GTF ${TRANSCRIPTS_GTF} ${stranded_opt} -o ${out} ${TOPHAT2_IDX_PATH} $1"
     exec_cmd ${cmd} > $log 2>&1
 
-    cmd="mv ${out}/accepted_hits.bam ${out}/${out_mapped}"
+    cmd="mv ${out}/accepted_hits.bam ${out_prefix}.bam"
+    exec_cmd ${cmd} >> $log 2>&1
+
+    ## Clean log folder
+    if [ -d ${out}/logs ]; then
+        cmd="/bin/rm -rf ${out}/logs"
+        exec_cmd ${cmd} >> $log 2>&1
+    fi
+}
+
+
+## STAR
+star_func()
+{
+    check_env
+
+    local log=$3/mapping.log
+    local cmd="${STAR_PATH}/STAR --genomeDir ${STAR_IDX_PATH} --outSAMtype BAM SortedByCoordinate --runThreadN ${NB_PROC} --runMode alignReads"
+
+    ## logs
+    echo -e "Running STAR mapping ..."
+    echo -e "Logs: $log"
+    if [ -z ${TRANSCRIPTS_GTF+x} ]; then
+        echo -e "Warning: GTF file not defined in STAR mapping"
+    else
+        cmd="$cmd --sjdbGTFfile ${TRANSCRIPTS_GTF} --sjdbOverhang 151"
+    fi
+    echo
+
+    ## input type
+    inputs=($1)
+    if [[ ${#inputs[@]} -eq 1 ]]; then
+        if [[ ${inputs[0]} =~ \.gz ]]; then
+            cmd_in="--readFilesIn <(gzip -cd ${inputs[0]})"
+            #cmd_in="--readFilesIn ${inputs[0]} --readFilesCommand zcat"
+        else
+            cmd_in="--readFilesIn ${inputs[0]}"
+	    fi
+    elif [[ ${#inputs[@]} -eq 2 ]]; then
+        if [[ ${inputs[0]} =~ \.gz ]]; then
+            cmd_in="--readFilesIn <(gzip -cd ${inputs[0]}) <(gzip -cd ${inputs[1]})"
+            #cmd_in="--readFilesIn ${inputs[0]} ${inputs[1]} --readFilesCommand zcat"
+        else
+            cmd_in="--readFilesIn ${inputs[0]} ${inputs[1]}"
+        fi
+    fi
+
+    ## sample id
+    if [[ ! -z ${SAMPLE_ID} ]]; then
+        cmd="$cmd --outSAMattrRGline ID:${SAMPLE_ID} SM:${SAMPLE_ID} LB:Illumina PL:Illumina"
+    fi
+
+    local out=$2/mapping
+    mkdir -p ${out}
+    local out_prefix=$(get_fastq_prefix ${inputs[0]})
+
+    cmd="$cmd $cmd_in --outFileNamePrefix ${out}/ --outTmpDir ${out}/tmp ${STAR_OPTS}"
+    exec_cmd ${cmd} > $log 2>&1
+
+    cmd="mv ${out}/Aligned.sortedByCoord.out.bam ${out}/${out_prefix}.bam"
     exec_cmd ${cmd} >> $log 2>&1
 }
 
 
 ## $1 = input file(s)
 ## $2 = output dir
-star_func()
-{
-    local log=$3/star.log
-    local cmd="${STAR_PATH}/STAR --genomeDir ${STAR_IDX_PATH} --sjdbGTFfile ${TRANSCRIPTS_GTF}"
-
-    ## logs
-    echo -e "Running STAR mapping ..."
-    echo -e "Logs: $log"
-    echo
-
-    ## input type
-    inputs=($1)
-    if [[ ${#inputs[@]} -eq 1 ]]; then
-	if [[ ${inputs[0]} =~ \.gz ]]; then
-            cmd_in="--readFilesIn <(gzip -cd ${inputs[0]})"
-            #cmd_in="--readFilesIn ${inputs[0]} --readFilesCommand zcat"          
-        else
-            cmd_in="--readFilesIn ${intputs[0]}"
-        fi
-    elif [[ ${#inputs[@]} -eq 2 ]]; then
-	if [[ ${inputs[0]} =~ \.gz ]]; then
-		cmd_in="--readFilesIn <(gzip -cd ${inputs[0]}) <(gzip -cd ${inputs[1]})"
-		#cmd_in="--readFilesIn ${inputs[0]} ${inputs[1]} --readFilesCommand zcat"
-	else
-		cmd_in="--readFilesIn ${inputs[0]} ${inputs[1]}"
-	fi
-    fi
-
-    ## sample id
-    if [[ ! -z ${SAMPLE_ID} ]]; then
-	cmd="$cmd --outSAMattrRGline ID:$SAMPLE_ID SM:$3 LB:Illumina PL:Illumina"
-    fi
-
-    ## estimate counts during mapping
-    if [[ ${COUNT_TOOL} == "STAR" ]]; then
-	cmd="$cmd --quantMode GeneCounts"
-    fi
-
-    local out=$2/mapping
-    mkdir -p ${out}
-    local out_mapped=$(basename ${inputs[0]} | sed -e 's/[\._]*R*[12]*.fastq\(.gz\)*//')
-
-    cmd="$cmd $cmd_in --outFileNamePrefix ${out}/${out_mapped} --outTmpDir ${out}/tmp ${STAR_OPTS}"
-    exec_cmd ${cmd} > $log 2>&1
-
-    cmd="mv ${out}/${out_mapped}Aligned.sortedByCoord.out.bam ${out}/${out_mapped}.bam"
-    exec_cmd ${cmd} >> $log 2>&1
-} 
-
-## $1 = input file(s)
-## $2 = output dir
 ## $3 = log file
+## $4 = work on the first N reads
 bowtie2_rseqc_func()
 {
+    check_env
     local log=$3
-    BOWTIE2_OPTS="--fast --end-to-end --reorder"
-    echo -e "Running fast bowtie2 mapping ..." >> ${log} 2>&1
+    echo -e "Running fast bowtie2 mapping on $4 first reads ..." >> ${log} 2>&1
+
+    bowtie2_opts="-p ${NB_PROC} --fast --end-to-end --reorder -u $4"
+    if [[ -z ${BWT2_IDX_PATH} ]]; then
+        die "Bowtie2 indexes not detected. Exit"
+    fi
 
     ## input type
     inputs=($1)
     if [[ ${#inputs[@]} -eq 1 ]]; then
-            cmd_in="-U ${inputs[0]}"          
+            cmd_in="-U ${inputs[0]}"
     elif [[ ${#inputs[@]} -eq 2 ]]; then
-	    cmd_in="-1 ${inputs[0]} -2 ${inputs[1]}"
+            cmd_in="-1 ${inputs[0]} -2 ${inputs[1]}"
     fi
 
-    cmd="${BOWTIE2_PATH}/bowtie2 ${BOWTIE2_OPTS} -x ${BWT2_IDX_PATH} $cmd_in > $2/subsample.bam"
+    ## Warning - do not store the bowtie logs to avoid multiQC reporting
+    cmd="bowtie2 ${bowtie2_opts} -x ${BWT2_IDX_PATH} $cmd_in > $2/subsample.bam"
     exec_cmd ${cmd} >> $log 2>&1
 }
 
@@ -216,6 +264,7 @@ bowtie2_rseqc_func()
 ## $2 = log directory
 bamindex_func()
 {
+    check_env
     local log=$2/index.log
     echo -e "Indexing BAM file ...."
     echo -e "Logs: ${log}"
@@ -228,9 +277,10 @@ bamindex_func()
 
 ## $1 = input file
 ## $2 = output dir
+## $3 = log dir
 htseq_func()
 {
-
+    check_env
     local log=$3/htseq.log
     local out=$2/counts
     mkdir -p ${out}
@@ -260,10 +310,13 @@ htseq_func()
     exec_cmd ${cmd} > $log 2>&1
 }
 
+
 ## $1 = input file
 ## $2 = output dir
+## $3 = log dir
 featurecounts_func()
 {    
+    check_env
     local log=$3/featurecounts.log
     local out=$2/counts
     mkdir -p ${out}
@@ -276,7 +329,6 @@ featurecounts_func()
     ## Perform strand-specific read counting. Acceptable values:
     ## 0 (unstranded), 1 (stranded) and 2 (reversely stranded).
     ## 0 by default.
-
 
     if [[ $STRANDED == "reverse" ]]; then
         local stranded_opt="-s 2"
@@ -291,10 +343,14 @@ featurecounts_func()
 	die "Unknown STRANDED parameter ; must be reverse/yes/no"
     fi
 
-    cmd="${FEATURECOUNTS_PATH}/featureCounts -a ${TRANSCRIPTS_GTF} -o ${out}/${out_count} ${FEATURECOUNTS_OPTS} $stranded_opt $1"
+    cmd="${FEATURECOUNTS_PATH}/featureCounts -T ${NB_PROC} -a ${TRANSCRIPTS_GTF} -o ${out}/${out_count} ${FEATURECOUNTS_OPTS} $stranded_opt $1"
     exec_cmd ${cmd} > $log 2>&1
 }
 
+
+## $1 = input file
+## $2 = output dir
+## $3 = log dir
 starcounts_func()
 {
     ## In theory, the counts have been run together with the mapping
@@ -324,55 +380,47 @@ rseqc_func()
 
     echo -e "Running RSeQC ..."
     echo -e "Logs: ${log}"
+    echo
 
     mkdir -p ${out}
     mkdir -p ${out}/tmp
-
     if [[ -z ${GENE_BED} ]]; then
         die "Check that transcript reference bed file exists in CONFIG. Exit"
+    fi
+    if [[ -z ${BWT2_MAPPING_INDEX} ]]; then
+        die "Bowtie2 indexes required for RSeQC. Exit"
     fi
 
     ## Infer experiments from bam files
     if [[ $1 =~ ".bam$" ]]; then
-	echo -e "Input bam file detected ..." > ${log} 2>&1
-	outfile=$(basename $1 | sed -e 's/.bam//').rseqc
-	input=$1
+        echo -e "Input bam file detected ..." > ${log} 2>&1
+        outfile=$(basename $1 | sed -e 's/.bam//').rseqc
+        input=$1
     ## Infer experiments from fastq files
     else
-	echo -e "Input fastq files detected ..." > ${log} 2>&1
-	inputs=($1)
-	outfile=$(basename ${inputs[0]} | sed -e 's/.fastq\(.gz\)*//').rseqc
-	nline=$(($n * 4))
-	
-	## Single end
-	if [[ ${#inputs[@]} -eq 1 ]]; then
-	    if [[ ${inputs[0]} =~ \.gz ]]; then
-		less ${inputs[0]} | head -n $nline > ${out}/tmp/subsample_1.fastq
-	    else
-		head -n $nline ${inputs[0]} > ${out}/tmp/subsample_1.fastq
-	    fi
-	    bowtie2_rseqc_func ${out}/tmp/subsample_1.fastq ${out}/tmp ${log}
-	    
-	## paired-end
+        echo -e "Input fastq files detected ..." > ${log} 2>&1
+        inputs=($1)
+        outfile=$(basename ${inputs[0]} | sed -e 's/.fastq\(.gz\)*//').rseqc
+
+        ## Single end
+        if [[ ${#inputs[@]} -eq 1 ]]; then
+            bowtie2_rseqc_func ${inputs[0]} ${out}/tmp ${log} ${n}
+
+        ## paired-end
         elif [[ ${#inputs[@]} -eq 2 ]]; then
-	    if [[ ${inputs[0]} =~ \.gz ]]; then
-		less ${inputs[0]} | head -n $nline > ${out}/tmp/subsample_1.fastq
-		less ${inputs[1]} | head -n $nline > ${out}/tmp/subsample_2.fastq
-	    else
-		head -n $nline ${inputs[0]} > ${out}/tmp/subsample_1.fastq
-		head -n $nline ${inputs[1]} > ${out}/tmp/subsample_2.fastq
-	    fi
-	    bowtie2_rseqc_func "${out}/tmp/subsample_1.fastq ${out}/tmp/subsample_2.fastq" ${out}/tmp ${log}
-	fi
-	input=${out}/tmp/subsample.bam
+            bowtie2_rseqc_func "${inputs[0]} ${inputs[1]}" ${out}/tmp ${log} ${n}
+        fi
+        input=${out}/tmp/subsample.bam
     fi
 
-    cmd="${PYTHON_PATH}/python ${RSEQC_PATH}/infer_experiment.py -i $input -r ${GENE_BED} > ${out}/${outfile}"
+    cmd="python ${RSEQC_PATH}/infer_experiment.py -i $input -r ${GENE_BED} > ${out}/${outfile}"
     exec_cmd ${cmd} >> $log 2>&1
 
     ## clean mapping folder
-    /bin/rm -rf ${out}/tmp
+    cmd="/bin/rm -rf ${out}/tmp/subsample.bam"
+    exec_cmd ${cmd} >> $log 2>&1
 }
+
 
 ## $1 reseqc output
 parse_rseqc_output()
@@ -415,11 +463,13 @@ parse_rseqc_output()
     echo $ret
 }
 
+
 ## $1 = input file
 ## $2 = output dir
 ## $3 log dir
 preseq_func()
 {
+    check_env
     local log=$3/preseq.log
     local out=$2/preseq
     mkdir -p ${out}
@@ -433,19 +483,25 @@ preseq_func()
     exec_cmd ${cmd} > $log 2>&1
 }
 
+
 ## $1 = input file
-## $2 =  log dir
-markdup(){
+## $2 = log dir
+## $3 = if == 1, output file erase input file
+markdup()
+{
+    check_env
     local log=$2/markdup.log
-    local prefix=$(echo $1 | sed -e 's/.bam$//')  
-    
+    local prefix=$(echo $1 | sed -e 's/.bam$//')
+ 
     echo -e "Mark duplicates ..."
     echo -e "Logs: ${log}"
     echo
 
-    cmd="java -jar ${PICARD_PATH} MarkDuplicates I=$1 O=${prefix}_markdup.bam REMOVE_DUPLICATES=false M=${prefix}_METRIC"
+    ## VALIDATION_STRINGENCY=LENIENT - That way, it will report all the errors it sees to STDIN, but it will finish the job anyway.
+    cmd="${JAVA_PATH}/java -jar ${PICARD_BIN} MarkDuplicates I=$1 O=${prefix}_markdup.bam M=${prefix}_METRIC VALIDATION_STRINGENCY=LENIENT REMOVE_DUPLICATES=false PG=null"
     exec_cmd ${cmd} > $log 2>&1
 }
+
 
 ## $1 = input fastq file(s)
 ## $2 = configuration file 
@@ -453,7 +509,6 @@ markdup(){
 ## $4 = output dir
 ## $5 = log directory
 ## $6 = rRNA BAM file (optional)
-
 mapping_stat(){
     local log=$5/getStatFile.log
     local output=$4/stats

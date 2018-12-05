@@ -12,9 +12,10 @@
 ## #properly_paired;non_dup;mean_depth_coverage
 
 VERSION=0.0.1
+N_CPU=1
 
 function usage {
-    echo -e "usage : ./getStatFile.sh -f FORWARD -b BAM -c CONFIG [-r REVERSE] [-x R_RNA_BAM] [-g ANOT_DIR] [-s SAMPLE_ID]"
+    echo -e "usage : ./getStatFile.sh -f FORWARD -b BAM -c CONFIG [-r REVERSE] [-x R_RNA_BAM] [-g ANOT_DIR] [-s SAMPLE_ID] [-p N_CPU]"
     echo -e "Use option -h|--help for more information"
 }
 
@@ -38,12 +39,13 @@ function help {
     echo "   [-x R_RNA_BAM]: bam file of rRNA mapping"
     echo "   [-g ANNOT_DIR]: Annotation folder. Results of parseGencodeAnntation.sh script"
     echo "   [-s SAMPLE_ID]: biosample ID"
+    echo "   [-p N_CPU]: Number of CPUs"
     echo "   [-h]: help"
     echo "   [-v]: version"
     exit;
 }
 
-while getopts "f:b:c:r:x:g:s:hv" OPT
+while getopts "f:b:c:r:x:g:s:p:hv" OPT
 do
     case $OPT in
         f) FORWARD=$OPTARG;;
@@ -53,6 +55,7 @@ do
         x) R_RNA_BAM=$OPTARG;;
         g) ANNOT_DIR=$OPTARG;;
 	s) SAMPLE_ID=$OPTARG;;
+	p) N_CPU=$OPTARG;;
         v) version ;;
         h) help ;;
         \?)
@@ -127,19 +130,15 @@ fi
 UNIQUE_BAM=$(echo $BAM | sed -e 's/.bam$/_unique.bam/')
 
 if [ ${MAPPING_TOOL} == "TOPHAT2" ]; then 
-    
-    #https://sequencing.qcfail.com/articles/mapq-values-are-really-useful-but-their-implementation-is-a-mess/
-    aligned=$(${SAMTOOLS_PATH}/samtools view -f 0x40 -c ${BAM})
-  
-    ${SAMTOOLS_PATH}/samtools view -bq50  ${BAM} > ${UNIQUE_BAM}
-    ubam=$(${SAMTOOLS_PATH}/samtools view -c ${UNIQUE_BAM})
-
-    mbam=$(${SAMTOOLS_PATH}/samtools view -F 0x100  ${BAM} | awk '($5!=50){print $1}' | sort -u | wc -l)
+    ##http://sequencing.qcfail.com/articles/mapq-values-are-really-useful-but-their-implementation-is-a-mess/
+    aligned=$(${SAMTOOLS_PATH}/samtools view -@ ${N_CPU} -f 0x40 -c ${BAM})
+    ${SAMTOOLS_PATH}/samtools view -@ ${N_CPU} -bq50  ${BAM} > ${UNIQUE_BAM}
+    ubam=$(${SAMTOOLS_PATH}/samtools view -@ ${N_CPU} -c ${UNIQUE_BAM})
+    mbam=$(${SAMTOOLS_PATH}/samtools view -@ ${N_CPU} -F 0x100  ${BAM} | awk '($5!=50){print $1}' | sort -u | wc -l)
   
 elif [ ${MAPPING_TOOL} == "STAR" ]; then
-
-    aligned=$(${SAMTOOLS_PATH}/samtools view -F 0x100 -c ${BAM})
-  
+    aligned=$(${SAMTOOLS_PATH}/samtools view -@ ${N_CPU} -F 0x100 -c ${BAM})
+ 
     ## STAR
     #Proper Paired aligns:
     #N12=$(${SAMTOOLS_PATH}/samtools view -q255 -c -f 0x2 $BAM)
@@ -150,23 +149,21 @@ elif [ ${MAPPING_TOOL} == "STAR" ]; then
     #The total number of uniquely aligned read is then:
     #N12/2+N1+N2 which should exactly agree with the number in the Log.final.out
     #ubam=$(($N12/2 + $N1 + $N2))
-
-    ${SAMTOOLS_PATH}/samtools view -bq255  ${BAM} > ${UNIQUE_BAM}
-    ubam=$( ${SAMTOOLS_PATH}/samtools view -c ${UNIQUE_BAM})
-
-    ## Multiple Hits
-    mbam=$(${SAMTOOLS_PATH}/samtools view -F 0x100  ${BAM} | awk '($5!=255){print $1}' | sort -u | wc -l)
-
-    if [ ! -z ${REVERSE} ]; then
-	mbam=$(( $mbam * 2 ))
+    uqualval=255
+    map_opts=$(samtools view -H ${BAM} | grep -e @PG | grep -e "STAR")
+    if [[ ${map_opts} =~ "outSAMmapqUnique" ]]; then
+        uqualval=$(echo ${map_opts} | awk 'BEGIN{score=255}{for (i=1;i<=NF;i++){if ($i=="--outSAMmapqUnique"){j=i+1;score=$j}}}END{print score}')
     fi
+    ${SAMTOOLS_PATH}/samtools view  -@ ${N_CPU} -b -q ${uqualval} ${BAM} > ${UNIQUE_BAM}
+    ubam=$(${SAMTOOLS_PATH}/samtools view -@ ${N_CPU} -q ${uqualval} -c ${BAM})
+    mbam=$(( $aligned - $ubam ))
 fi
 
 ## duplicates
 MDUP_BAM=$(echo $BAM | sed -e 's/.bam$/_markdup.bam/')
 ndup=NA
 if [ -e ${MDUP_BAM} ]; then
-    ndup=$(${SAMTOOLS_PATH}/samtools view -f 1024 ${MDUP_BAM} | wc -l)
+    ndup=$(${SAMTOOLS_PATH}/samtools view -@ ${N_CPU} -f 1024 ${MDUP_BAM} | wc -l)
 fi
 
 
