@@ -11,9 +11,10 @@
 SOFT="RNApip_cluster"
 PWD=$(dirname $0)
 VERSION=$(bash $PWD/RNApip -v)
+runKDIExport=0
 
 function usage {
-    echo -e "usage : $SOFT -i SAMPLE_PLAN -o OUTPUT -c CONFIG [-m METADATA] [-n RUN_ID] [-h] [-v]"
+    echo -e "usage : $SOFT -i SAMPLE_PLAN -o OUTPUT -c CONFIG [-m METADATA] [-n RUN_ID] [-k] [-h] [-v]"
     echo -e "Use option -h|--help for more information"
 }
 
@@ -29,6 +30,7 @@ function help {
     echo "   -c|--conf CONFIG: configuration file for RNA processing"
     echo "   [-m|--meta] METADATA: Metada related to sequencing run"
     echo "   [-n|--run] RUNID: Id of the run - used as a prefix of the report name"
+    echo "   [-k|--kdi]: Generate KDI export file(s)"
     echo "   [-h|--help]: help"
     exit;
 }
@@ -38,6 +40,9 @@ function version {
     exit
 }
 
+function setKDIExport {
+    runKDIExport=1
+}
 
 if [ $# -lt 1 ]
 then
@@ -54,6 +59,7 @@ for arg in "$@"; do
       "--conf")   set -- "$@" "-c" ;;
       "--meta")   set -- "$@" "-m" ;;
       "--run")   set -- "$@" "-n" ;;
+      "--kdi")   set -- "$@" "-k" ;;
       "--version")   set -- "$@" "-v" ;;
       "--help")   set -- "$@" "-h" ;;
       *)        set -- "$@" "$arg"
@@ -61,7 +67,7 @@ for arg in "$@"; do
 done
 
 RUNID="__"
-while getopts "i:o:c:m:n:vh" OPT
+while getopts "i:o:c:m:n:kvh" OPT
 do
     case $OPT in
         i) SPLAN=$OPTARG;;
@@ -69,6 +75,7 @@ do
 	c) CONF=$OPTARG;;
 	m) META=$OPTARG;;
 	n) RUNID=$OPTARG;;
+	k) setKDIExport;;
 	v) version ;;
 	h) help ;;
 	\?)
@@ -101,7 +108,17 @@ ODIR=$(realpath $ODIR)
 SPLAN=$(realpath $SPLAN)
 
 ## Load functions file
-. $SCRIPTS_PATH/utils.inc.sh
+. ${SCRIPTS_PATH}/utils.inc.sh
+
+if [ -e "$CONF" ]; then
+    read_config $CONF
+    if [ -z ${NB_PROC} ]; then NB_PROC=6; fi
+    if [ -z ${SUB_MEM} ]; then SUB_MEM="50gb"; fi
+    if [ -z ${SUB_WALLTIME} ]; then SUB_WALLTIME="24:00:00"; fi
+    if [ -z ${SUB_QUEUE} ]; then SUB_QUEUE="batch"; fi
+else
+    die "Error - config file '$CONF' not found"
+fi
 
 ## Run the pipeline in parallel
 arraycmd=""
@@ -115,12 +132,18 @@ fi
 pid=$(echo "bash ${SCRIPTS_PATH}/run_qsub.sh" | qsub  -m ae -j oe -q ${SUB_QUEUE} -N ${SOFT} -l "nodes=1:ppn="${NB_PROC}",mem="${SUB_MEM}",walltime="${SUB_WALLTIME} ${arraycmd} -v SAMPLE_PLAN="${SPLAN}",ODIR="${ODIR}",CONFIG="${CONF}")
 jobidarray=${pid%%.*}
 
+if [ $runKDIExport == 1 ]; then
+    exportCMD="${SCRIPTS_PATH}/makeExportFiles.sh -c ${CONF} -o ${ODIR}"
+else
+    exportCMD=""
+fi
+
 ## Run the report
 if [[ -z $META ]]; then
-    pid=$(echo "bash ${ABS_BIN_PATH}/makeRNAreport -i ${ODIR} -c ${CONF} -s ${SPLAN} -n ${RUNID}" | qsub -m ae -j oe -q ${SUB_QUEUE} -N ${SOFT} -l "nodes=1:ppn=1,mem=2gb,walltime=01:00:00" -W depend=${dependcmd}:${jobidarray})
+    pid=$(echo "bash ${ABS_BIN_PATH}/makeRNAreport -i ${ODIR} -c ${CONF} -s ${SPLAN} -n ${RUNID}; ${exportCMD}" | qsub -m ae -j oe -q ${SUB_QUEUE} -N ${SOFT} -l "nodes=1:ppn=1,mem=2gb,walltime=01:00:00" -W depend=${dependcmd}:${jobidarray})
 else
     META=$(realpath $META)
-    pid=$(echo "bash ${ABS_BIN_PATH}/makeRNAreport -i ${ODIR} -c ${CONF} -s ${SPLAN} -m ${META} -n ${RUNID}" | qsub -m ae -j oe -q ${SUB_QUEUE} -N ${SOFT} -l "nodes=1:ppn=1,mem=2gb,walltime=01:00:00" -W depend=${dependcmd}:${jobidarray})
+    pid=$(echo "bash ${ABS_BIN_PATH}/makeRNAreport -i ${ODIR} -c ${CONF} -s ${SPLAN} -m ${META} -n ${RUNID}; ${exportCMD}" | qsub -m ae -j oe -q ${SUB_QUEUE} -N ${SOFT} -l "nodes=1:ppn=1,mem=2gb,walltime=01:00:00" -W depend=${dependcmd}:${jobidarray})
 fi
 echo "Job(s) [$pid] submitted to the cluster !"
 exit 0

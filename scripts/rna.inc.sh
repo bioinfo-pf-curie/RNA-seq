@@ -46,7 +46,7 @@ fastqc_func()
 rRNA_mapping_func()
 {
     check_env
-    if [[ -z ${BOWTIE_RRNA_IDX} ]]; then
+    if [[ -z ${BOWTIE_RRNA_INDEX} ]]; then
 	die "rRNA indexes file not set. Exit"
     fi
     
@@ -104,7 +104,7 @@ rRNA_mapping_func()
 	die "Bowtie1 -  found more than two input files. Exit"
     fi
 
-    local cmd="${BOWTIE_PATH}/bowtie ${BOWTIE_OPTS} -p ${NB_PROC} ${cmd_un} --sam ${BOWTIE_RRNA_IDX} ${cmd_in} ${bowtie_sam}"
+    local cmd="${BOWTIE_PATH}/bowtie ${BOWTIE_OPTS} -p ${NB_PROC} ${cmd_un} --sam ${BOWTIE_RRNA_INDEX} ${cmd_in} ${bowtie_sam}"
     exec_cmd ${cmd} > $log 2>&1
 
     local cmd="${SAMTOOLS_PATH}/samtools view -@ ${NB_PROC} -bS ${bowtie_sam} > ${bowtie_bam}"
@@ -164,7 +164,7 @@ tophat2_func()
 
     local out_prefix=${out}/$(get_fastq_prefix ${inputs[0]})
 
-    local cmd="$cmd ${TOPHAT2_OPTS} --GTF ${TRANSCRIPTS_GTF} ${stranded_opt} -o ${out} ${TOPHAT2_IDX_PATH} $1"
+    local cmd="$cmd ${TOPHAT2_OPTS} --GTF ${TRANSCRIPTS_GTF} ${stranded_opt} -o ${out} ${TOPHAT2_INDEX} $1"
     exec_cmd ${cmd} > $log 2>&1
 
     cmd="mv ${out}/accepted_hits.bam ${out_prefix}.bam"
@@ -184,7 +184,7 @@ star_func()
     check_env
 
     local log=$3/mapping.log
-    local cmd="${STAR_PATH}/STAR --genomeDir ${STAR_IDX_PATH} --outSAMtype BAM SortedByCoordinate --runThreadN ${NB_PROC} --runMode alignReads"
+    local cmd="${STAR_PATH}/STAR --genomeDir ${STAR_INDEX} --outSAMtype BAM SortedByCoordinate --runThreadN ${NB_PROC} --runMode alignReads"
 
     ## logs
     echo -e "Running STAR mapping ..."
@@ -192,7 +192,7 @@ star_func()
     if [ -z ${TRANSCRIPTS_GTF+x} ]; then
         echo -e "Warning: GTF file not defined in STAR mapping"
     else
-        cmd="$cmd --sjdbGTFfile ${TRANSCRIPTS_GTF} --sjdbOverhang 151"
+        cmd="$cmd --sjdbGTFfile ${TRANSCRIPTS_GTF}"
     fi
     echo
 
@@ -219,6 +219,11 @@ star_func()
         cmd="$cmd --outSAMattrRGline ID:${SAMPLE_ID} SM:${SAMPLE_ID} LB:Illumina PL:Illumina"
     fi
 
+    ## estimate counts during mapping     
+    if [[ ${COUNT_TOOL} == "STAR" ]]; then 
+	cmd="$cmd --quantMode GeneCounts"     
+    fi
+
     local out=$2/mapping
     mkdir -p ${out}
     local out_prefix=$(get_fastq_prefix ${inputs[0]})
@@ -242,7 +247,7 @@ bowtie2_rseqc_func()
     echo -e "Running fast bowtie2 mapping on $4 first reads ..." >> ${log} 2>&1
 
     bowtie2_opts="-p ${NB_PROC} --fast --end-to-end --reorder -u $4"
-    if [[ -z ${BWT2_IDX_PATH} ]]; then
+    if [[ -z ${BOWTIE2_INDEX} ]]; then
         die "Bowtie2 indexes not detected. Exit"
     fi
 
@@ -255,7 +260,7 @@ bowtie2_rseqc_func()
     fi
 
     ## Warning - do not store the bowtie logs to avoid multiQC reporting
-    cmd="bowtie2 ${bowtie2_opts} -x ${BWT2_IDX_PATH} $cmd_in > $2/subsample.bam"
+    cmd="bowtie2 ${bowtie2_opts} -x ${BOWTIE2_INDEX} $cmd_in > $2/subsample.bam"
     exec_cmd ${cmd} >> $log 2>&1
 }
 
@@ -284,7 +289,7 @@ htseq_func()
     local log=$3/htseq.log
     local out=$2/counts
     mkdir -p ${out}
-    local out_count=$(basename $1 | sed -e 's/.bam$/_htseq.csv/')
+    local out_count=$(basename $1 | sed -e 's/.bam$/_counts.csv/')
     
     echo -e "Running HTSeq ..."
     echo -e "Logs: ${log}"
@@ -320,7 +325,7 @@ featurecounts_func()
     local log=$3/featurecounts.log
     local out=$2/counts
     mkdir -p ${out}
-    local out_count=$(basename $1 | sed -e 's/.bam$/_featurecounts.csv/')
+    local out_count=$(basename $1 | sed -e 's/.bam$/_counts.csv/')
 
     echo -e "Running FeatureCounts ..."
     echo -e "Logs: ${log}"
@@ -359,11 +364,14 @@ starcounts_func()
     local out=$2/counts
     mkdir -p ${out}
 
+    local out_count=$(basename $1 | sed -e 's/.bam$/_counts.csv/')
+
     echo -e "Getting counts from the STAR mapper ..."
     echo
-    local out_count=$(echo $1 | sed -e 's/.bam$/ReadsPerGene.out.tab/')
+    #local out_count=$(echo $1 | sed -e 's/.bam$/ReadsPerGene.out.tab/')
+    local out_star=$(dirname $1)/ReadsPerGene.out.tab
 
-    cmd="mv ${out_count} ${out}/"
+    cmd="mv ${out_star} ${out}/${out_count}"
     exec_cmd ${cmd} > $log 2>&1
 }
 
@@ -387,20 +395,20 @@ rseqc_func()
     if [[ -z ${GENE_BED} ]]; then
         die "Check that transcript reference bed file exists in CONFIG. Exit"
     fi
-    if [[ -z ${BWT2_MAPPING_INDEX} ]]; then
+    if [[ -z ${BOWTIE2_INDEX} ]]; then
         die "Bowtie2 indexes required for RSeQC. Exit"
     fi
 
     ## Infer experiments from bam files
     if [[ $1 =~ ".bam$" ]]; then
         echo -e "Input bam file detected ..." > ${log} 2>&1
-        outfile=$(basename $1 | sed -e 's/.bam//').rseqc
+        outfile=$(get_fastq_prefix ${1}).rseqc
         input=$1
     ## Infer experiments from fastq files
     else
         echo -e "Input fastq files detected ..." > ${log} 2>&1
         inputs=($1)
-        outfile=$(basename ${inputs[0]} | sed -e 's/.fastq\(.gz\)*//').rseqc
+        outfile=$(get_fastq_prefix ${inputs[0]}).rseqc
 
         ## Single end
         if [[ ${#inputs[@]} -eq 1 ]]; then
