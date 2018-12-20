@@ -7,7 +7,11 @@
 print_export_persample()
 {
     local ofile=$1
-    kdi_bioapp="raw transcriptomics"
+    if [ -e ${ofile} ]; then
+	/bin/rm -f ${ofile}
+    fi
+
+    kdi_bioapp="mRNA expression"
 
     if [ ! -z ${BOWTIE_RRNA_INDEX} ]; then
 	## BAM files
@@ -15,7 +19,7 @@ print_export_persample()
 	echo -e "backup/{SAMPLE}/mapping/{SAMPLE}_norRNA.bam.bai\tanalysis_results/{SAMPLE}/mapping/{SAMPLE}.bam.bai\tbam\tprocessed\t$kdi_bioapp" >> ${ofile}
 	
 	## Counts
-	echo -e "backup/{SAMPLE}/counts/{SAMPLE}_norRNA_counts.csv\tanalysis_results/{SAMPLE}/counts/{SAMPLE}_noRNA_counts.csv\ttxt\tprocessed\t$kdi_bioapp" >> ${ofile}
+	echo -e "backup/{SAMPLE}/counts/{SAMPLE}_norRNA_counts.csv\tanalysis_results/{SAMPLE}/counts/{SAMPLE}_noRNA_counts.csv\tcount_table\tprocessed\t$kdi_bioapp" >> ${ofile}
 
    else
 	## BAM files
@@ -23,25 +27,37 @@ print_export_persample()
         echo -e "backup/{SAMPLE}/mapping/{SAMPLE}.bam.bai\tanalysis_results/{SAMPLE}/mapping/{SAMPLE}.bam.bai\tbam\tprocessed\t$kdi_bioapp" >> ${ofile}
 
 	## Counts
-	echo -e "backup/{SAMPLE}/counts/{SAMPLE}_counts.csv\tanalysis_results/{SAMPLE}/counts/{SAMPLE}_counts.csv\ttxt\tprocessed\t$kdi_bioapp" >> ${ofile}
+	echo -e "backup/{SAMPLE}/counts/{SAMPLE}_counts.csv\tanalysis_results/{SAMPLE}/counts/{SAMPLE}_counts.csv\tcount_table\tprocessed\t$kdi_bioapp" >> ${ofile}
     fi
 
     ## Strand check
-    echo -e "backup/{SAMPLE}/strand_check/{SAMPLE}.rseqc\tanalysis_results/{SAMPLE}/strand_check/{SAMPLE}.rseqc\ttxt\tprocessed\t$kdi_bioapp" >> ${ofile}       
+    echo -e "backup/{SAMPLE}/strand_check/{SAMPLE}.rseqc\tanalysis_results/{SAMPLE}/strand_check/{SAMPLE}.rseqc\tlibrary_annotation\tprocessed\t$kdi_bioapp" >> ${ofile}       
 }
 
 print_export_perrun()
 {
     local ofile=$1
     local odir=$2
-    
-    outfiles=(report/report.html report/tablecounts_raw.csv report/tablecounts_tpm.csv)
+    if [ -e ${ofile} ]; then
+        /bin/rm -f ${ofile}
+    fi
+
+    outfiles=(report/report.html report/tablecounts_raw.csv report/tablecounts_tpm.csv report/fullStatFile.xls)
     for item in ${outfiles[*]}
     do
 	f=$(basename ${item})
 	if [ -e ${odir}/${item} ]; then
 	    echo -e "backup/${item}\treport/${f}\treport\tprocessed\tQuality Control" >> ${ofile}
 	fi
+    done
+
+    outfiles=(report/config.txt)
+    for item in ${outfiles[*]}
+    do
+        f=$(basename ${item})
+        if [ -e ${odir}/${item} ]; then
+            echo -e "backup/${item}\treport/${f}\tconf\tdescription file\tannotation" >> ${ofile}
+        fi
     done
 }
 

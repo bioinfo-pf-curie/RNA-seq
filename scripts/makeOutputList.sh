@@ -44,6 +44,9 @@ read_config $CONF
 ## Output
 ofile=${ODIR}/logs/output_list.tsv
 prefix_dir=$(basename $ODIR)
+if [ -e ${ofile} ]; then
+    /bin/rm -f ${ofile}
+fi
 
 ## Mapping
 if [ ! -z ${BOWTIE_RRNA_INDEX} ]; then

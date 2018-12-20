@@ -38,7 +38,7 @@ def createXLSfile(txtFile, xlsFile):
         for j in range(len(row)):
             ws.write(i, j, row[j].replace("\n",""))
 
-    book.save(xlsFile + ".xls")
+    book.save(xlsFile)
     inputFile.close() 
 
 #######################################################
@@ -47,7 +47,7 @@ outputPath = dargs["odir"]
 samples = dargs["inputs"]
 runID = dargs["runID"]
 
-outputFile = open(outputPath + "/" + runID + ".fullStatFile.txt", "w")
+outputFile = open(outputPath + "/fullStatFile.txt", "w")
 
 write_header=0
 for sample in samples:
@@ -62,7 +62,7 @@ for sample in samples:
     statFileBySample.close()
 outputFile.close()
 
-createXLSfile(outputPath+"/"+runID+".fullStatFile.txt", outputPath+"/"+runID+".fullStatFile")
+createXLSfile(outputPath+"/fullStatFile.txt", outputPath+"/fullStatFile.xls")
 
 
 

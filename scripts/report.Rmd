@@ -89,17 +89,17 @@ inactivate_hover <- function(x){
 
 ```{r splan}
 ##Load sample plan                         
-splan <- read.csv(splan, header=FALSE)
-fids <- gsub("[._]*R*[12]*.fastq(.gz)*", "", basename(as.character(splan[,3])), perl=TRUE)
-bioids <- as.character(splan[,2])
+sp <- read.csv(splan, header=FALSE)
+fids <- gsub("[._]*R*[12]*.fastq(.gz)*", "", basename(as.character(sp[,3])), perl=TRUE)
+bioids <- as.character(sp[,2])
 names(bioids) <- fids
 ```
 
 
 ```{r statsFile, results="asis", eval=TRUE}
-statsIn <- list.files(file.path(input_path, "report"), pattern=".fullStatFile.txt", full.names=TRUE)
+statsIn <- list.files(file.path(input_path, "report"), pattern="fullStatFile.txt", full.names=TRUE)
 stopifnot(length(statsIn)==1)
-statsXLS <- list.files(file.path(input_path, "report"), pattern=".fullStatFile.xls", full.names=TRUE)
+statsXLS <- list.files(file.path(input_path, "report"), pattern="fullStatFile.xls", full.names=TRUE)
 if(length(statsIn)==0) stop("fullStatFile not found !")
 statsFile <- read.csv(statsIn, row.names=NULL)
 
@@ -134,10 +134,10 @@ if (file.exists(meta)){
 
 ### Experiment(s)
 ```{r exp, results="asis", eval=TRUE}
-  strand.in <- list.files(input_path, pattern="strandness.info", recursive=TRUE, full.names=TRUE)
-  strand.info <- sapply(strand.in, function(f){d<-read.table(f); strsplit(as.character(d[1,1]),"=")[[1]][2]})
-  strand.in.ids <- basename(sub("strand_check","",dirname(strand.in)))
-  datatable(cbind(strand.in.ids, strand.info), colnames=c('Sample','Strandness'), rownames = FALSE, escape = FALSE, filter = 'top', 
+strand.in <- list.files(input_path, pattern="strandness.info", recursive=TRUE, full.names=TRUE)
+strand.info <- sapply(strand.in, function(f){d<-read.table(f); strsplit(as.character(d[1,1]),"=")[[1]][2]})
+strand.in.ids <- basename(sub("strand_check","",dirname(strand.in)))
+datatable(cbind(strand.in.ids, strand.info), colnames=c('Sample','Strandness'), rownames = FALSE, escape = FALSE, filter = 'top', 
   					caption = 'Strandness information per sample')
 ```
 
@@ -169,7 +169,8 @@ names(verbosetype) <- c("uniqueHits","multiHits","rRNA","unmapped")
 
 dataPlot <- statsFile %>%
 	select(., sampleID, n_reads, n_u_aligned, n_m_aligned, n_rrna) %>% 
-	set_colnames(., c("sample", "totalReads", "uniqueHits", "multiHits", "rRNA")) %>% 
+	set_colnames(., c("sample", "totalReads", "uniqueHits", "multiHits", "rRNA")) %>%
+	replace(., is.na(.), 0) %>% 
 	mutate(., unmapped=(totalReads-rRNA-uniqueHits-multiHits)) %>%  
   gather(., key="type", value="n_read", -sample, -totalReads)
 
@@ -203,7 +204,8 @@ ggly_b
 preseq.in <- list.files(input_path, pattern=".preseq", recursive=TRUE, full.names=TRUE)	
 if (length(preseq.in) > 0){
    preseq.info <- lapply(preseq.in, read.table, header=TRUE)
-   names(preseq.info) <- bioids[basename(sub("preseq","",dirname(preseq.in)))]
+   names(preseq.info) <- as.character(sp[match(basename(sub("preseq","",dirname(preseq.in))), sp[,1]),2])
+   #names(preseq.info) <- bioids[basename(sub("preseq","",dirname(preseq.in)))]
    d2p <-  melt(preseq.info, id.vars=c("total_reads","distinct_reads"))
    selcol <-  colorRampPalette(brewer.pal(9, "Set1"))(length(preseq.info))
 
@@ -254,7 +256,9 @@ Reference: `r basename(gtf)`
 
 ```{r table3, eval=TRUE}
 
-datatable(format(statsFile[,c('inputID', 'sampleID', 'n_u_aligned', 'n_exons', 'p_exons', 'n_introns', 'p_introns', 'n_inter', 'p_inter')], big.mark=",",scientific=FALSE), colnames =c('Sample', 'Biosample', 'Number of mapped reads', 'Number of exonic reads', 'Percent of exonic reads', 'Number of intronic reads', 'Percent of intronic reads', 'Number of intergenic reads', 'Percent of intergenic reads'), rownames = FALSE, filter = 'top', caption = 'Reads annotation', options = list(columnDefs = list(list(className = 'dt-center', targets = 2:5))))
+datatable(format(statsFile[,c('inputID', 'sampleID', 'n_u_aligned', 'n_exons', 'p_exons', 'n_introns', 'p_introns', 'n_inter', 'p_inter')], big.mark=",",scientific=FALSE), 
+colnames =c('Sample', 'Biosample', 'Number of mapped reads', 'Number of exonic reads', 'Percent of exonic reads', 'Number of intronic reads', 'Percent of intronic reads', 
+'Number of intergenic reads', 'Percent of intergenic reads'), rownames = FALSE, filter = 'top', caption = 'Reads annotation', options = list(columnDefs = list(list(className = 'dt-center', targets = 2:5))))
 
 ```
 
@@ -310,18 +314,18 @@ my_genes <- d.gtf[d.gtf$type == "gene"]
 if (length(my_genes) > 0 && is.element("gene_type", colnames(elementMetadata(my_genes)))){
    mcols(my_genes) <- mcols(my_genes)[c("gene_id", "gene_type","gene_name")]
    n_items <- 5
-   d2p <- as.matrix(as.data.frame(lapply(as.list(counts.tpm), function(x){
+   d2p <- as.matrix(data.frame(lapply(as.list(counts.tpm), function(x){
 	    n_ex <- length(which(x>1))
 	    ids <- sapply(strsplit(rownames(counts.tpm)[which(x>1)], "\\|"), "[[", 1)
 	    dt <- table(factor(my_genes$gene_type[match(ids, my_genes$gene_id)], levels=unique(sort(my_genes$gene_type))))
 	    c(total=n_ex, dt)
-	    })))
+	    }), check.names=FALSE))
 }else{
     n_items <- 1
-    d2p <-  as.matrix(as.data.frame(lapply(as.list(counts.tpm), function(x){
+    d2p <-  as.matrix(data.frame(lapply(as.list(counts.tpm), function(x){
             n_ex <- length(which(x>1))
             c(total=n_ex)
-            })))
+            }), check.names=FALSE))
 }
 
 ## remove zero values and sort by counts
@@ -344,7 +348,7 @@ rownames(d2p) <- gsub("[_.-]"," ",gsub("(^|[[:space:]])([[:alpha:]])", "\\1\\U\\
 ```{r table4, eval=TRUE}
 
 datatable(format(t(d2p), big.mark=",",scientific=FALSE), colnames = rownames(d2p),
- rownames = TRUE, filter = 'top', caption = 'Gene annotation', options = list(columnDefs = list(list(className = 'dt-center', targets = 1:6))))
+ rownames = TRUE, filter = 'top', caption = 'Gene annotation', options=list(columnDefs = list(list(className = 'dt-center', targets=1:nrow(d2p)))))
 
 ```
 <a href="#">Back to top</a>

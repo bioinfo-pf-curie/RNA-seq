@@ -15,7 +15,7 @@ if (count_tool == "STAR"){
     }else{
         counts.exprs <- data.frame(lapply(counts.exprs, "[", 1))
     }    
-    colnames(counts.exprs) <- gsub("_norRNA", "", gsub("ReadsPerGene.out.tab","",sapply(exprs.in, basename)))
+    colnames(counts.exprs) <- gsub("_norRNA", "", gsub("_counts.csv","",sapply(exprs.in, basename)))
     ## remove first 4 lines
     counts.exprs <- counts.exprs[5:nrow(counts.exprs), , drop=FALSE]
 }else if (count_tool == "FEATURECOUNTS"){
@@ -26,14 +26,14 @@ if (count_tool == "STAR"){
         data.frame(z[,6], row.names=rownames(z))
     })
     counts.exprs <- data.frame(counts.exprs)
-    colnames(counts.exprs)<- gsub("_norRNA", "", gsub("_featurecounts.csv","",sapply(exprs.in, basename)))
+    colnames(counts.exprs)<- gsub("_norRNA", "", gsub("_counts.csv","",sapply(exprs.in, basename)))
     
 }else if (count_tool == "HTSEQCOUNT"){
     ## Load HTSeq data
     exprs.in <- list.files(path=input_path, pattern="_counts.csv$", full.names=TRUE, recursive=TRUE)
     counts.exprs <- lapply(exprs.in, read.csv, sep="\t", header=FALSE, row.names=1, check.names=FALSE)
     counts.exprs <- as.data.frame(counts.exprs)
-    colnames(counts.exprs) <- gsub("_norRNA", "", gsub("_htseq.csv","",sapply(exprs.in, basename)))
+    colnames(counts.exprs) <- gsub("_norRNA", "", gsub("_counts.csv","",sapply(exprs.in, basename)))
 }
 
 ## export count table(s)

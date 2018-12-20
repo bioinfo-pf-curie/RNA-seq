@@ -175,7 +175,6 @@ echo
 PREFIX=$(get_fastq_prefix ${FORWARD})
 bash ${SCRIPTS_PATH}/makeOutputList.sh -c ${CONF} -p ${PREFIX} -o ${ODIR}
 
-
 ###################
 ## WORFLOW
 ###################
