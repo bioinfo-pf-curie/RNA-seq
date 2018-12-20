@@ -7,7 +7,7 @@ SIGNIFICANT USER-VISIBLE CHANGES
 
    o Add KDI export files
 
-BUG FIXES
+   o Change in output file names to ease the KDI export
 
 ***********************************
 CHANGES IN VERSION 0.1.1

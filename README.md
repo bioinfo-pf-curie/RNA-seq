@@ -6,7 +6,7 @@ output: html_document
 ---
 
 # RNA-seq pipeline
-# v0.1.0
+# v0.2.0
 
 ## Quick start guide
 
@@ -48,7 +48,7 @@ PYTHON_PATH | /bioinfo/local/build/Centos/python/python-2.7.11/bin
 RSEQC_PATH | /bioinfo/local/build/Centos/RSeQC/RSeQC-2.6.4/scripts
 PICARD_PATH | /bioinfo/local/build/Centos/picard/2.6.0/picard.jar
 PRESEQ_PATH | /bioinfo/local/build/Centos/preseq/preseq_v2.0/
-
+GATK_JAR | /bioinfo/local/build/Centos/envs_conda/gatk4_4.0.2.1/share/gatk4-4.0.2.1-0/gatk-package-4.0.2.1-local.jar
 
 ### Setting the configuration files
 
@@ -57,22 +57,26 @@ In this case, simply copy the CONFIG file from the installation folder to your l
 
 PARAMETERS | DESCRIPTION 
 --- | ---
+NB_PROC | Number of CPUs
+SUB_MEM | Memory requirement
+SUB_WALLTIME | Walltime
+SUB_QUEUE | PBS queue
 ORG | Organism
 BUILD | Version of reference genome
 RUN_FASTQC | Run Fastq for quality controls; 0=no, 1=yes (default: no)
 MAPPING_TOOL | Mapping tool. Must be STAR or TOPHAT2 (default: STAR)
 COUNT_TOOL | Tools to quantify expression per gene. Must be STAR, HTSEQ or FEATURECOUNTS (default: STAR)
 STRANDED | The strandness of the protocol. Must be yes, no or reverse following HTSeq-Count standard. If not specified, the pipeline will detect it automatically. (default: ) 
-BOWTIE_RRNA_IDX | Indexes for rRNA mapping. If not specified, this step is skipped
+BOWTIE_RRNA_INDEX | Indexes for rRNA mapping. If not specified, this step is skipped
 BOWTIE_OPTS | Option for bowtie mapping on rRNA reference (default: -v 2 -a -m 1 --best --strata --nomaqround -y)
-STAR_IDX_PATH | Path to STAR indexes
+STAR_INDEX | Path to STAR indexes
 STAR_OPTS | Options for STAR mapping (default: --runThreadN 8 --outSAMtype BAM SortedByCoordinate --runMode alignReads --outFilterType BySJout --outFilterMultimapNmax 20 --alignSJoverhangMin 8 --alignSJDBoverhangMin 1 --outFilterMismatchNmax 999 --outFilterMismatchNoverLmax 0.04 --alignIntronMin 20 --alignIntronMax 1000000 --alignMatesGapMax 1000000 --outSAMprimaryFlag OneBestScore --outMultimapperOrder Random --outSAMattributes All)
-TOPHAT2_IDX_PATH | Path to Tophat2 indexes
+TOPHAT2_INDEX | Path to Tophat2 indexes
 TOPHAT2_OPTS | Options for TopHat2 mapping (default: --b2-sensitive -p 6 -g 1 -N 2 --no-coverage-search)
 TRANSCRIPTS_GTF | GTF file for annotation
 HTSEQ_OPTS | Options for HTSeq read counts (default: -f bam -t exon -r pos) 
 FEATURECOUNTS_OPTS | Options for FeatureCounts read counts (default: -t exon -C -T 8 -p)
-BWT2_IDX_PATH | Path to bowtie2 indexes for RSeQC usage
+BWT2_INDEX | Path to bowtie2 indexes for RSeQC usage
 GENE_BED | Path to BED file for RSeQC usage
 
 
