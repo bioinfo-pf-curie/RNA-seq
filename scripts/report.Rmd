@@ -182,7 +182,7 @@ dataPlot$type <- factor(dataPlot$type, levels=rev(c("Aligned reads (unique-hits)
 p_unmapped <- paste0(round(dataPlot[which(dataPlot$type=="Unmapped reads"),"n_read"] / sapply(unique(dataPlot$sample),function(i){sum(dataPlot[which(dataPlot$sample==i),"n_read"])})*100,2),"%")
 dataPlot$percent <- c(statsFile$p_u_aligned, statsFile$p_m_aligned, statsFile$p_rrna, p_unmapped)
 
-gg <- ggplot(dataPlot, aes(x=sample, y=n_read, fill=type, text=percent)) + geom_bar(stat="identity") + scale_fill_manual(name = "", values=rev(c("orange", "darkorange4", "red3", "gray"))) + 
+gg <- ggplot(dataPlot, aes(x=as.character(sample), y=n_read, fill=type, text=percent)) + geom_bar(stat="identity") + scale_fill_manual(name = "", values=rev(c("orange", "darkorange4", "red3", "gray"))) + 
    theme_minimal() +
    labs(title = "Mapping statistics per sample", x = "Sample(s)", y = "Number of reads") + 
    theme(axis.text.x = element_text(angle = 45, hjust = 1, size=11), axis.title.x = element_text(size = 13, face="bold"), axis.title.y = element_text(size = 13, face="bold"))
@@ -277,7 +277,7 @@ dataPlot$percent <-  round(dataPlot$n_read/rep(statsFile$n_u_aligned, 4)*100, 2)
 dataPlot$type <- verboseannot[dataPlot$type]
 dataPlot$type <- factor(dataPlot$type, levels=rev(c("Exonic reads", "Intronic reads", "Intergenic reads", "Non-annotated")))
 
-gg <- ggplot(dataPlot, aes(x=sample, y=n_read, fill=type, text = paste("--Sample: ",sample,"<br>","Percent: ",percent,"%<br>","n_read: ",n_read))) + 
+gg <- ggplot(dataPlot, aes(x=as.character(sample), y=n_read, fill=type, text = paste("--Sample: ",sample,"<br>","Percent: ",percent,"%<br>","n_read: ",n_read))) + 
    geom_bar(stat="identity") + scale_fill_manual(name = "", values=rev(c("#E41A1C", "#377EB8", "#4DAF4A", "gray"))) + 
    theme_minimal() +
    labs(title = "Annotation of uniquely aligned reads", x = "Sample(s)", y = "Number of reads") + 
@@ -344,6 +344,11 @@ if (nrow(d2p) > (n_items + 1)){
 rownames(d2p) <- gsub("[_.-]"," ",gsub("(^|[[:space:]])([[:alpha:]])", "\\1\\U\\2", rownames(d2p), perl=TRUE))
 ```
 
+<a href="#">Back to top</a>
+
+##Gene types and Expression
+
+Reference: `r basename(gtf)`
 
 ```{r table4, eval=TRUE}
 
@@ -351,18 +356,12 @@ datatable(format(t(d2p), big.mark=",",scientific=FALSE), colnames = rownames(d2p
  rownames = TRUE, filter = 'top', caption = 'Gene annotation', options=list(columnDefs = list(list(className = 'dt-center', targets=1:nrow(d2p)))))
 
 ```
-<a href="#">Back to top</a>
-
-##Gene types and Expression
-
-Reference: `r basename(gtf)`
-
 
 ```{r annot_plot, eval=TRUE, message=FALSE, warning=FALSE}
 if (nrow(d2p) > 1){
    ## remove Total for plot
    d2p <- d2p[setdiff(rownames(d2p), "Total"),, drop=FALSE]
-   gg <- ggplot(melt(d2p), aes(x=Var2, y=value, fill=Var1)) + 
+   gg <- ggplot(melt(d2p), aes(x=as.character(Var2), y=value, fill=Var1)) + 
       geom_bar(stat="identity") +
       theme_minimal() + 
       scale_fill_manual(values=c(brewer.pal(n_items, "Set2"))) +
@@ -371,7 +370,7 @@ if (nrow(d2p) > 1){
       theme(axis.text.x = element_text(angle = 45, hjust = 1, size=11), axis.title.x = element_text(size = 13, face="bold"), axis.title.y = element_text(size = 13, face="bold"))
 }else{
    rownames(d2p) <- "All Genes"
-   gg <- ggplot(melt(d2p), aes(x=Var2, y=value, fill=Var1)) +
+   gg <- ggplot(melt(d2p), aes(x=as.character(Var2), y=value, fill=Var1)) +
       geom_bar(stat="identity") +
       theme_minimal() +
       scale_fill_manual(values=c(brewer.pal(n_items, "Set2"))) +

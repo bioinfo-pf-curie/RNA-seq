@@ -1,4 +1,14 @@
 ***********************************
+CHANGES IN VERSION 0.2.1
+
+BUG FIXES
+
+   o Fix bug when multiple gtf annotation are available
+
+   o Fix bug when sample labels are numerical
+
+
+***********************************
 CHANGES IN VERSION 0.2.0
 
 SIGNIFICANT USER-VISIBLE CHANGES

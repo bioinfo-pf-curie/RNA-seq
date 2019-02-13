@@ -8,7 +8,7 @@
 ## Public License, either Version 2, June 1991 or Version 3, June 2007.
 
 SOFT="RNApip"
-VERSION="0.2.0"
+VERSION="0.2.1"
 
 function usage {
     echo -e "usage : $SOFT -f FORWARD -o OUTPUT -c CONFIG [-r REVERSE][-s SAMPLE_ID] [-d] [-h] [-v]"

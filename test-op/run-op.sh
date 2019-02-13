@@ -13,3 +13,5 @@
 ## Test dataset - Human Tophat - featureCounts
 ../bin/RNApip_cluster -i SAMPLE_PLAN_G448 -o /data/tmp/RNAPIP_OP_G448/ -c CONFIG_G448 -n testop_G448 -k
 
+## Test dataset - Human hg38
+../bin/RNApip_cluster -i SAMPLE_PLAN_D095 -o /data/tmp/RNAPIP_OP_D095/ -c CONFIG_D095 -n testop_D095 -k
