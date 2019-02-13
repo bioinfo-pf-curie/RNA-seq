@@ -434,11 +434,14 @@ rseqc_func()
 parse_rseqc_output()
 {
     rseqout=$1
+    ret="undetermined"
+
     ##PE
     if [[ $(grep -c "PairEnd" $rseqout) -ne 0 ]]; then
 	nb_fail=$(grep "failed" $rseqout | awk -F": " '{print $2}')
 	nb_fs=$(echo "$nb_fail > 0.5" | bc)
 	if [ $nb_fs -eq 1 ]; then ret="undetermined"; fi
+
 	nb_fr=$(grep "1++" $rseqout | awk -F": " '{print $2}') ## fr-secondstrand = yes
 	nb_rf=$(grep "2++" $rseqout | awk -F": " '{print $2}') ## fr-firststrand = reverse
 	nb_yes=$(echo "$nb_fr - $nb_rf > 0.8" | bc)
@@ -454,6 +457,9 @@ parse_rseqc_output()
     else
     ##SE
 	nb_fail=$(grep "failed" $rseqout | awk -F": " '{print $2}')
+        nb_fs=$(echo "$nb_fail > 0.5" | bc)
+        if [ $nb_fs -eq 1 ]; then ret="undetermined"; fi
+
         nb_ss=$(grep "++" $rseqout | awk -F": " '{print $2}') ## fr-secondstrand = yes
         nb_ds=$(grep "+-" $rseqout | awk -F": " '{print $2}') ## fr-firststrand = reverse
         nb_yes=$(echo "$nb_ss - $nb_ds > 0.8" | bc)

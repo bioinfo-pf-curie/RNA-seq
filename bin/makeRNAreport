@@ -167,6 +167,12 @@ if [[ $statfiles == "" ]]; then die "Not *stats files detected. Exit."; fi
 cmd="${PYTHON_PATH}/python ${SCRIPTS_PATH}/fullStats.py -i $statfiles -o ${output_path} -r ${PROJNAME}"
 exec_cmd ${cmd} >> $logdir/getstat.log 2>&1
 
+## Check strandness
+nbstd=$(cat ${IDIR}/*/strand_check/strandness.info | sort -u | wc -l)
+if [[ $nbstd -gt 1 ]]; then
+    echo -e "Warning: Different strandness parameter detected across samples !"
+fi
+
 ## Generate merged table count
 echo -e "Combine merged table counts ..."
 echo -e "Logs: ${logdir}/makeCountTable.log"
@@ -180,8 +186,3 @@ echo -e "Logs: ${logdir}/report.log"
 echo
 cmd="${R_PATH}/R --no-save --no-restore -e \"input_path='${IDIR}'; output_path='${output_path}'; species='${ORG}'; build='${BUILD}'; gtf='${TRANSCRIPTS_GTF}'; meta='${META}'; splan='${SPLAN}'; rmarkdown::render('${SCRIPTS_PATH}/report.Rmd', intermediates_dir='${output_path}', output_file='${output_path}/report.html')\"" 
 exec_cmd ${cmd} > $logdir/report.log 2>&1
-
-#cmd="${R_PATH}/R --no-save --no-restore -e \"input_path='${IDIR}'; output_path='${output_path}'; species='${ORG}'; build='${BUILD}'; gtf='${TRANSCRIPTS_GTF}'; meta='${META}'; rmarkdown::render('${SCRIPTS_PATH}/report.Rmd', intermediates_dir='${output_path}', output_file='${output_path}/report.pdf', output_format='pdf_document')\""
-#echo $cmd
-#eval $cmd
-#render("input.Rmd", "all")

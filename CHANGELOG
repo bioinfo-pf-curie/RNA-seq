@@ -3,6 +3,8 @@ CHANGES IN VERSION 0.2.1
 
 BUG FIXES
 
+   o fix bug in count table
+
    o Fix bug when multiple gtf annotation are available
 
    o Fix bug when sample labels are numerical
