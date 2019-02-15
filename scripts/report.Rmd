@@ -106,6 +106,9 @@ statsFile <- read.csv(statsIn, row.names=NULL)
 ## Format colnames to ease data access
 colnames(statsFile) <- c("inputID","sampleID","n_cluster", "n_reads", "n_rrna", "n_non_rrna", "n_aligned", "n_u_aligned", "n_m_aligned", "n_dup", "n_exons", "n_introns", "n_inter")
 
+## Force sampleID as character
+statsFile$sampleID <- as.character(statsFile$sampleID)
+
 ## Calculate %
 statsFile$p_rrna <- paste0(round(statsFile$n_rrna / statsFile$n_reads * 100, 2),"%")
 statsFile$p_aligned <- paste0(round(statsFile$n_aligned / statsFile$n_non_rrna * 100, 2),"%")

@@ -1,6 +1,10 @@
 ***********************************
 CHANGES IN VERSION 0.2.1
 
+SIGNIFICANT USER-VISIBLE CHANGES
+
+   o Change tolerance for strandness from 0.8 to 0.5
+
 BUG FIXES
 
    o fix bug in count table

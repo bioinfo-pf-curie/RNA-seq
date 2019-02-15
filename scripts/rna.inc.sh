@@ -444,8 +444,8 @@ parse_rseqc_output()
 
 	nb_fr=$(grep "1++" $rseqout | awk -F": " '{print $2}') ## fr-secondstrand = yes
 	nb_rf=$(grep "2++" $rseqout | awk -F": " '{print $2}') ## fr-firststrand = reverse
-	nb_yes=$(echo "$nb_fr - $nb_rf > 0.8" | bc)
-	nb_rev=$(echo "$nb_fr - $nb_rf < -0.8" | bc)
+	nb_yes=$(echo "$nb_fr - $nb_rf > 0.5" | bc)
+	nb_rev=$(echo "$nb_fr - $nb_rf < -0.5" | bc)
 
 	if [ $nb_rev -eq 1 ];then
 	    ret="reverse"
@@ -462,8 +462,8 @@ parse_rseqc_output()
 
         nb_ss=$(grep "++" $rseqout | awk -F": " '{print $2}') ## fr-secondstrand = yes
         nb_ds=$(grep "+-" $rseqout | awk -F": " '{print $2}') ## fr-firststrand = reverse
-        nb_yes=$(echo "$nb_ss - $nb_ds > 0.8" | bc)
-        nb_rev=$(echo "$nb_ss - $nb_ds < -0.8" | bc)
+        nb_yes=$(echo "$nb_ss - $nb_ds > 0.5" | bc)
+        nb_rev=$(echo "$nb_ss - $nb_ds < -0.5" | bc)
 	
         if [ $nb_rev -eq 1 ]; then
             ret="reverse"
