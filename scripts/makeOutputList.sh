@@ -66,6 +66,6 @@ echo -e "${prefix_dir}/stats/${PREFIX}.stats" >> ${ofile}
 echo -e "${prefix_dir}/counts/${prefix_bam}_counts.csv" >> ${ofile}
 
 ## Strand_check
-if [ ! -z ${STRANDED} ]; then
+if [ -z ${STRANDED} ]; then
     echo -e "${prefix_dir}/strand_check/${PREFIX}.rseqc" >> ${ofile}
 fi
