@@ -64,8 +64,8 @@ STRANDED =
 #########################################################################
 
 ## Mapping on rRNA - Do not set to skip
-BOWTIE_RRNA_INDEX = 
-BOWTIE_OPTS = 
+BOWTIE_RRNA_INDEX = /data/annotations/pipelines/Drosophila_melanogaster/rRNA/dmel-all-rRNA-r6.21
+BOWTIE_OPTS = -v 2 -a -m 1 --best --strata --nomaqround -y
 
 ## Mapping on genome
 STAR_INDEX = /data/annotations/pipelines/Drosophila_melanogaster/dmel_r6.21_FB2018_02/indexes/STAR

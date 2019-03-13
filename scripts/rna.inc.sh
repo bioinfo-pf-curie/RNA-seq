@@ -436,6 +436,10 @@ parse_rseqc_output()
     rseqout=$1
     ret="undetermined"
 
+    if [ ! -e $rseqout ]; then
+        die "File $rseqout was not find ! Exit"
+    fi
+
     ##PE
     if [[ $(grep -c "PairEnd" $rseqout) -ne 0 ]]; then
 	nb_fail=$(grep "failed" $rseqout | awk -F": " '{print $2}')
@@ -444,15 +448,18 @@ parse_rseqc_output()
 
 	nb_fr=$(grep "1++" $rseqout | awk -F": " '{print $2}') ## fr-secondstrand = yes
 	nb_rf=$(grep "2++" $rseqout | awk -F": " '{print $2}') ## fr-firststrand = reverse
-	nb_yes=$(echo "$nb_fr - $nb_rf > 0.5" | bc)
-	nb_rev=$(echo "$nb_fr - $nb_rf < -0.5" | bc)
 
-	if [ $nb_rev -eq 1 ];then
-	    ret="reverse"
-	elif [ $nb_yes -eq 1 ];then
-	    ret="yes"
-	else
-	    ret="no"
+	if [[ ! -z $nb_fr && ! -z $nb_rf ]]; then
+	    nb_yes=$(echo "$nb_fr - $nb_rf > 0.5" | bc)
+	    nb_rev=$(echo "$nb_fr - $nb_rf < -0.5" | bc)
+	    
+	    if [ $nb_rev -eq 1 ];then
+		ret="reverse"
+	    elif [ $nb_yes -eq 1 ];then
+		ret="yes"
+	    else
+		ret="no"
+	    fi
 	fi
     else
     ##SE
@@ -462,16 +469,19 @@ parse_rseqc_output()
 
         nb_ss=$(grep "++" $rseqout | awk -F": " '{print $2}') ## fr-secondstrand = yes
         nb_ds=$(grep "+-" $rseqout | awk -F": " '{print $2}') ## fr-firststrand = reverse
-        nb_yes=$(echo "$nb_ss - $nb_ds > 0.5" | bc)
-        nb_rev=$(echo "$nb_ss - $nb_ds < -0.5" | bc)
+
+        if [[ ! -z $nb_ss && ! -z $nb_ds ]]; then
+	    nb_yes=$(echo "$nb_ss - $nb_ds > 0.5" | bc)
+            nb_rev=$(echo "$nb_ss - $nb_ds < -0.5" | bc)
 	
-        if [ $nb_rev -eq 1 ]; then
-            ret="reverse"
-        elif [ $nb_yes -eq 1 ];then
-            ret="yes"
-        else
-            ret="no"
-        fi
+            if [ $nb_rev -eq 1 ]; then
+		ret="reverse"
+            elif [ $nb_yes -eq 1 ];then
+		ret="yes"
+            else
+		ret="no"
+            fi
+	fi
     fi
     
     echo $ret
