@@ -167,7 +167,7 @@ process markDuplicates {
 
 process preseq {
   when:
-    !params.skip_qc && !params.skip_preseq
+    !params.skip_preseq
 
   input:
     file bam_preseq
@@ -184,7 +184,7 @@ process preseq {
 process dupradar {
 
   when:
-    !params.skip_qc && !params.skip_dupradar
+    !params.skip_dupradar
 
   input:
     file bam_md
