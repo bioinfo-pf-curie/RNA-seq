@@ -3,6 +3,8 @@ CHANGES IN VERSION 0.2.2
 
 BUG FIXES
 
+   o Bug in HTSeqCount usage (#45)
+
    o Fix undertermined cases in rseqc
 
 ***********************************
