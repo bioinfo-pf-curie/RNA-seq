@@ -46,7 +46,7 @@ CONFIG_NXF_PATH = /data/tmp/NGS_RUN_TEMP/RNASEQ_G261_1552391265888/conf
 1. Ligne de commande exemple 
 
 ```
-bash run_install.sh  -p RNASEQ -e dev -r G261 -i "/bioinfo/local/curie/ngs-data-analysis/testdataset_pipelines/RNA-seq/Gendrel2012/*{1,2}.fastq.gz" -o /data/tmp/NGS_RUN_TEMP -q diag
+export RACINE_PIPELINES_DIR=$(pwd);bash run_install.sh  -p RNASEQ -e dev -r G261 -i "/bioinfo/local/curie/ngs-data-analysis/testdataset_pipelines/RNA-seq/Gendrel2012/*{1,2}.fastq.gz" -o /data/tmp/NGS_RUN_TEMP -q diag
 
 ```    
                       
