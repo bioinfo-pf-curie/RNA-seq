@@ -1,0 +1,1 @@
+export RACINE_PIPELINES_DIR=$(pwd);bash run_install.sh  -p RNASEQ -e dev -r G261 -i "/bioinfo/pipelines/sandbox/dev/nfcore/rnafusion/data_in/*/*R{1,2}.fastq.gz" -o /data/tmp/NGS_RUN_TEMP -q diag
