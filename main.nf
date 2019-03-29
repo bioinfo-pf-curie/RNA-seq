@@ -481,7 +481,6 @@ process rRNA_mapping {
 
   output:
    set val(name), file("${prefix}_norRNA_{1,2}.fastq.gz") into rrna_mapping_res
-   file "${prefix}.sorted.bam" into bam_rseqc
 
   script:
   prefix = reads[0].toString() - ~/(_1M_1)?(_R1)?(_R2)?(.R1)?(.R2)?(_trimmed)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
@@ -535,7 +534,7 @@ def check_log(logs) {
         }
     }
     logname = logs.getBaseName() - 'Log.final'
-    if(percent_aligned.toFloat() <= '5'.toFloat() ){
+    if(percent_aligned.toFloat() <= '2'.toFloat() ){
         log.info "#################### VERY POOR ALIGNMENT RATE! IGNORING FOR FURTHER DOWNSTREAM ANALYSIS! ($logname)    >> ${percent_aligned}% <<"
         skipped_poor_alignment << logname
         return false
@@ -577,7 +576,7 @@ if(params.aligner == 'star'){
         output:
         set file("*Log.final.out"), file ('*.bam') into star_aligned
         file "*.out" into alignment_logs
-        file "*SJ.out.tab"
+        file "*.out.tab"
         file "*Log.out" into star_log
         file "where_are_my_files.txt"
         file "${prefix}Aligned.sortedByCoord.out.bam.bai" into bam_index_rseqc
@@ -586,6 +585,7 @@ if(params.aligner == 'star'){
         prefix = reads[0].toString() - ~/(_1M_1)?(_norRNA_1)?(_R1)?(_R2)?(.R1)?(.R2)?(_trimmed)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
         def star_mem = task.memory ?: params.star_memory ?: false
         def avail_mem = star_mem ? "--limitBAMsortRAM ${star_mem.toBytes() - 100000000}" : ''
+        def star_opt_add = params.rrna ? params.star_opts_counts : ''
         seqCenter = params.seqCenter ? "--outSAMattrRGline ID:$prefix 'CN:$params.seqCenter'" : ''
         """
         STAR --genomeDir $index \\
@@ -599,24 +599,16 @@ if(params.aligner == 'star'){
             --outTmpDir /local/scratch/nfcore-rnaseq_\$(date +%d%s%S) \\
             --outFileNamePrefix $prefix  \\
             --outSAMattrRGline ID:$prefix SM:$prefix LB:Illumina PL:Illumina  \\
-            ${params.star_opts}
+            ${params.star_opts} ${star_opt_add} 
             
         samtools index ${prefix}Aligned.sortedByCoord.out.bam
         """
     }
     // Filter removes all 'aligned' channels that fail the check
-    if( params.rrna ){ 
-        star_aligned
+    star_aligned
             .filter { logs, bams -> check_log(logs) }
             .flatMap {  logs, bams -> bams }
-        .into { bam_count; bam_preseq; bam_markduplicates; bam_featurecounts; bam_HTseqCounts }
-    }
-    else {  
-        star_aligned
-            .filter { logs, bams -> check_log(logs) }
-            .flatMap {  logs, bams -> bams }
-        .into { bam_count; bam_rseqc; bam_preseq; bam_markduplicates; bam_featurecounts; bam_HTseqCounts }
-    }
+    .into { bam_count; bam_rseqc; bam_preseq; bam_markduplicates; bam_featurecounts; bam_HTseqCounts }
 }
 
 
@@ -747,23 +739,64 @@ process rseqc {
 
     input:
     file bam_rseqc
-    //file index from bam_index_rseqc
     file bed12 from bed_rseqc.collect()
 
     output:
-    file "*.{txt,pdf,r,xls}" into rseqc_results, rseqc_results_dupradar
+    file "*.{txt,pdf,r,xls}" into rseqc_results
+    file "${bam_rseqc.baseName}.ret_parserseq_output.txt" into parse_rseqc
+   
 
     script:
+    pathworkdir = workDir
     """
     infer_experiment.py -i $bam_rseqc -r $bed12 > ${bam_rseqc.baseName}.infer_experiment.txt
-    parse_rseq_output.sh ${bam_rseqc.baseName}.infer_experiment.txt > ret_parserseq_output.txt
-    if grep no ret_parserseq_output.txt > /dev/null;then ${unstranded}=true;fi  
-    if grep yes ret_parserseq_output.txt > /dev/null;then ${forward_stranded}=true;fi  
-    if grep reverse ret_parserseq_output.txt > /dev/null;then ${reverse_stranded}=true;fi  
-    rm ret_parserseq_output.txt
-     
+    parse_rseq_output.sh ${bam_rseqc.baseName}.infer_experiment.txt > ${bam_rseqc.baseName}.ret_parserseq_output.txt
+    cp ${bam_rseqc.baseName}.ret_parserseq_output.txt $workDir
     """
 }
+
+/*
+ * STEP 2 - RSeQC parse 
+ * infer_experiment.py
+ */
+
+process parse_infer_experiment {
+    tag "${name}"
+
+    when:
+    !params.skip_qc && !params.skip_rseqc
+
+    input:
+    file parse_rseqc
+
+    output:
+    file "res.stranded.txt" into rseqc_results_featureCounts, rseqc_results_HTseqCounts, rseqc_results_dupradar, rseqc_results_tophat
+
+    script:
+    name = parse_rseqc[0].toString()
+    pathworkdir = workDir
+    lines = new File("${pathworkdir}/${name}").findAll { it.startsWith('') }
+    def val_un = 0
+    def val_f = 0
+    def val_r = 0
+    if (lines[0] == 'no'){  
+        unstranded = 1
+        val_un = 1
+    }else if (lines[0] == 'yes'){  
+        forward_stranded = 1 
+        val_f = 1
+    }else if (lines[0] == 'reverse'){ 
+        reverse_stranded = 1
+        val_r = 1
+    } 
+
+    """
+
+   echo 'parse stranded = ${lines[0]} val_u = ${val_un}  val_f = ${val_f}  val_r = ${val_r} '  > res.stranded.txt
+     
+    """
+
+    }
 
 // permet de fournir a TopHat2 comme entree :
 // soit le channel de sortie de rRNA mapping (si annotations fournies)
@@ -780,7 +813,7 @@ else {
  * STEP 4 - align with TOPHAT2 - NEW !!!
  */
 if(params.aligner == 'tophat2'){
-process tophat2 {
+ process tophat2 {
   tag "${name}"
   publishDir "${params.outdir}/tophat2", mode: 'copy',
 	saveAs: { filename  }
@@ -790,6 +823,7 @@ process tophat2 {
     file "tophat2" from tophat2_indices.collect()
     file alignment_splicesites from alignment_splicesites.collect()
     file wherearemyfiles from ch_where_tophat2.collect()
+    file rseqc_results_tophat
 
   output:
     file "${prefix}.bam" into bam_tophat2 
@@ -800,7 +834,7 @@ process tophat2 {
         """
         echo "$cmd ${TOPHAT2_OPTS} --GTF ${TRANSCRIPTS_GTF} ${stranded_opt} -o ${out} ${TOPHAT2_INDEX} $reads" > ${prefix}.bam
         """
-}
+ }
 }
 
 
@@ -808,7 +842,7 @@ process tophat2 {
  * STEP 5 - preseq analysis
  */
 process preseq {
-    tag "${bam_preseq.baseName - '.sorted'}"
+    tag "${bam_preseq.baseName - 'Aligned.sortedByCoord.out'}"
     publishDir "${params.outdir}/preseq", mode: 'copy'
 
     when:
@@ -831,7 +865,7 @@ process preseq {
  * STEP 6 Mark duplicates
  */
 process markDuplicates {
-    tag "${bam.baseName - '.sorted'}"
+    tag "${bam.baseName - 'Aligned.sortedByCoord.out'}"
     publishDir "${params.outdir}/markDuplicates", mode: 'copy',
         saveAs: {filename -> filename.indexOf("_metrics.txt") > 0 ? "metrics/$filename" : "$filename"}
 
@@ -872,7 +906,7 @@ process markDuplicates {
  */
 process dupradar {
 
-    tag "${bam_md.baseName - '.sorted.markDups'}"
+    tag "${bam_md.baseName - 'Aligned.sortedByCoord.out.markDups'}"
     publishDir "${params.outdir}/dupradar", mode: 'copy',
         saveAs: {filename ->
             if (filename.indexOf("_duprateExpDens.pdf") > 0) "scatter_plots/$filename"
@@ -913,7 +947,7 @@ process dupradar {
  * STEP 8 Feature counts
  */
 process featureCounts {
-    tag "${bam_featurecounts.baseName - '.sorted'}"
+    tag "${bam_featurecounts.baseName - 'Aligned.sortedByCoord.out'}"
     publishDir "${params.outdir}/featureCounts", mode: 'copy',
         saveAs: {filename ->
             if (filename.indexOf("_gene.featureCounts.txt.summary") > 0) "gene_count_summaries/$filename"
@@ -927,6 +961,7 @@ process featureCounts {
     input:
     file bam_featurecounts
     file gtf from gtf_featureCounts.collect()
+    file rseqc_results_featureCounts
 
     output:
     file "${bam_featurecounts.baseName}_gene.featureCounts.txt" into geneCounts, featureCounts_to_merge
@@ -951,7 +986,7 @@ process featureCounts {
  * STEP 9 HTSeq counts - NEW ! 
  */
 process HTseqCounts {
-    tag "${bam_HTseqCounts.baseName - '.sorted'}"
+    tag "${bam_HTseqCounts.baseName - 'Aligned.sortedByCoord.out'}"
     publishDir "${params.outdir}/HTseqCounts", mode: 'copy',
         saveAs: {filename ->
             if (filename.indexOf("_gene.HTseqCounts.txt.summary") > 0) "gene_count_summaries/$filename"
@@ -964,23 +999,24 @@ process HTseqCounts {
     input:
     file bam_HTseqCounts
     file gtf from gtf_HTseqCounts.collect()
+    file rseqc_results_HTseqCounts
 
     output: 
-    file "${bam_HTseqCounts.baseName}_gene.HTseqCounts.txt" into HTgeneCounts, HTfeatureCounts_to_merge
-    file "${bam_HTseqCounts.baseName}_gene.HTseqCounts.txt.summary" into HTseqCounts_logs
+    file "*_counts.csv" into HTseqCounts_to_merge
 
     script:
-    def featureCounts_direction = 0
-    def extraAttributes = params.fcExtraAttributes ? "--extraAttributes ${params.fcExtraAttributes}" : ''
+    def stranded_opt = '-s no' 
     if (forward_stranded && !unstranded) {
-        featureCounts_direction = 1
+        stranded_opt= '-s yes'
     } else if (reverse_stranded && !unstranded){
-        featureCounts_direction = 2
+        stranded_opt= '-s reverse'
     }
+
     // Try to get real sample name
     sample_name = bam_HTseqCounts.baseName - 'Aligned.sortedByCoord.out'
+
     """
-    featureCounts -a $gtf -g gene_id -o ${bam_HTseqCounts.baseName}_gene.HTseqCounts.txt $extraAttributes -p -s $featureCounts_direction $bam_featurecounts
+    htseq-count ${params.htseq_opts} $stranded_opt $bam_HTseqCounts $gtf > ${sample_name}_counts.csv
     """
 }
 
@@ -988,7 +1024,7 @@ process HTseqCounts {
  * STEP 9 - Merge featurecounts
  */
 process merge_featureCounts {
-    tag "${input_files[0].baseName - '.sorted'}"
+    tag "${input_files[0].baseName - 'Aligned.sortedByCoord.out_gene.featureCounts'}"
     publishDir "${params.outdir}/featureCounts", mode: 'copy'
 
     input:
@@ -1031,6 +1067,7 @@ process get_software_versions {
     read_duplication.py --version &> v_rseqc.txt
     echo \$(bamCoverage --version 2>&1) > v_deeptools.txt
     featureCounts -v &> v_featurecounts.txt
+    htseq-count -h | grep version  &> v_htseq-count.txt
     picard MarkDuplicates --version &> v_markduplicates.txt  || true
     samtools --version &> v_samtools.txt
     multiqc --version &> v_multiqc.txt
@@ -1064,6 +1101,15 @@ ${summary.collect { k,v -> "            <dt>$k</dt><dd><samp>${v ?: '<span style
     """.stripIndent()
 }
 
+
+Counts_logs_choix = Channel.create()
+if( params.featureCounts ){
+    Counts_logs_choix = featureCounts_logs
+}
+else {
+    Counts_logs_choix = HTseqCounts_to_merge
+}
+
 /*
  * STEP 12 MultiQC
  */
@@ -1078,12 +1124,9 @@ process multiqc {
     file (fastqc:'fastqc/*') from fastqc_results.collect().ifEmpty([])
     file ('alignment/*') from alignment_logs.collect()
     file ('rseqc/*') from rseqc_results.collect().ifEmpty([])
-    //file ('rseqc/*') from genebody_coverage_results.collect().ifEmpty([])
     file ('preseq/*') from preseq_results.collect().ifEmpty([])
     file ('dupradar/*') from dupradar_results.collect().ifEmpty([])
-    file ('featureCounts/*') from featureCounts_logs.collect()
-    //file ('stringtie/stringtie_log*') from stringtie_log.collect()
-    //file ('sample_correlation_results/*') from sample_correlation_results.collect().ifEmpty([]) // If the Edge-R is not run create an Empty array
+    file ('featureCounts/*') from Counts_logs_choix.collect()
     file ('software_versions/*') from software_versions_yaml.collect()
     file ('workflow_summary/*') from workflow_summary_yaml.collect()
 
@@ -1094,10 +1137,19 @@ process multiqc {
     script:
     rtitle = custom_runName ? "--title \"$custom_runName\"" : ''
     rfilename = custom_runName ? "--filename " + custom_runName.replaceAll('\\W','_').replaceAll('_+','_') + "_multiqc_report" : ''
-    """
-    multiqc . -f $rtitle $rfilename --config $multiqc_config \\
+    
+    if( params.featureCounts ){
+        """
+        multiqc . -f $rtitle $rfilename --config $multiqc_config \\
         -m custom_content -m picard -m preseq -m rseqc -m featureCounts -m hisat2 -m star -m cutadapt -m fastqc
-    """
+        """
+        }
+    else {
+         """
+        multiqc . -f $rtitle $rfilename --config $multiqc_config \\
+        -m custom_content -m picard -m preseq -m rseqc -m hisat2 -m star -m cutadapt -m fastqc
+         """
+    }
 }
 
 /*
