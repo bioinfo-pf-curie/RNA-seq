@@ -27,5 +27,6 @@ dependencies:
   - bioconda::deeptools=3.1.3
   - bioconda::multiqc=1.6
   - bioconda::bowtie=1.2
-  - bioconda::bowtie2
+  - bioconda::bowtie2=2.2.5
+  - bioconda::tophat
   - bioconda::htseq=0.11.2

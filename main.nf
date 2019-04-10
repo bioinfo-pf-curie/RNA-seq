@@ -882,10 +882,10 @@ if(params.aligner == 'tophat2'){
         ${params.tophat2_opts} \\
         --GTF $gtf \\
         ${stranded_opt} \\
-        -o ${out}
+        -o ${out} \\
         ${params.bowtie2_index} \\
         ${reads} && \\
-        mv ${out}/accepted_hits.bam ${out_prefix}.bam
+        mv ${out}/accepted_hits.bam ${out}/${prefix}.bam
         """
  }
 }
