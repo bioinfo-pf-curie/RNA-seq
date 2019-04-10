@@ -158,10 +158,10 @@ else if ( params.hisat2_index && params.aligner == 'hisat2' ){
         .fromPath("${params.hisat2_index}*")
         .ifEmpty { exit 1, "HISAT2 index not found: ${params.hisat2_index}" }
 }
-else if ( params.tophat2_index && params.aligner == 'tophat2' ){
-    tophat2_indices = Channel
-        .fromPath("${params.bowtie2_index}*")
+else if ( params.bowtie2_index && params.aligner == 'tophat2' ){
+    Channel.fromPath("${params.bowtie2_index}*")
         .ifEmpty { exit 1, "TOPHAT2 index not found: ${params.bowtie2_index}" }
+        .into { tophat2_indices}
 }
 else if ( params.fasta ){
     Channel.fromPath(params.fasta)
@@ -177,7 +177,7 @@ if( params.gtf ){
         .fromPath(params.gtf)
         .ifEmpty { exit 1, "GTF annotation file not found: ${params.gtf}" }
         .into { gtf_makeSTARindex; gtf_makeHisatSplicesites; gtf_makeHISATindex; gtf_makeBED12;
-              gtf_star; gtf_dupradar; gtf_featureCounts; gtf_HTseqCounts }
+              gtf_star; gtf_dupradar; gtf_featureCounts; gtf_HTseqCounts; gtf_tophat}
 } else if( params.gff ){
   gffFile = Channel.fromPath(params.gff)
                    .ifEmpty { exit 1, "GFF annotation file not found: ${params.gff}" }
@@ -221,19 +221,19 @@ if(params.readPaths){
             .from(params.readPaths)
             .map { row -> [ row[0], [file(row[1][0])]] }
             .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-            .into { raw_reads_fastqc; raw_reads_star; raw_reads_hisat2; raw_reads_tophat2; raw_reads_rna_mapping }
+            .into { raw_reads_fastqc; raw_reads_star; raw_reads_hisat2; raw_reads_tophat2; raw_reads_rna_mapping; raw_reads_prep_rseqc }
     } else {
         Channel
             .from(params.readPaths)
             .map { row -> [ row[0], [file(row[1][0]), file(row[1][1])]] }
             .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-            .into { raw_reads_fastqc; raw_reads_star; raw_reads_hisat2; raw_reads_tophat2; raw_reads_rna_mapping }
+            .into { raw_reads_fastqc; raw_reads_star; raw_reads_hisat2; raw_reads_tophat2; raw_reads_rna_mapping; raw_reads_prep_rseqc }
     }
 } else {
     Channel
         .fromFilePairs( params.reads, size: params.singleEnd ? 1 : 2 )
         .ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\nNB: Path needs to be enclosed in quotes!\nNB: Path requires at least one * wildcard!\nIf this is single-end data, please specify --singleEnd on the command line." }
-        .into { raw_reads_fastqc; raw_reads_star; raw_reads_hisat2; raw_reads_tophat2; raw_reads_rna_mapping }
+        .into { raw_reads_fastqc; raw_reads_star; raw_reads_hisat2; raw_reads_tophat2; raw_reads_rna_mapping; raw_reads_prep_rseqc }
 }
 
 
@@ -608,7 +608,7 @@ if(params.aligner == 'star'){
     star_aligned
             .filter { logs, bams -> check_log(logs) }
             .flatMap {  logs, bams -> bams }
-    .into { bam_count; bam_rseqc; bam_preseq; bam_markduplicates; bam_featurecounts; bam_HTseqCounts }
+    .into { bam_count; bam_preseq; bam_markduplicates; bam_featurecounts; bam_HTseqCounts }
 }
 
 
@@ -703,7 +703,7 @@ if(params.aligner == 'hisat2'){
         file wherearemyfiles from ch_where_hisat2_sort.collect()
 
         output:
-        file "${hisat2_bam.baseName}.sorted.bam" into bam_count, bam_rseqc, bam_preseq, bam_markduplicates, bam_featurecounts, bam_HTseqCounts 
+        file "${hisat2_bam.baseName}.sorted.bam" into bam_count, bam_preseq, bam_markduplicates, bam_featurecounts, bam_HTseqCounts 
         file "${hisat2_bam.baseName}.sorted.bam.bai" into bam_index_rseqc
         file "where_are_my_files.txt"
 
@@ -720,13 +720,48 @@ if(params.aligner == 'hisat2'){
 }
 
 
+process prep_rseqc {
+  tag "${prefix}"
+  input:
+  set val(name), file(reads) from raw_reads_prep_rseqc
+
+
+  output:
+  file("${prefix}_subsample.bam") into bam_rseqc
+
+  script:
+  prefix = reads[0].toString() - ~/(_1M_1)?(_R1)?(_R2)?(.R1)?(.R2)?(_trimmed)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
+
+    if (params.singleEnd) {
+       """
+       bowtie2 --fast --end-to-end --reorder \\
+       -p ${task.cpus} \\
+       -u ${params.n_check} \\
+       -x ${params.bowtie2_index} \\
+       -U ${reads} > ${prefix}_subsample.bam 
+
+       """
+    } else {
+       """
+       bowtie2 --fast --end-to-end --reorder \\
+       -p ${task.cpus} \\
+       -u ${params.n_check} \\
+       -x ${params.bowtie2_index} \\
+       -1 ${reads[0]} \\
+       -2 ${reads[1]} > ${prefix}_subsample.bam
+
+       """
+  }
+  
+}
+
 /*
  * STEP 2 - RSeQC analysis
  * infer_experiment.py
  */
 
 process rseqc {
-    tag "${bam_rseqc.baseName - '.sorted'}"
+    tag "${bam_rseqc.baseName - '_subsample'}"
     publishDir "${params.outdir}/rseqc" , mode: 'copy',
         saveAs: {filename ->
                  if (filename.indexOf("bam_stat.txt") > 0)                      "bam_stat/$filename"
@@ -821,18 +856,36 @@ if(params.aligner == 'tophat2'){
   input:
     set val(name), file(reads) from tophat2_raw_reads_choix 
     file "tophat2" from tophat2_indices.collect()
-    file alignment_splicesites from alignment_splicesites.collect()
-    file wherearemyfiles from ch_where_tophat2.collect()
+    file gtf from gtf_tophat.collect()
     file rseqc_results_tophat
 
   output:
-    file "${prefix}.bam" into bam_tophat2 
+    file "${prefix}.bam" into bam_count, bam_preseq, bam_markduplicates, bam_featurecounts, bam_HTseqCounts
+    file "*.out" into alignment_logs
 
     script:
         prefix = reads[0].toString() - ~/(_1M_1)?(_R1)?(_R2)?(.R1)?(.R2)?(_trimmed)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
         def avail_mem = task.memory ? "-m ${task.memory.toBytes() / task.cpus}" : ''
+        def stranded_opt = '--library-type fr-unstranded'
+        if (forward_stranded && !unstranded){
+            stranded_opt = '--library-type fr-secondstrand'
+        } else if (reverse_stranded && !unstranded){
+            stranded_opt = '--library-type fr-firststrand'
+        }
+        def out = './mapping'
+        def sample = "--rg-id ${name} --rg-sample ${name} --rg-library Illumina --rg-platform Illumina --rg-platform-unit ${name}"
+
         """
-        echo "$cmd ${TOPHAT2_OPTS} --GTF ${TRANSCRIPTS_GTF} ${stranded_opt} -o ${out} ${TOPHAT2_INDEX} $reads" > ${prefix}.bam
+        mkdir -p ${out}
+        tophat2 -p ${task.cpus} \\
+        ${sample} \\
+        ${params.tophat2_opts} \\
+        --GTF $gtf \\
+        ${stranded_opt} \\
+        -o ${out}
+        ${params.bowtie2_index} \\
+        ${reads} && \\
+        mv ${out}/accepted_hits.bam ${out_prefix}.bam
         """
  }
 }
