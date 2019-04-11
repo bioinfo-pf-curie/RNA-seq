@@ -805,7 +805,7 @@ process parse_infer_experiment {
     file parse_rseqc
 
     output:
-    set val("${parse_res}"), file("res.stranded.txt") into rseqc_results_featureCounts, rseqc_results_HTseqCounts, rseqc_results_dupradar, rseqc_results_tophat
+    val parse_res into rseqc_results_featureCounts, rseqc_results_HTseqCounts, rseqc_results_dupradar, rseqc_results_tophat
 
     script:
     name = parse_rseqc[0].toString()
@@ -852,11 +852,11 @@ if(params.aligner == 'tophat2'){
     set val(name), file(reads) from tophat2_raw_reads_choix 
     file "tophat2" from tophat2_indices.collect()
     file gtf from gtf_tophat.collect()
-    set val(parse_res), file ("res.stranded.txt") from rseqc_results_tophat
+    val parse_res from rseqc_results_tophat
 
   output:
     file "${prefix}.bam" into bam_count, bam_preseq, bam_markduplicates, bam_featurecounts, bam_HTseqCounts
-    file "*.out" into alignment_logs
+    file "${prefix}.align_summary.txt" into alignment_logs
 
     script:
         prefix = reads[0].toString() - ~/(_1M_1)?(_R1)?(_R2)?(.R1)?(.R2)?(_trimmed)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
@@ -880,8 +880,8 @@ if(params.aligner == 'tophat2'){
         -o ${out} \\
         ${params.bowtie2_index} \\
         ${reads} && \\
-        mv ${out}/accepted_hits.bam ${out}/${prefix}.bam
-        ln -s ${out}/${prefix}.bam .
+        mv ${out}/accepted_hits.bam ./${prefix}.bam
+        ln -s ${out}/align_summary.txt ./${prefix}.align_summary.txt
         """
  }
 }
@@ -973,7 +973,7 @@ process dupradar {
     input:
     file bam_md
     file gtf from gtf_dupradar.collect()
-    set val(parse_res), file ("res.stranded.txt") from rseqc_results_dupradar
+    val parse_res from rseqc_results_dupradar
 
     output:
     file "*.{pdf,txt}" into dupradar_results
@@ -1010,7 +1010,7 @@ process featureCounts {
     input:
     file bam_featurecounts
     file gtf from gtf_featureCounts.collect()
-    set val(parse_res), file ("res.stranded.txt") from rseqc_results_featureCounts
+    val parse_res from rseqc_results_featureCounts
 
     output:
     file "${bam_featurecounts.baseName}_gene.featureCounts.txt" into geneCounts, featureCounts_to_merge
@@ -1049,7 +1049,7 @@ process HTseqCounts {
     input:
     file bam_HTseqCounts
     file gtf from gtf_HTseqCounts.collect()
-    set val(parse_res), file ("res.stranded.txt") from  rseqc_results_HTseqCounts
+    val parse_res from  rseqc_results_HTseqCounts
 
     output: 
     file "*_counts.csv" into HTseqCounts_to_merge
