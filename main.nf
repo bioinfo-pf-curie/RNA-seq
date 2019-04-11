@@ -805,29 +805,24 @@ process parse_infer_experiment {
     file parse_rseqc
 
     output:
-    file "res.stranded.txt" into rseqc_results_featureCounts, rseqc_results_HTseqCounts, rseqc_results_dupradar, rseqc_results_tophat
+    set val("${parse_res}"), file("res.stranded.txt") into rseqc_results_featureCounts, rseqc_results_HTseqCounts, rseqc_results_dupradar, rseqc_results_tophat
 
     script:
     name = parse_rseqc[0].toString()
     pathworkdir = workDir
     lines = new File("${pathworkdir}/${name}").findAll { it.startsWith('') }
-    def val_un = 0
-    def val_f = 0
-    def val_r = 0
+    parse_res = lines[0] 
     if (lines[0] == 'no'){  
         unstranded = 1
-        val_un = 1
     }else if (lines[0] == 'yes'){  
         forward_stranded = 1 
-        val_f = 1
     }else if (lines[0] == 'reverse'){ 
         reverse_stranded = 1
-        val_r = 1
     } 
 
     """
 
-   echo 'parse stranded = ${lines[0]} val_u = ${val_un}  val_f = ${val_f}  val_r = ${val_r} '  > res.stranded.txt
+   echo '${lines[0]}'  > res.stranded.txt
      
     """
 
@@ -857,7 +852,7 @@ if(params.aligner == 'tophat2'){
     set val(name), file(reads) from tophat2_raw_reads_choix 
     file "tophat2" from tophat2_indices.collect()
     file gtf from gtf_tophat.collect()
-    file rseqc_results_tophat
+    set val(parse_res), file ("res.stranded.txt") from rseqc_results_tophat
 
   output:
     file "${prefix}.bam" into bam_count, bam_preseq, bam_markduplicates, bam_featurecounts, bam_HTseqCounts
@@ -867,9 +862,9 @@ if(params.aligner == 'tophat2'){
         prefix = reads[0].toString() - ~/(_1M_1)?(_R1)?(_R2)?(.R1)?(.R2)?(_trimmed)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
         def avail_mem = task.memory ? "-m ${task.memory.toBytes() / task.cpus}" : ''
         def stranded_opt = '--library-type fr-unstranded'
-        if (forward_stranded && !unstranded){
-            stranded_opt = '--library-type fr-secondstrand'
-        } else if (reverse_stranded && !unstranded){
+        if (parse_res == 'yes'){
+           stranded_opt = '--library-type fr-secondstrand'
+        } else if ((parse_res == 'reverse')){
             stranded_opt = '--library-type fr-firststrand'
         }
         def out = './mapping'
@@ -886,6 +881,7 @@ if(params.aligner == 'tophat2'){
         ${params.bowtie2_index} \\
         ${reads} && \\
         mv ${out}/accepted_hits.bam ${out}/${prefix}.bam
+        ln -s ${out}/${prefix}.bam .
         """
  }
 }
@@ -977,16 +973,16 @@ process dupradar {
     input:
     file bam_md
     file gtf from gtf_dupradar.collect()
-    file rseqc_results_dupradar
+    set val(parse_res), file ("res.stranded.txt") from rseqc_results_dupradar
 
     output:
     file "*.{pdf,txt}" into dupradar_results
 
     script: // This script is bundled with the pipeline, in nfcore/rnaseq/bin/
     def dupradar_direction = 0
-    if (forward_stranded && !unstranded) {
+    if (parse_res == 'yes'){
         dupradar_direction = 1
-    } else if (reverse_stranded && !unstranded){
+    } else if ((parse_res == 'reverse')){
         dupradar_direction = 2
     }
     def paired = params.singleEnd ? 'single' :  'paired'
@@ -1014,7 +1010,7 @@ process featureCounts {
     input:
     file bam_featurecounts
     file gtf from gtf_featureCounts.collect()
-    file rseqc_results_featureCounts
+    set val(parse_res), file ("res.stranded.txt") from rseqc_results_featureCounts
 
     output:
     file "${bam_featurecounts.baseName}_gene.featureCounts.txt" into geneCounts, featureCounts_to_merge
@@ -1023,11 +1019,12 @@ process featureCounts {
     script:
     def featureCounts_direction = 0
     def extraAttributes = params.fcExtraAttributes ? "--extraAttributes ${params.fcExtraAttributes}" : ''
-    if (forward_stranded && !unstranded) {
+    if (parse_res == 'yes'){
         featureCounts_direction = 1
-    } else if (reverse_stranded && !unstranded){
+    } else if ((parse_res == 'reverse')){
         featureCounts_direction = 2
     }
+
     // Try to get real sample name
     sample_name = bam_featurecounts.baseName - 'Aligned.sortedByCoord.out'
     """
@@ -1052,16 +1049,16 @@ process HTseqCounts {
     input:
     file bam_HTseqCounts
     file gtf from gtf_HTseqCounts.collect()
-    file rseqc_results_HTseqCounts
+    set val(parse_res), file ("res.stranded.txt") from  rseqc_results_HTseqCounts
 
     output: 
     file "*_counts.csv" into HTseqCounts_to_merge
 
     script:
     def stranded_opt = '-s no' 
-    if (forward_stranded && !unstranded) {
+    if (parse_res == 'yes'){
         stranded_opt= '-s yes'
-    } else if (reverse_stranded && !unstranded){
+    } else if ((parse_res == 'reverse')){
         stranded_opt= '-s reverse'
     }
 
@@ -1114,6 +1111,7 @@ process get_software_versions {
     trim_galore --version &> v_trim_galore.txt
     STAR --version &> v_star.txt
     bowtie --version &> v_bowtie.txt
+    tophat2 --version &> v_tophat2.txt
     hisat2 --version &> v_hisat2.txt
     stringtie --version &> v_stringtie.txt
     preseq &> v_preseq.txt
