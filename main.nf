@@ -845,8 +845,7 @@ else {
 if(params.aligner == 'tophat2'){
  process tophat2 {
   tag "${name}"
-  publishDir "${params.outdir}/tophat2", mode: 'copy',
-	saveAs: { filename  }
+  publishDir "${params.outdir}/tophat2", mode: 'copy'
 
   input:
     set val(name), file(reads) from tophat2_raw_reads_choix 
@@ -881,7 +880,7 @@ if(params.aligner == 'tophat2'){
         ${params.bowtie2_index} \\
         ${reads} && \\
         mv ${out}/accepted_hits.bam ./${prefix}.bam
-        ln -s ${out}/align_summary.txt ./${prefix}.align_summary.txt
+        mv ${out}/align_summary.txt ./${prefix}.align_summary.txt
         """
  }
 }
