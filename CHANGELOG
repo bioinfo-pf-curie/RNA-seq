@@ -1,18 +1,9 @@
 ***********************************
-CHANGES IN VERSION 0.0.1
+CHANGES IN VERSION 1.0.0dev
 
-NEW FEATURE
+NEW FEATURES
 
-   o
-
-BUG FIXES
-
-   o Bug fixed if space in the configuration file
-
-
-SIGNIFICANT USER-VISIBLE CHANGES
-
-   o Update python access in utils (pull request D. Vanichkina)
+   o Initialise release of RNA-seq pipeline
 
 
 
