@@ -482,8 +482,8 @@ if(params.aligner == 'star'){
         publishDir "${params.outdir}/STAR", mode: 'copy',
             saveAs: {filename ->
                 if (filename.indexOf(".bam") == -1) "logs/$filename"
-                else if (!params.saveAlignedIntermediates && filename == "where_are_my_files.txt") filename
-                else if (params.saveAlignedIntermediates && filename != "where_are_my_files.txt") filename
+                else if (!params.saveAlignedIntermediates) filename
+                else if (params.saveAlignedIntermediates) filename
                 else null
             }
 
@@ -497,7 +497,6 @@ if(params.aligner == 'star'){
         file "*.out" into alignment_logs
         file "*.out.tab"
         file "*Log.out" into star_log
-        file "where_are_my_files.txt"
         file "${prefix}Aligned.sortedByCoord.out.bam.bai" into bam_index_rseqc
 
         script:
@@ -548,8 +547,8 @@ if(params.aligner == 'hisat2'){
         publishDir "${params.outdir}/HISAT2", mode: 'copy',
             saveAs: {filename ->
                 if (filename.indexOf(".hisat2_summary.txt") > 0) "logs/$filename"
-                else if (!params.saveAlignedIntermediates && filename == "where_are_my_files.txt") filename
-                else if (params.saveAlignedIntermediates && filename != "where_are_my_files.txt") filename
+                else if (!params.saveAlignedIntermediates) filename
+                else if (params.saveAlignedIntermediates) filename
                 else null
             }
 
@@ -561,7 +560,6 @@ if(params.aligner == 'hisat2'){
         output:
         file "${prefix}.bam" into hisat2_bam
         file "${prefix}.hisat2_summary.txt" into alignment_logs
-        file "where_are_my_files.txt"
 
         script:
         index_base = hs2_indices[0].toString() - ~/.\d.ht2/
@@ -607,8 +605,8 @@ if(params.aligner == 'hisat2'){
         tag "${hisat2_bam.baseName}"
         publishDir "${params.outdir}/HISAT2", mode: 'copy',
             saveAs: { filename ->
-                if (!params.saveAlignedIntermediates && filename == "where_are_my_files.txt") filename
-                else if (params.saveAlignedIntermediates && filename != "where_are_my_files.txt") "aligned_sorted/$filename"
+                if (!params.saveAlignedIntermediates) filename
+                else if (params.saveAlignedIntermediates) "aligned_sorted/$filename"
                 else null
             }
 
@@ -618,8 +616,7 @@ if(params.aligner == 'hisat2'){
         output:
         file "${hisat2_bam.baseName}.sorted.bam" into bam_count, bam_preseq, bam_markduplicates, bam_featurecounts, bam_HTseqCounts 
         file "${hisat2_bam.baseName}.sorted.bam.bai" into bam_index_rseqc
-        file "where_are_my_files.txt"
-
+ 
         script:
         def avail_mem = task.memory ? "-m ${task.memory.toBytes() / task.cpus}" : ''
         """
@@ -885,67 +882,6 @@ process merge_featureCounts {
     """
 }
 
-
-
-/*
- * Parse software version numbers
- */
-process get_software_versions {
-
-    output:
-    file 'software_versions_mqc.yaml' into software_versions_yaml
-
-    script:
-    """
-    echo $workflow.manifest.version &> v_ngi_rnaseq.txt
-    echo $workflow.nextflow.version &> v_nextflow.txt
-    fastqc --version &> v_fastqc.txt
-    cutadapt --version &> v_cutadapt.txt
-    trim_galore --version &> v_trim_galore.txt
-    STAR --version &> v_star.txt
-    bowtie --version &> v_bowtie.txt
-    tophat2 --version &> v_tophat2.txt
-    hisat2 --version &> v_hisat2.txt
-    stringtie --version &> v_stringtie.txt
-    preseq &> v_preseq.txt
-    read_duplication.py --version &> v_rseqc.txt
-    echo \$(bamCoverage --version 2>&1) > v_deeptools.txt
-    featureCounts -v &> v_featurecounts.txt
-    htseq-count -h | grep version  &> v_htseq-count.txt
-    picard MarkDuplicates --version &> v_markduplicates.txt  || true
-    samtools --version &> v_samtools.txt
-    multiqc --version &> v_multiqc.txt
-    scrape_software_versions.py &> software_versions_mqc.yaml
-    """
-}
-
-/*
- * Pipeline parameters to go into MultiQC report
- */
-process workflow_summary_mqc {
-
-    when:
-    !params.skip_multiqc
-
-    output:
-    file 'workflow_summary_mqc.yaml' into workflow_summary_yaml
-
-    exec:
-    def yaml_file = task.workDir.resolve('workflow_summary_mqc.yaml')
-    yaml_file.text  = """
-    id: 'nfcore-rnaseq-summary'
-    description: " - this information is collected when the pipeline is started."
-    section_name: 'nfcore/rnaseq Workflow Summary'
-    section_href: 'https://github.com/nf-core/rnaseq'
-    plot_type: 'html'
-    data: |
-        <dl class=\"dl-horizontal\">
-${summary.collect { k,v -> "            <dt>$k</dt><dd><samp>${v ?: '<span style=\"color:#999999;\">N/A</a>'}</samp></dd>" }.join("\n")}
-        </dl>
-    """.stripIndent()
-}
-
-
 Counts_logs_choix = Channel.create()
 if( params.featureCounts ){
     Counts_logs_choix = featureCounts_logs
@@ -997,6 +933,32 @@ process multiqc {
 }
 
 /*
+ * Pipeline parameters to go into MultiQC report
+ */
+process workflow_summary_mqc {
+
+    when:
+    !params.skip_multiqc
+
+    output:
+    file 'workflow_summary_mqc.yaml' into workflow_summary_yaml
+
+    exec:
+    def yaml_file = task.workDir.resolve('workflow_summary_mqc.yaml')
+    yaml_file.text  = """
+    id: 'nfcore-rnaseq-summary'
+    description: " - this information is collected when the pipeline is started."
+    section_name: 'nfcore/rnaseq Workflow Summary'
+    section_href: 'https://github.com/nf-core/rnaseq'
+    plot_type: 'html'
+    data: |
+        <dl class=\"dl-horizontal\">
+${summary.collect { k,v -> "            <dt>$k</dt><dd><samp>${v ?: '<span style=\"color:#999999;\">N/A</a>'}</samp></dd>" }.join("\n")}
+        </dl>
+    """.stripIndent()
+}
+
+/*
  * STEP 13 - Output Description HTML
  */
 process output_documentation {
@@ -1032,6 +994,38 @@ ${summary.collect { k,v -> "            <dt>$k</dt><dd><samp>${v ?: '<span style
     """.stripIndent()
 
    return yaml_file
+}
+
+/*
+ * Parse software version numbers
+ */
+process get_software_versions {
+
+    output:
+    file 'software_versions_mqc.yaml' into software_versions_yaml
+
+    script:
+    """
+    echo $workflow.manifest.version &> v_ngi_rnaseq.txt
+    echo $workflow.nextflow.version &> v_nextflow.txt
+    fastqc --version &> v_fastqc.txt
+    cutadapt --version &> v_cutadapt.txt
+    trim_galore --version &> v_trim_galore.txt
+    STAR --version &> v_star.txt
+    bowtie --version &> v_bowtie.txt
+    tophat2 --version &> v_tophat2.txt
+    hisat2 --version &> v_hisat2.txt
+    stringtie --version &> v_stringtie.txt
+    preseq &> v_preseq.txt
+    read_duplication.py --version &> v_rseqc.txt
+    echo \$(bamCoverage --version 2>&1) > v_deeptools.txt
+    featureCounts -v &> v_featurecounts.txt
+    htseq-count -h | grep version  &> v_htseq-count.txt
+    picard MarkDuplicates --version &> v_markduplicates.txt  || true
+    samtools --version &> v_samtools.txt
+    multiqc --version &> v_multiqc.txt
+    scrape_software_versions.py &> software_versions_mqc.yaml
+    """
 }
 
 
