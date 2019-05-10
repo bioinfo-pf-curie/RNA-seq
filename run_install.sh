@@ -154,7 +154,7 @@ genome=\$1
 cd  ${WORK_DIR}
 # lancement du pipeline sur le cluster 
 
-echo "cd \$(pwd);export NXF_OPTS='-Xms1g -Xmx4g';nextflow run main.nf -resume -profile curieu900 -c nextflow.config --genome \${genome} --aligner star --reads '${preproc_dir}' --queue '${queue}' --featureCounts" | qsub -q ${queue} -N nfcore-rnaseq
+echo "cd \$(pwd);export NXF_OPTS='-Xms1g -Xmx4g';nextflow run main.nf -resume -profile curie -c nextflow.config --genome \${genome} --aligner star --reads '${preproc_dir}' --queue '${queue}' --counts star --email ${USER}@curie.fr" | qsub -q ${queue} -N nfcore-rnaseq
 COMM
 
 }

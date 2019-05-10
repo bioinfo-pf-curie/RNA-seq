@@ -129,6 +129,9 @@ unstranded = params.unstranded
 if (params.aligner != 'star' && params.aligner != 'hisat2' && params.aligner != 'tophat2'){
     exit 1, "Invalid aligner option: ${params.aligner}. Valid options: 'star', 'hisat2', 'tophat2'"
 }
+if (params.counts != 'star' && params.counts != 'featureCounts' && params.counts != 'HTseqCounts'){
+    exit 1, "Invalid aligner option: ${params.aligner}. Valid options: 'star', 'featureCounts', 'HTseqCounts'"
+}
 if( params.star_index && params.aligner == 'star' ){
     star_index = Channel
         .fromPath(params.star_index)
@@ -503,7 +506,7 @@ if(params.aligner == 'star'){
         prefix = reads[0].toString() - ~/(_1M_1)?(_norRNA_1)?(_R1)?(_R2)?(.R1)?(.R2)?(_trimmed)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
         def star_mem = task.memory ?: params.star_memory ?: false
         def avail_mem = star_mem ? "--limitBAMsortRAM ${star_mem.toBytes() - 100000000}" : ''
-        def star_opt_add = params.rrna ? params.star_opts_counts : ''
+        def star_opt_add = params.counts == 'star' ? params.star_opts_counts : ''
         seqCenter = params.seqCenter ? "--outSAMattrRGline ID:$prefix 'CN:$params.seqCenter'" : ''
         """
         STAR --genomeDir $index \\
@@ -801,7 +804,7 @@ process featureCounts {
         }
 
     when:
-    params.featureCounts
+    params.counts == 'featureCounts'
 
     input:
     file bam_featurecounts
@@ -837,7 +840,7 @@ process HTseqCounts {
             else "$filename"
         }
     when:
-    params.HTseqCounts
+    params.counts == 'HTseqCounts'
 
     input:
     file bam_HTseqCounts
@@ -944,7 +947,7 @@ ${summary.collect { k,v -> "            <dt>$k</dt><dd><samp>${v ?: '<span style
 
 
 Counts_logs_choix = Channel.create()
-if( params.featureCounts ){
+if( params.counts == 'featureCounts' ){
     Counts_logs_choix = featureCounts_logs
 }
 else {
@@ -979,7 +982,7 @@ process multiqc {
     rtitle = custom_runName ? "--title \"$custom_runName\"" : ''
     rfilename = custom_runName ? "--filename " + custom_runName.replaceAll('\\W','_').replaceAll('_+','_') + "_multiqc_report" : ''
     
-    if( params.featureCounts ){
+    if( params.== 'featureCounts' ){
         """
         multiqc . -f $rtitle $rfilename --config $multiqc_config \\
         -m custom_content -m picard -m preseq -m rseqc -m featureCounts -m hisat2 -m star -m cutadapt -m fastqc
