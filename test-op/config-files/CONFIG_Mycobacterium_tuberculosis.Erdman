@@ -1,0 +1,85 @@
+# Please change the variable settings below if necessary
+
+#########################################################################
+## Paths and Settings
+#########################################################################
+
+FASTQC_PATH = /bioinfo/local/build/Centos/FastQC/FastQC_v0.11.5
+JAVA_PATH = /bioinfo/local/build/Centos/java/jre1.8.0_101/bin
+BOWTIE_PATH = /bioinfo/local/build/Centos/bowtie/bowtie-1.2/bin
+TOPHAT2_PATH = /bioinfo/local/build/Centos/tophat/tophat_2.1.1/bin
+BOWTIE2_PATH = /bioinfo/local/build/Centos/bowtie2/bowtie2-2.2.9
+STAR_PATH = /bioinfo/local/build/Centos/STAR/STAR-2.5.3a/bin/Linux_x86_64
+SAMTOOLS_PATH = /bioinfo/local/build/Centos/samtools/samtools-1.3/bin
+HTSEQ_PATH = /bioinfo/local/build/Centos/python/python-2.7.13/bin
+FEATURECOUNTS_PATH = /bioinfo/local/build/Centos/subread/subread-1.5.1-Linux-x86_64/bin
+BEDTOOLS_PATH = /bioinfo/local/build/Centos/bedtools/bedtools-2.27.1/bin
+R_PATH = /bioinfo/local/build/Centos/R/R-3.4.0/bin
+PYTHON_PATH = /bioinfo/local/build/Centos/python/python-2.7.11/bin
+RSEQC_PATH = /bioinfo/local/build/Centos/RSeQC/RSeQC-2.6.4/scripts
+PICARD_BIN = /bioinfo/local/build/Centos/picard/2.6.0/picard.jar
+PRESEQ_PATH = /bioinfo/local/build/Centos/preseq/preseq_v2.0/
+GATK_JAR=/bioinfo/local/build/Centos/envs_conda/gatk4_4.0.2.1/share/gatk4-4.0.2.1-0/gatk-package-4.0.2.1-local.jar
+
+
+#########################################################################
+## Cluster settings
+#########################################################################
+
+NB_PROC = 6
+SUB_MEM = 50gb
+SUB_WALLTIME = 24:00:00
+SUB_QUEUE = batch
+
+#########################################################################
+## GENOME
+#########################################################################
+
+ORG = Mycobacterium_tuberculosis
+BUILD = Erdman
+
+#########################################################################
+## WORKFLOW
+#########################################################################
+
+## Run FastqQC 0/1
+RUN_FASTQC = 0
+
+## STAR or TOPHAT2
+MAPPING_TOOL = STAR
+
+## STAR or HTSEQ or FEATURECOUNTS
+COUNT_TOOL = STAR
+
+#########################################################################
+## Data
+#########################################################################
+
+# must be "no", "yes", or "reverse"
+STRANDED = 
+
+#########################################################################
+## Define Options
+#########################################################################
+
+## Mapping on rRNA - Do not set to skip
+BOWTIE_RRNA_INDEX = 
+BOWTIE_OPTS = 
+
+## Mapping on genome
+STAR_INDEX = /data/annotations/pipelines/Mycobacterium_tuberculosis/Erdman/indexes/STAR/
+STAR_OPTS = --outFilterType BySJout --outFilterMultimapNmax 20 --outFilterMismatchNmax 999 --outFilterMismatchNoverLmax 0.04 --outSAMprimaryFlag OneBestScore --outMultimapperOrder Random --outSAMattributes All
+
+TOPHAT2_INDEX = /data/annotations/pipelines/Mycobacterium_tuberculosis/Erdman/indexes/bowtie2/Mycobacterium_tuberculosis_str_erdman_atcc_35801.ASM35020v1.dna.toplevel
+TOPHAT2_OPTS =  --b2-sensitive -g 1 -N 2 --no-coverage-search
+
+## Count gene expression
+ANNOT_DIR = /data/annotations/pipelines/Mycobacterium_tuberculosis/Erdman/gtf/parseGTFAnnotation/
+TRANSCRIPTS_GTF = /data/annotations/pipelines/Mycobacterium_tuberculosis/Erdman/gtf/Mycobacterium_tuberculosis_str_erdman_atcc_35801.ASM35020v1.41.gtf
+HTSEQ_OPTS = -f bam -t exon -r pos 
+FEATURECOUNTS_OPTS = -t exon -C -p
+
+## RSeqQC
+BOWTIE2_INDEX = /data/annotations/pipelines/Mycobacterium_tuberculosis/Erdman/indexes/bowtie2/Mycobacterium_tuberculosis_str_erdman_atcc_35801.ASM35020v1.dna.toplevel
+GENE_BED = /data/annotations/pipelines/Mycobacterium_tuberculosis/Erdman/gtf/parseGTFAnnotation/Mycobacterium_tuberculosis_str_erdman_atcc_35801.ASM35020v1.41_gene.bed
+
