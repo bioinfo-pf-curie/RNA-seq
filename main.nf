@@ -130,7 +130,10 @@ if (params.aligner != 'star' && params.aligner != 'hisat2' && params.aligner != 
     exit 1, "Invalid aligner option: ${params.aligner}. Valid options: 'star', 'hisat2', 'tophat2'"
 }
 if (params.counts != 'star' && params.counts != 'featureCounts' && params.counts != 'HTseqCounts'){
-    exit 1, "Invalid aligner option: ${params.aligner}. Valid options: 'star', 'featureCounts', 'HTseqCounts'"
+    exit 1, "Invalid aligner option: ${params.counts}. Valid options: 'star', 'featureCounts', 'HTseqCounts'"
+}
+if (params.stranded != 'auto' && params.stranded != 'reverse' && params.stranded != 'yes' && params.stranded != 'no'){
+    exit 1, "Invalid stranded option: ${params.stranded}. Valid options: 'auto', 'reverse', 'yes', 'no'"
 }
 if( params.star_index && params.aligner == 'star' ){
     star_index = Channel
@@ -404,11 +407,19 @@ process rseqc {
 
     script:
     pathworkdir = workDir
-    """
-    infer_experiment.py -i $bam_rseqc -r $bed12 > ${bam_rseqc.baseName}.infer_experiment.txt
-    parse_rseq_output.sh ${bam_rseqc.baseName}.infer_experiment.txt > ${bam_rseqc.baseName}.ret_parserseq_output.txt
-    cp ${bam_rseqc.baseName}.ret_parserseq_output.txt $workDir
-    """
+    if(params.stranded == 'auto'){
+        """
+        infer_experiment.py -i $bam_rseqc -r $bed12 > ${bam_rseqc.baseName}.infer_experiment.txt
+        parse_rseq_output.sh ${bam_rseqc.baseName}.infer_experiment.txt > ${bam_rseqc.baseName}.ret_parserseq_output.txt
+        cp ${bam_rseqc.baseName}.ret_parserseq_output.txt $workDir
+        """
+    } else {
+        """
+        echo ${params.stranded}  > ${bam_rseqc.baseName}.ret_parserseq_output.txt
+        cp ${bam_rseqc.baseName}.ret_parserseq_output.txt $workDir
+        """
+    } 
+    
 }
 
 process parse_infer_experiment {
@@ -949,9 +960,10 @@ ${summary.collect { k,v -> "            <dt>$k</dt><dd><samp>${v ?: '<span style
 Counts_logs_choix = Channel.create()
 if( params.counts == 'featureCounts' ){
     Counts_logs_choix = featureCounts_logs
-}
-else {
+} else if (params.counts == 'HTseqCounts'){
     Counts_logs_choix = HTseqCounts_to_merge
+}else if (params.counts == 'star'){
+    Counts_logs_choix = star_log
 }
 
 /*
@@ -970,7 +982,7 @@ process multiqc {
     file ('rseqc/*') from rseqc_results.collect().ifEmpty([])
     file ('preseq/*') from preseq_results.collect().ifEmpty([])
     file ('dupradar/*') from dupradar_results.collect().ifEmpty([])
-    file ('featureCounts/*') from Counts_logs_choix.collect()
+    file ('choiceCounts/*') from Counts_logs_choix.collect()
     file ('software_versions/*') from software_versions_yaml.collect()
     file ('workflow_summary/*') from workflow_summary_yaml.collect()
 
@@ -982,7 +994,7 @@ process multiqc {
     rtitle = custom_runName ? "--title \"$custom_runName\"" : ''
     rfilename = custom_runName ? "--filename " + custom_runName.replaceAll('\\W','_').replaceAll('_+','_') + "_multiqc_report" : ''
     
-    if( params.== 'featureCounts' ){
+    if( params.counts == 'featureCounts' ){
         """
         multiqc . -f $rtitle $rfilename --config $multiqc_config \\
         -m custom_content -m picard -m preseq -m rseqc -m featureCounts -m hisat2 -m star -m cutadapt -m fastqc
