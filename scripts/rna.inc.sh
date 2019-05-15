@@ -184,7 +184,7 @@ star_func()
     check_env
 
     local log=$3/mapping.log
-    local cmd="${STAR_PATH}/STAR --genomeDir ${STAR_INDEX} --outSAMtype BAM SortedByCoordinate --runThreadN ${NB_PROC} --runMode alignReads"
+    local cmd="${STAR_PATH}/STAR --genomeDir ${STAR_INDEX} --runThreadN ${NB_PROC} --runMode alignReads --outSAMtype BAM Unsorted"
 
     ## logs
     echo -e "Running STAR mapping ..."
@@ -231,7 +231,10 @@ star_func()
     cmd="$cmd $cmd_in --outFileNamePrefix ${out}/ --outTmpDir ${out}/tmp ${STAR_OPTS}"
     exec_cmd ${cmd} > $log 2>&1
 
-    cmd="mv ${out}/Aligned.sortedByCoord.out.bam ${out}/${out_prefix}.bam"
+    #cmd="mv ${out}/Aligned.sortedByCoord.out.bam ${out}/${out_prefix}.bam"
+    #exec_cmd ${cmd} >> $log 2>&1
+
+    cmd="${SAMTOOLS_PATH}/samtools sort -@ ${NB_PROC} ${out}/Aligned.out.bam -o ${out}/${out_prefix}.bam"
     exec_cmd ${cmd} >> $log 2>&1
 }
 

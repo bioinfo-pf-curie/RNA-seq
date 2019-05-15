@@ -68,7 +68,7 @@ BOWTIE_OPTS =
 
 ## Mapping on genome
 STAR_INDEX = /data/annotations/pipelines/Mycobacterium_tuberculosis/Erdman/indexes/STAR/
-STAR_OPTS = --outFilterType BySJout --outFilterMultimapNmax 20 --outFilterMismatchNmax 999 --outFilterMismatchNoverLmax 0.04 --outSAMprimaryFlag OneBestScore --outMultimapperOrder Random --outSAMattributes All
+STAR_OPTS = --outFilterType BySJout
 
 TOPHAT2_INDEX = /data/annotations/pipelines/Mycobacterium_tuberculosis/Erdman/indexes/bowtie2/Mycobacterium_tuberculosis_str_erdman_atcc_35801.ASM35020v1.dna.toplevel
 TOPHAT2_OPTS =  --b2-sensitive -g 1 -N 2 --no-coverage-search

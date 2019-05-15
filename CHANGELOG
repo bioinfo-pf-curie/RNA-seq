@@ -1,4 +1,11 @@
 ***********************************
+CHANGES IN VERSION 0.2.3
+
+BUG FIXES
+
+   o Remove --outSAMtype BAM SortedByCoordinate and use samtools for sorting
+
+***********************************
 CHANGES IN VERSION 0.2.2
 
 BUG FIXES
