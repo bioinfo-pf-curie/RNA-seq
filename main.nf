@@ -42,9 +42,7 @@ def helpMessage() {
       --singleEnd                   Specifies that the input is single end reads
 
     Strandedness:
-      --forward_stranded            The library is forward stranded
-      --reverse_stranded            The library is reverse stranded
-      --unstranded                  The default behaviour
+      --stranded                    Library strandness ['auto', 'yes', 'reverse', 'no']
 
     References                      If not specified in the configuration file or you wish to overwrite any of the references.
       --star_index                  Path to STAR index
@@ -65,12 +63,11 @@ def helpMessage() {
 
     QC options:
       --skip_qc                     Skip all QC steps apart from MultiQC
+      --skip_rrna		    Skip rRNA mapping
       --skip_fastqc                 Skip FastQC
       --skip_rseqc                  Skip RSeQC
-      --skip_genebody_coverage      Skip calculating genebody coverage
       --skip_preseq                 Skip Preseq
       --skip_dupradar               Skip dupRadar (and Picard MarkDups)
-      --skip_edger                  Skip edgeR MDS plot and heatmap
       --skip_multiqc                Skip MultiQC
 
     """.stripIndent()
@@ -120,10 +117,6 @@ ch_output_docs = Channel.fromPath("$baseDir/docs/output.md")
  * CHANNELS
  */
 
-// Define regular variables so that they can be overwritten
-forward_stranded = params.forward_stranded
-reverse_stranded = params.reverse_stranded
-unstranded = params.unstranded
 
 // Validate inputs
 if (params.aligner != 'star' && params.aligner != 'hisat2' && params.aligner != 'tophat2'){
@@ -233,8 +226,7 @@ summary['Run Name']     = custom_runName ?: workflow.runName
 summary['Reads']        = params.reads
 summary['Data Type']    = params.singleEnd ? 'Single-End' : 'Paired-End'
 summary['Genome']       = params.genome
-if( params.pico ) summary['Library Prep'] = "SMARTer Stranded Total RNA-Seq Kit - Pico Input"
-summary['Strandedness'] = ( unstranded ? 'None' : forward_stranded ? 'Forward' : reverse_stranded ? 'Reverse' : 'None' )
+summary['Strandedness'] = params.stranded
 if(params.aligner == 'star'){
     summary['Aligner'] = "STAR"
     if(params.star_index)          summary['STAR Index']   = params.star_index
@@ -301,66 +293,70 @@ process fastqc {
 */
 process rRNA_mapping {
   tag "${prefix}"
+
+  when:
+    !params.skip_rrna
+
   input:
-  set val(name), file(reads) from raw_reads_rna_mapping
-  file annot from mapping.collect()
+    set val(name), file(reads) from raw_reads_rna_mapping
+    file annot from mapping.collect()
 
   output:
-   set val(name), file("${prefix}_norRNA_{1,2}.fastq.gz") into rrna_mapping_res
+    set val(name), file("${prefix}_norRNA_{1,2}.fastq.gz") into rrna_mapping_res
 
   script:
   prefix = reads[0].toString() - ~/(_1M_1)?(_R1)?(_R2)?(.R1)?(.R2)?(_trimmed)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
 
-    if (params.singleEnd) {
-       """
-       bowtie ${params.bowtie_opts} \\
-       -p ${task.cpus} \\
-       --un ${prefix}_norRNA.fastq \\
-       --sam ${params.rrna} \\
-       -1 ${reads} \\
-       ${prefix}.sam  && \
-       gzip -f ${prefix}_norRNA*.fastq
-       samtools view -@  ${task.cpus} -bS ${prefix}.sam > ${prefix}.bam  && \
-       samtools sort \\
-            ${prefix}.bam \\
-            -@ ${task.cpus} \\
-            -o ${prefix}.sorted.bam
-       """
-    } else {
-       """
-       bowtie ${params.bowtie_opts} \\
-       -p ${task.cpus} \\
-       --un ${prefix}_norRNA.fastq \\
-       --sam ${params.rrna} \\
-       -1 ${reads[0]} \\
-       -2 ${reads[1]} \\
-       ${prefix}.sam  && \
-       gzip -f ${prefix}_norRNA_*.fastq
-       samtools view -@  ${task.cpus} -bS ${prefix}.sam > ${prefix}.bam  && \
-       samtools sort \\
-            ${prefix}.bam \\
-            -@ ${task.cpus} \\
-            -o ${prefix}.sorted.bam
-       """
+  if (params.singleEnd) {
+     """
+     bowtie ${params.bowtie_opts} \\
+     -p ${task.cpus} \\
+     --un ${prefix}_norRNA.fastq \\
+     --sam ${params.rrna} \\
+     -1 ${reads} \\
+     ${prefix}.sam  && \
+     gzip -f ${prefix}_norRNA*.fastq
+     samtools view -@  ${task.cpus} -bS ${prefix}.sam > ${prefix}.bam  && \
+     samtools sort \\
+          ${prefix}.bam \\
+          -@ ${task.cpus} \\
+          -o ${prefix}.sorted.bam
+    """
+  } else {
+     """
+     bowtie ${params.bowtie_opts} \\
+     -p ${task.cpus} \\
+     --un ${prefix}_norRNA.fastq \\
+     --sam ${params.rrna} \\
+     -1 ${reads[0]} \\
+     -2 ${reads[1]} \\
+     ${prefix}.sam  && \
+     gzip -f ${prefix}_norRNA_*.fastq
+     samtools view -@  ${task.cpus} -bS ${prefix}.sam > ${prefix}.bam  && \
+     samtools sort \\
+          ${prefix}.bam \\
+          -@ ${task.cpus} \\
+          -o ${prefix}.sorted.bam
+     """
   }  
 }
+
 
 /*
  * STEP 2 - strandness
  */
 
-process prep_rseqc {
-  tag "${prefix}"
-  input:
-  set val(name), file(reads) from raw_reads_prep_rseqc
+if (params.stranded == 'auto'){
+  process prep_rseqc {
+    tag "${prefix}"
+    input:
+    set val(name), file(reads) from raw_reads_prep_rseqc
 
+    output:
+    file("${prefix}_subsample.bam") into bam_rseqc
 
-  output:
-  file("${prefix}_subsample.bam") into bam_rseqc
-
-  script:
-  prefix = reads[0].toString() - ~/(_1M_1)?(_R1)?(_R2)?(.R1)?(.R2)?(_trimmed)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
-
+    script:
+    prefix = reads[0].toString() - ~/(_1M_1)?(_R1)?(_R2)?(.R1)?(.R2)?(_trimmed)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
     if (params.singleEnd) {
        """
        bowtie2 --fast --end-to-end --reorder \\
@@ -378,13 +374,11 @@ process prep_rseqc {
        -x ${params.bowtie2_index} \\
        -1 ${reads[0]} \\
        -2 ${reads[1]} > ${prefix}_subsample.bam
-
        """
+    }
   }
-  
-}
 
-process rseqc {
+  process rseqc {
     tag "${bam_rseqc.baseName - '_subsample'}"
     publishDir "${params.outdir}/rseqc" , mode: 'copy',
         saveAs: {filename ->
@@ -392,9 +386,6 @@ process rseqc {
             else if (filename.indexOf("infer_experiment.txt") > 0) "infer_experiment/$filename"
             else filename
         }
-
-    when:
-    !params.skip_qc && !params.skip_rseqc
 
     input:
     file bam_rseqc
@@ -407,26 +398,15 @@ process rseqc {
 
     script:
     pathworkdir = workDir
-    if(params.stranded == 'auto'){
-        """
-        infer_experiment.py -i $bam_rseqc -r $bed12 > ${bam_rseqc.baseName}.infer_experiment.txt
-        parse_rseq_output.sh ${bam_rseqc.baseName}.infer_experiment.txt > ${bam_rseqc.baseName}.ret_parserseq_output.txt
-        cp ${bam_rseqc.baseName}.ret_parserseq_output.txt $workDir
-        """
-    } else {
-        """
-        echo ${params.stranded}  > ${bam_rseqc.baseName}.ret_parserseq_output.txt
-        cp ${bam_rseqc.baseName}.ret_parserseq_output.txt $workDir
-        """
-    } 
-    
-}
+    """
+    infer_experiment.py -i $bam_rseqc -r $bed12 > ${bam_rseqc.baseName}.infer_experiment.txt
+    parse_rseq_output.sh ${bam_rseqc.baseName}.infer_experiment.txt > ${bam_rseqc.baseName}.ret_parserseq_output.txt
+    cp ${bam_rseqc.baseName}.ret_parserseq_output.txt $workDir
+    """
+  }
 
-process parse_infer_experiment {
+  process parse_infer_experiment {
     tag "${name}"
-
-    when:
-    !params.skip_qc && !params.skip_rseqc
 
     input:
     file parse_rseqc
@@ -452,7 +432,13 @@ process parse_infer_experiment {
    
     """
     }
+}else{
+   Channel.from( params.stranded )
+     .into { rseqc_results_featureCounts; rseqc_results_HTseqCounts; rseqc_results_dupradar; rseqc_results_tophat }
 
+   //empty channel for multiQC
+   rseqc_results = Channel.create()
+}
 
 
 /*
@@ -482,7 +468,7 @@ def check_log(logs) {
 
 // Update input channel
 star_raw_reads = Channel.create()
-if( params.rrna ){
+if( params.rrna && !params.skip_rrna){
     star_raw_reads = rrna_mapping_res
 }
 else {  
@@ -547,7 +533,7 @@ if(params.aligner == 'star'){
 
 // Update HiSat2 channel
 hisat2_raw_reads_choix = Channel.create()
-if( params.rrna ){
+if( params.rrna && !params.skip_rrna ){
     hisat2_raw_reads_choix = rrna_mapping_res
 }
 else {
@@ -580,9 +566,9 @@ if(params.aligner == 'hisat2'){
         prefix = reads[0].toString() - ~/(_1M_1)?(_R1)?(_R2)?(.R1)?(.R2)?(_trimmed)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
         seqCenter = params.seqCenter ? "--rg-id ${prefix} --rg CN:${params.seqCenter.replaceAll('\\s','_')}" : ''
         def rnastrandness = ''
-        if (forward_stranded && !unstranded){
+        if (params.stranded=='yes'){
             rnastrandness = params.singleEnd ? '--rna-strandness F' : '--rna-strandness FR'
-        } else if (reverse_stranded && !unstranded){
+        } else if (params.stranded=='reverse'){
             rnastrandness = params.singleEnd ? '--rna-strandness R' : '--rna-strandness RF'
         }
         if (params.singleEnd) {
@@ -645,7 +631,7 @@ if(params.aligner == 'hisat2'){
 
 // Update channel for TopHat2
 tophat2_raw_reads_choix = Channel.create()
-if( params.rrna ){
+if( params.rrna && !params.skip_rrna ){
     tophat2_raw_reads_choix = rrna_mapping_res
 }
 else {
@@ -728,7 +714,7 @@ process markDuplicates {
         saveAs: {filename -> filename.indexOf("_metrics.txt") > 0 ? "metrics/$filename" : "$filename"}
 
     when:
-    !params.skip_dupradar
+    !params.skip_qc && !params.skip_dupradar
 
     input:
     file bam from bam_markduplicates
@@ -777,7 +763,7 @@ process dupradar {
         }
 
     when:
-    !params.skip_dupradar
+      !params.skip_qc && !params.skip_dupradar
 
     input:
     file bam_md
@@ -897,7 +883,6 @@ process merge_featureCounts {
 }
 
 
-
 /*
  * Parse software version numbers
  */
@@ -908,21 +893,15 @@ process get_software_versions {
 
     script:
     """
-    echo $workflow.manifest.version &> v_ngi_rnaseq.txt
+    echo $workflow.manifest.version &> v_rnaseq.txt
     echo $workflow.nextflow.version &> v_nextflow.txt
     fastqc --version &> v_fastqc.txt
-    cutadapt --version &> v_cutadapt.txt
-    trim_galore --version &> v_trim_galore.txt
     STAR --version &> v_star.txt
-    bowtie --version &> v_bowtie.txt
     tophat2 --version &> v_tophat2.txt
     hisat2 --version &> v_hisat2.txt
-    stringtie --version &> v_stringtie.txt
     preseq &> v_preseq.txt
-    read_duplication.py --version &> v_rseqc.txt
-    echo \$(bamCoverage --version 2>&1) > v_deeptools.txt
     featureCounts -v &> v_featurecounts.txt
-    htseq-count -h | grep version  &> v_htseq-count.txt
+    htseq-count -h | grep version  &> v_htseq.txt
     picard MarkDuplicates --version &> v_markduplicates.txt  || true
     samtools --version &> v_samtools.txt
     multiqc --version &> v_multiqc.txt
