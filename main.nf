@@ -25,20 +25,18 @@ This script is based on the nf-core guidelines. See https://nf-co.re/ for more i
 
 def helpMessage() {
     log.info """
-
     rnaseq v${workflow.manifest.version}
     =======================================================
 
     Usage:
-
-    nextflow run nf-core/rnaseq --reads '*_R{1,2}.fastq.gz' --genome GRCh37 -profile conda
+    nextflow run nf-core/rnaseq --reads '*_R{1,2}.fastq.gz' --genome hg19 -profile conda
 
     Mandatory arguments:
       --reads                       Path to input data (must be surrounded with quotes)
-      -profile                      Configuration profile to use. uppmax / uppmax_modules / hebbe / docker / aws
+      -profile                      Configuration profile to use. test / curie / conda / docker / singularity
 
     Options:
-      --genome                      Name of iGenomes reference
+      --genome                      Name of genomes reference
       --singleEnd                   Specifies that the input is single end reads
 
     Strandedness:
@@ -47,12 +45,9 @@ def helpMessage() {
     References                      If not specified in the configuration file or you wish to overwrite any of the references.
       --star_index                  Path to STAR index
       --hisat2_index                Path to HiSAT2 index
-      --fasta                       Path to Fasta reference
+      --tophat2_index		    Path to TopHat2 index
       --gtf                         Path to GTF file
-      --gff                         Path to GFF3 file
-      --bed12                       Path to bed12 file
-      --saveReference               Save the generated reference files the the Results directory.
-      --saveTrimmed                 Save trimmed FastQ file intermediates
+      --bed12                       Path to gene bed12 file
       --saveAlignedIntermediates    Save the BAM files from the Aligment step  - not done by default
 
     Other options:
@@ -92,17 +87,14 @@ if (params.genomes && params.genome && !params.genomes.containsKey(params.genome
 // Reference index path configuration
 // Define these here - after the profiles are loaded with the iGenomes paths
 params.star_index = params.genome ? params.genomes[ params.genome ].star ?: false : false
-params.fasta = params.genome ? params.genomes[ params.genome ].fasta ?: false : false
-params.gtf = params.genome ? params.genomes[ params.genome ].gtf ?: false : false
-params.gff = params.genome ? params.genomes[ params.genome ].gff ?: false : false
-params.bed12 = params.genome ? params.genomes[ params.genome ].bed12 ?: false : false
-params.hisat2_index = params.genome ? params.genomes[ params.genome ].hisat2 ?: false : false
 params.bowtie2_index = params.genome ? params.genomes[ params.genome ].bowtie2 ?: false : false
+params.hisat2_index = params.genome ? params.genomes[ params.genome ].hisat2 ?: false : false
 params.rrna = params.genome ? params.genomes[ params.genome ].rrna ?: false : false
-
+params.gtf = params.genome ? params.genomes[ params.genome ].gtf ?: false : false
+params.bed12 = params.genome ? params.genomes[ params.genome ].bed12 ?: false : false
 
 // Has the run name been specified by the user?
-//  this has the bonus effect of catching both -name and --name
+// this has the bonus effect of catching both -name and --name
 custom_runName = params.name
 if( !(workflow.runName ==~ /[a-z]+_[a-z]+/) ){
   custom_runName = workflow.runName
@@ -112,11 +104,9 @@ if( !(workflow.runName ==~ /[a-z]+_[a-z]+/) ){
 ch_multiqc_config = Channel.fromPath(params.multiqc_config)
 ch_output_docs = Channel.fromPath("$baseDir/docs/output.md")
 
-
 /*
  * CHANNELS
  */
-
 
 // Validate inputs
 if (params.aligner != 'star' && params.aligner != 'hisat2' && params.aligner != 'tophat2'){
@@ -128,6 +118,7 @@ if (params.counts != 'star' && params.counts != 'featureCounts' && params.counts
 if (params.stranded != 'auto' && params.stranded != 'reverse' && params.stranded != 'yes' && params.stranded != 'no'){
     exit 1, "Invalid stranded option: ${params.stranded}. Valid options: 'auto', 'reverse', 'yes', 'no'"
 }
+
 if( params.star_index && params.aligner == 'star' ){
     star_index = Channel
         .fromPath(params.star_index)
@@ -143,11 +134,6 @@ else if ( params.bowtie2_index && params.aligner == 'tophat2' ){
         .ifEmpty { exit 1, "TOPHAT2 index not found: ${params.bowtie2_index}" }
         .into { tophat2_indices}
 }
-else if ( params.fasta ){
-    Channel.fromPath(params.fasta)
-           .ifEmpty { exit 1, "Fasta file not found: ${params.fasta}" }
-           .into { ch_fasta_for_star_index; ch_fasta_for_hisat_index}
-}
 else {
     exit 1, "No reference genome specified!"
 }
@@ -158,11 +144,8 @@ if( params.gtf ){
         .ifEmpty { exit 1, "GTF annotation file not found: ${params.gtf}" }
         .into { gtf_makeSTARindex; gtf_makeHisatSplicesites; gtf_makeHISATindex; gtf_makeBED12;
               gtf_star; gtf_dupradar; gtf_featureCounts; gtf_HTseqCounts; gtf_tophat}
-} else if( params.gff ){
-  gffFile = Channel.fromPath(params.gff)
-                   .ifEmpty { exit 1, "GFF annotation file not found: ${params.gff}" }
 } else {
-    exit 1, "No GTF or GFF3 annotation specified!"
+    exit 1, "No GTF annotation specified!"
 }
 
 if( params.bed12 ){
@@ -171,24 +154,19 @@ if( params.bed12 ){
         .ifEmpty { exit 1, "BED12 annotation file not found: ${params.bed12}" }
         .into {bed_rseqc; bed_genebody_coverage}
 }
+
 if( params.rrna ){
     Channel
         .fromPath(params.rrna)
         .ifEmpty { exit 1, "RRNA annotation file not found: ${params.rrna}" }
         .set {mapping}
 }
+
 if( params.aligner == 'hisat2' && params.splicesites ){
     Channel
         .fromPath(params.bed12)
         .ifEmpty { exit 1, "HISAT2 splice sites file not found: $alignment_splicesites" }
         .into { indexing_splicesites; alignment_splicesites }
-}
-
-// Has the run name been specified by the user?
-//  this has the bonus effect of catching both -name and --name
-custom_runName = params.name
-if( !(workflow.runName ==~ /[a-z]+_[a-z]+/) ){
-  custom_runName = workflow.runName
 }
 
 
@@ -228,25 +206,22 @@ summary['Data Type']    = params.singleEnd ? 'Single-End' : 'Paired-End'
 summary['Genome']       = params.genome
 summary['Strandedness'] = params.stranded
 if(params.aligner == 'star'){
-    summary['Aligner'] = "STAR"
-    if(params.star_index)          summary['STAR Index']   = params.star_index
-    else if(params.fasta)          summary['Fasta Ref']    = params.fasta
+  summary['Aligner'] = "STAR"
+  if(params.star_index) summary['STAR Index'] = params.star_index
+} else if(params.aligner == 'tophat2') {
+  summary['Aligner'] = "Tophat2"
+  if(params.bowtie2_index) summary['Tophat2 Index'] = params.bowtie2_index
 } else if(params.aligner == 'hisat2') {
-    summary['Aligner'] = "HISAT2"
-    if(params.hisat2_index)        summary['HISAT2 Index'] = params.hisat2_index
-    else if(params.fasta)          summary['Fasta Ref']    = params.fasta
-    if(params.splicesites)         summary['Splice Sites'] = params.splicesites
+  summary['Aligner'] = "HISAT2"
+  if(params.hisat2_index) summary['HISAT2 Index'] = params.hisat2_index
+  if(params.splicesites) summary['Splice Sites'] = params.splicesites
 }
 if(params.gtf)                 summary['GTF Annotation']  = params.gtf
-if(params.gff)                 summary['GFF3 Annotation']  = params.gff
 if(params.bed12)               summary['BED Annotation']  = params.bed12
-summary['Save Reference'] = params.saveReference ? 'Yes' : 'No'
 summary['Save Intermeds'] = params.saveAlignedIntermediates ? 'Yes' : 'No'
 summary['Max Memory']     = params.max_memory
 summary['Max CPUs']       = params.max_cpus
 summary['Max Time']       = params.max_time
-summary['Output dir']     = params.outdir
-summary['Working dir']  = workflow.workDir
 summary['Container Engine'] = workflow.containerEngine
 if(workflow.containerEngine) summary['Container'] = workflow.container
 summary['Current home']   = "$HOME"
@@ -254,7 +229,6 @@ summary['Current user']   = "$USER"
 summary['Current path']   = "$PWD"
 summary['Working dir']    = workflow.workDir
 summary['Output dir']     = params.outdir
-summary['Script dir']     = workflow.projectDir
 summary['Config Profile'] = workflow.profile
 
 if(params.email) summary['E-mail Address'] = params.email
@@ -280,6 +254,7 @@ process fastqc {
     file "*_fastqc.{zip,html}" into fastqc_results
 
     script:
+    // TODO update reg exp
     prefix = reads[0].toString() - ~/(_1M_1)?(_R1)?(_R2)?(.R1)?(.R2)?(_trimmed)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
 
     """
@@ -356,6 +331,7 @@ if (params.stranded == 'auto'){
     file("${prefix}_subsample.bam") into bam_rseqc
 
     script:
+    //TODO update regexp
     prefix = reads[0].toString() - ~/(_1M_1)?(_R1)?(_R2)?(.R1)?(.R2)?(_trimmed)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
     if (params.singleEnd) {
        """
@@ -395,7 +371,6 @@ if (params.stranded == 'auto'){
     file "*.{txt,pdf,r,xls}" into rseqc_results
     file "${bam_rseqc.baseName}.ret_parserseq_output.txt" into parse_rseqc
    
-
     script:
     pathworkdir = workDir
     """
@@ -445,88 +420,89 @@ if (params.stranded == 'auto'){
  * STEP 3 - reads mapping
  */
 
+// From nf-core
 // Function that checks the alignment rate of the STAR output
 // and returns true if the alignment passed and otherwise false
 skipped_poor_alignment = []
 def check_log(logs) {
-    def percent_aligned = 0;
-    logs.eachLine { line ->
-        if ((matcher = line =~ /Uniquely mapped reads %\s*\|\s*([\d\.]+)%/)) {
-            percent_aligned = matcher[0][1]
-        }
+  def percent_aligned = 0;
+  logs.eachLine { line ->
+    if ((matcher = line =~ /Uniquely mapped reads %\s*\|\s*([\d\.]+)%/)) {
+      percent_aligned = matcher[0][1]
     }
-    logname = logs.getBaseName() - 'Log.final'
-    if(percent_aligned.toFloat() <= '2'.toFloat() ){
-        log.info "#################### VERY POOR ALIGNMENT RATE! IGNORING FOR FURTHER DOWNSTREAM ANALYSIS! ($logname)    >> ${percent_aligned}% <<"
-        skipped_poor_alignment << logname
-        return false
-    } else {
-        log.info "          Passed alignment > star ($logname)   >> ${percent_aligned}% <<"
-        return true
-    }
+  }
+  logname = logs.getBaseName() - 'Log.final'
+  if(percent_aligned.toFloat() <= '2'.toFloat() ){
+      log.info "#################### VERY POOR ALIGNMENT RATE! IGNORING FOR FURTHER DOWNSTREAM ANALYSIS! ($logname)    >> ${percent_aligned}% <<"
+      skipped_poor_alignment << logname
+      return false
+  } else {
+      log.info "          Passed alignment > star ($logname)   >> ${percent_aligned}% <<"
+      return true
+  }
 }
 
 // Update input channel
 star_raw_reads = Channel.create()
 if( params.rrna && !params.skip_rrna){
-    star_raw_reads = rrna_mapping_res
+  star_raw_reads = rrna_mapping_res
 }
 else {  
-    star_raw_reads = raw_reads_star
+  star_raw_reads = raw_reads_star
 }
 
 if(params.aligner == 'star'){
-    hisat_stdout = Channel.from(false)
-    process star {
-        tag "$prefix"
-        publishDir "${params.outdir}/STAR", mode: 'copy',
-            saveAs: {filename ->
-                if (filename.indexOf(".bam") == -1) "logs/$filename"
-                else if (!params.saveAlignedIntermediates) filename
-                else if (params.saveAlignedIntermediates) filename
-                else null
-            }
+  hisat_stdout = Channel.from(false)
+  process star {
+    tag "$prefix"
+    publishDir "${params.outdir}/STAR", mode: 'copy',
+        saveAs: {filename ->
+            if (filename.indexOf(".bam") == -1) "logs/$filename"
+            else if (!params.saveAlignedIntermediates) filename
+            else if (params.saveAlignedIntermediates) filename
+            else null
+        }
 
-        input:
-        set val(name), file(reads) from star_raw_reads
-        file index from star_index.collect()
-        file gtf from gtf_star.collect()
+    input:
+    set val(name), file(reads) from star_raw_reads
+    file index from star_index.collect()
+    file gtf from gtf_star.collect()
 
-        output:
-        set file("*Log.final.out"), file ('*.bam') into star_aligned
-        file "*.out" into alignment_logs
-        file "*.out.tab"
-        file "*Log.out" into star_log
-        file "${prefix}Aligned.sortedByCoord.out.bam.bai" into bam_index_rseqc
+    output:
+    set file("*Log.final.out"), file ('*.bam') into star_aligned
+    file "*.out" into alignment_logs
+    file "*.out.tab"
+    file "*Log.out" into star_log
+    file "${prefix}Aligned.sortedByCoord.out.bam.bai" into bam_index_rseqc
 
-        script:
-        prefix = reads[0].toString() - ~/(_1M_1)?(_norRNA_1)?(_R1)?(_R2)?(.R1)?(.R2)?(_trimmed)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
-        def star_mem = task.memory ?: params.star_memory ?: false
-        def avail_mem = star_mem ? "--limitBAMsortRAM ${star_mem.toBytes() - 100000000}" : ''
-        def star_opt_add = params.counts == 'star' ? params.star_opts_counts : ''
-        seqCenter = params.seqCenter ? "--outSAMattrRGline ID:$prefix 'CN:$params.seqCenter'" : ''
-        """
-        STAR --genomeDir $index \\
-            --sjdbGTFfile $gtf \\
-            --readFilesIn $reads  \\
-            --runThreadN ${task.cpus} \\
-            --runMode alignReads \\
-            --outSAMtype BAM SortedByCoordinate  \\
-            --readFilesCommand zcat \\
-            --runDirPerm All_RWX \\
-            --outTmpDir /local/scratch/rnaseq_\$(date +%d%s%S) \\
-            --outFileNamePrefix $prefix  \\
-            --outSAMattrRGline ID:$prefix SM:$prefix LB:Illumina PL:Illumina  \\
-            ${params.star_opts} ${star_opt_add} 
+    script:
+    prefix = reads[0].toString() - ~/(_1M_1)?(_norRNA_1)?(_R1)?(_R2)?(.R1)?(.R2)?(_trimmed)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
+    def star_mem = task.memory ?: params.star_memory ?: false
+    def avail_mem = star_mem ? "--limitBAMsortRAM ${star_mem.toBytes() - 100000000}" : ''
+    def star_opt_add = params.counts == 'star' ? params.star_opts_counts : ''
+    seqCenter = params.seqCenter ? "--outSAMattrRGline ID:$prefix 'CN:$params.seqCenter'" : ''
+    """
+    STAR --genomeDir $index \\
+         --sjdbGTFfile $gtf \\
+         --readFilesIn $reads  \\
+         --runThreadN ${task.cpus} \\
+         --runMode alignReads \\
+         --outSAMtype BAM SortedByCoordinate  \\
+         --readFilesCommand zcat \\
+         --runDirPerm All_RWX \\
+         --outTmpDir /local/scratch/rnaseq_\$(date +%d%s%S) \\
+         --outFileNamePrefix $prefix  \\
+         --outSAMattrRGline ID:$prefix SM:$prefix LB:Illumina PL:Illumina  \\
+         ${params.star_opts} ${star_opt_add} 
             
-        samtools index ${prefix}Aligned.sortedByCoord.out.bam
-        """
+    samtools index ${prefix}Aligned.sortedByCoord.out.bam
+    """
     }
 
     // Filter removes all 'aligned' channels that fail the check
     star_aligned
-            .filter { logs, bams -> check_log(logs) }
-            .flatMap {  logs, bams -> bams }
+        .filter { logs, bams -> check_log(logs) }
+        .flatMap {  logs, bams -> bams }
     .into { bam_count; bam_preseq; bam_markduplicates; bam_featurecounts; bam_HTseqCounts }
 }
 
@@ -541,92 +517,93 @@ else {
 }
 
 if(params.aligner == 'hisat2'){
-    star_log = Channel.from(false)
-    process hisat2Align {
-        tag "$prefix"
-        publishDir "${params.outdir}/HISAT2", mode: 'copy',
-            saveAs: {filename ->
-                if (filename.indexOf(".hisat2_summary.txt") > 0) "logs/$filename"
-                else if (!params.saveAlignedIntermediates) filename
-                else if (params.saveAlignedIntermediates) filename
-                else null
-            }
-
-        input:
-        set val(name), file(reads) from hisat2_raw_reads_choix 
-        file hs2_indices from hs2_indices.collect()
-        file alignment_splicesites from alignment_splicesites.collect()
-
-        output:
-        file "${prefix}.bam" into hisat2_bam
-        file "${prefix}.hisat2_summary.txt" into alignment_logs
-
-        script:
-        index_base = hs2_indices[0].toString() - ~/.\d.ht2/
-        prefix = reads[0].toString() - ~/(_1M_1)?(_R1)?(_R2)?(.R1)?(.R2)?(_trimmed)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
-        seqCenter = params.seqCenter ? "--rg-id ${prefix} --rg CN:${params.seqCenter.replaceAll('\\s','_')}" : ''
-        def rnastrandness = ''
-        if (params.stranded=='yes'){
-            rnastrandness = params.singleEnd ? '--rna-strandness F' : '--rna-strandness FR'
-        } else if (params.stranded=='reverse'){
-            rnastrandness = params.singleEnd ? '--rna-strandness R' : '--rna-strandness RF'
+  star_log = Channel.from(false)
+  process hisat2Align {
+    tag "$prefix"
+    publishDir "${params.outdir}/HISAT2", mode: 'copy',
+        saveAs: {filename ->
+            if (filename.indexOf(".hisat2_summary.txt") > 0) "logs/$filename"
+            else if (!params.saveAlignedIntermediates) filename
+            else if (params.saveAlignedIntermediates) filename
+            else null
         }
-        if (params.singleEnd) {
-            """
-            hisat2 -x $index_base \\
-                   -U $reads \\
-                   $rnastrandness \\
-                   --known-splicesite-infile $alignment_splicesites \\
-                   -p ${task.cpus} \\
-                   --met-stderr \\
-                   --new-summary \\
-                   --summary-file ${prefix}.hisat2_summary.txt $seqCenter \\
-                   | samtools view -bS -F 4 -F 256 - > ${prefix}.bam
-            """
-        } else {
-            """
-            hisat2 -x $index_base \\
-                   -1 ${reads[0]} \\
-                   -2 ${reads[1]} \\
-                   $rnastrandness \\
-                   --known-splicesite-infile $alignment_splicesites \\
-                   --no-mixed \\
-                   --no-discordant \\
-                   -p ${task.cpus} \\
-                   --met-stderr \\
-                   --new-summary \\
-                   --summary-file ${prefix}.hisat2_summary.txt $seqCenter \\
-                   | samtools view -bS -F 4 -F 8 -F 256 - > ${prefix}.bam
-            """
-        }
+
+    input:
+    set val(name), file(reads) from hisat2_raw_reads_choix 
+    file hs2_indices from hs2_indices.collect()
+    file alignment_splicesites from alignment_splicesites.collect()
+
+    output:
+    file "${prefix}.bam" into hisat2_bam
+    file "${prefix}.hisat2_summary.txt" into alignment_logs
+
+    script:
+    index_base = hs2_indices[0].toString() - ~/.\d.ht2/
+    // TODO update regexp
+    prefix = reads[0].toString() - ~/(_1M_1)?(_R1)?(_R2)?(.R1)?(.R2)?(_trimmed)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
+    seqCenter = params.seqCenter ? "--rg-id ${prefix} --rg CN:${params.seqCenter.replaceAll('\\s','_')}" : ''
+    def rnastrandness = ''
+    if (params.stranded=='yes'){
+        rnastrandness = params.singleEnd ? '--rna-strandness F' : '--rna-strandness FR'
+    } else if (params.stranded=='reverse'){
+        rnastrandness = params.singleEnd ? '--rna-strandness R' : '--rna-strandness RF'
     }
+    if (params.singleEnd) {
+    """
+    hisat2 -x $index_base \\
+           -U $reads \\
+           $rnastrandness \\
+           --known-splicesite-infile $alignment_splicesites \\
+           -p ${task.cpus} \\
+           --met-stderr \\
+           --new-summary \\
+           --summary-file ${prefix}.hisat2_summary.txt $seqCenter \\
+           | samtools view -bS -F 4 -F 256 - > ${prefix}.bam
+    """
+    } else {
+    """
+    hisat2 -x $index_base \\
+           -1 ${reads[0]} \\
+           -2 ${reads[1]} \\
+           $rnastrandness \\
+           --known-splicesite-infile $alignment_splicesites \\
+           --no-mixed \\
+           --no-discordant \\
+           -p ${task.cpus} \\
+           --met-stderr \\
+           --new-summary \\
+           --summary-file ${prefix}.hisat2_summary.txt $seqCenter \\
+           | samtools view -bS -F 4 -F 8 -F 256 - > ${prefix}.bam
+     """
+    }
+  }
 
-    process hisat2_sortOutput {
-        tag "${hisat2_bam.baseName}"
-        publishDir "${params.outdir}/HISAT2", mode: 'copy',
-            saveAs: { filename ->
-                if (!params.saveAlignedIntermediates) filename
-                else if (params.saveAlignedIntermediates) "aligned_sorted/$filename"
-                else null
-            }
+  process hisat2_sortOutput {
+      tag "${hisat2_bam.baseName}"
+      publishDir "${params.outdir}/HISAT2", mode: 'copy',
+          saveAs: { filename ->
+              if (!params.saveAlignedIntermediates) filename
+              else if (params.saveAlignedIntermediates) "aligned_sorted/$filename"
+              else null
+          }
 
-        input:
-        file hisat2_bam
+      input:
+      file hisat2_bam
 
-        output:
-        file "${hisat2_bam.baseName}.sorted.bam" into bam_count, bam_preseq, bam_markduplicates, bam_featurecounts, bam_HTseqCounts 
-        file "${hisat2_bam.baseName}.sorted.bam.bai" into bam_index_rseqc
+      output:
+      file "${hisat2_bam.baseName}.sorted.bam" into bam_count, bam_preseq, bam_markduplicates, bam_featurecounts, bam_HTseqCounts 
+      file "${hisat2_bam.baseName}.sorted.bam.bai" into bam_index_rseqc
  
-        script:
-        def avail_mem = task.memory ? "-m ${task.memory.toBytes() / task.cpus}" : ''
-        """
-        samtools sort \\
-            $hisat2_bam \\
-            -@ ${task.cpus} $avail_mem \\
-            -o ${hisat2_bam.baseName}.sorted.bam
-        samtools index ${hisat2_bam.baseName}.sorted.bam
-        """
-    }
+      script:
+      def avail_mem = task.memory ? "-m ${task.memory.toBytes() / task.cpus}" : ''
+      """
+      samtools sort \\
+          $hisat2_bam \\
+          -@ ${task.cpus} $avail_mem \\
+          -o ${hisat2_bam.baseName}.sorted.bam
+      samtools index ${hisat2_bam.baseName}.sorted.bam
+      """
+  }
 }
 
 // Update channel for TopHat2
@@ -653,31 +630,30 @@ if(params.aligner == 'tophat2'){
     file "${prefix}.bam" into bam_count, bam_preseq, bam_markduplicates, bam_featurecounts, bam_HTseqCounts
     file "${prefix}.align_summary.txt" into alignment_logs
 
-    script:
-        prefix = reads[0].toString() - ~/(_1M_1)?(_R1)?(_R2)?(.R1)?(.R2)?(_trimmed)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
-        def avail_mem = task.memory ? "-m ${task.memory.toBytes() / task.cpus}" : ''
-        def stranded_opt = '--library-type fr-unstranded'
-        if (parse_res == 'yes'){
-           stranded_opt = '--library-type fr-secondstrand'
-        } else if ((parse_res == 'reverse')){
-            stranded_opt = '--library-type fr-firststrand'
-        }
-        def out = './mapping'
-        def sample = "--rg-id ${name} --rg-sample ${name} --rg-library Illumina --rg-platform Illumina --rg-platform-unit ${name}"
-
-        """
-        mkdir -p ${out}
-        tophat2 -p ${task.cpus} \\
-        ${sample} \\
-        ${params.tophat2_opts} \\
-        --GTF $gtf \\
-        ${stranded_opt} \\
-        -o ${out} \\
-        ${params.bowtie2_index} \\
-        ${reads} && \\
-        mv ${out}/accepted_hits.bam ./${prefix}.bam
-        mv ${out}/align_summary.txt ./${prefix}.align_summary.txt
-        """
+  script:
+    prefix = reads[0].toString() - ~/(_1M_1)?(_R1)?(_R2)?(.R1)?(.R2)?(_trimmed)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
+    def avail_mem = task.memory ? "-m ${task.memory.toBytes() / task.cpus}" : ''
+    def stranded_opt = '--library-type fr-unstranded'
+    if (parse_res == 'yes'){
+        stranded_opt = '--library-type fr-secondstrand'
+    } else if ((parse_res == 'reverse')){
+        stranded_opt = '--library-type fr-firststrand'
+    }
+    def out = './mapping'
+    def sample = "--rg-id ${name} --rg-sample ${name} --rg-library Illumina --rg-platform Illumina --rg-platform-unit ${name}"
+    """
+    mkdir -p ${out}
+    tophat2 -p ${task.cpus} \\
+    ${sample} \\
+    ${params.tophat2_opts} \\
+    --GTF $gtf \\
+    ${stranded_opt} \\
+    -o ${out} \\
+    ${params.bowtie2_index} \\
+    ${reads} && \\
+    mv ${out}/accepted_hits.bam ./${prefix}.bam
+    mv ${out}/align_summary.txt ./${prefix}.align_summary.txt
+    """
  }
 }
 
@@ -686,22 +662,22 @@ if(params.aligner == 'tophat2'){
  * STEP 4 - preseq analysis
  */
 process preseq {
-    tag "${bam_preseq.baseName - 'Aligned.sortedByCoord.out'}"
-    publishDir "${params.outdir}/preseq", mode: 'copy'
+  tag "${bam_preseq.baseName - 'Aligned.sortedByCoord.out'}"
+  publishDir "${params.outdir}/preseq", mode: 'copy'
 
-    when:
-    !params.skip_qc && !params.skip_preseq
+  when:
+  !params.skip_qc && !params.skip_preseq
 
-    input:
-    file bam_preseq
+  input:
+  file bam_preseq
 
-    output:
-    file "${bam_preseq.baseName}.ccurve.txt" into preseq_results
+  output:
+  file "${bam_preseq.baseName}.ccurve.txt" into preseq_results
 
-    script:
-    """
-    preseq lc_extrap -v -B $bam_preseq -o ${bam_preseq.baseName}.ccurve.txt
-    """
+  script:
+  """
+  preseq lc_extrap -v -B $bam_preseq -o ${bam_preseq.baseName}.ccurve.txt
+  """
 }
 
 
@@ -709,39 +685,39 @@ process preseq {
  * STEP 5 - Mark duplicates
  */
 process markDuplicates {
-    tag "${bam.baseName - 'Aligned.sortedByCoord.out'}"
-    publishDir "${params.outdir}/markDuplicates", mode: 'copy',
-        saveAs: {filename -> filename.indexOf("_metrics.txt") > 0 ? "metrics/$filename" : "$filename"}
+  tag "${bam.baseName - 'Aligned.sortedByCoord.out'}"
+  publishDir "${params.outdir}/markDuplicates", mode: 'copy',
+      saveAs: {filename -> filename.indexOf("_metrics.txt") > 0 ? "metrics/$filename" : "$filename"}
 
-    when:
-    !params.skip_qc && !params.skip_dupradar
+  when:
+  !params.skip_qc && !params.skip_dupradar
 
-    input:
-    file bam from bam_markduplicates
+  input:
+  file bam from bam_markduplicates
 
-    output:
-    file "${bam.baseName}.markDups.bam" into bam_md
-    file "${bam.baseName}.markDups_metrics.txt" into picard_results
-    file "${bam.baseName}.markDups.bam.bai"
+  output:
+  file "${bam.baseName}.markDups.bam" into bam_md
+  file "${bam.baseName}.markDups_metrics.txt" into picard_results
+  file "${bam.baseName}.markDups.bam.bai"
 
-    script:
-    if( !task.memory ){
-        log.info "[Picard MarkDuplicates] Available memory not known - defaulting to 3GB. Specify process memory requirements to change this."
-        avail_mem = 3
-    } else {
-        avail_mem = task.memory.toGiga()
-    }
-    """
-    picard -Xmx${avail_mem}g MarkDuplicates \\
-        INPUT=$bam \\
-        OUTPUT=${bam.baseName}.markDups.bam \\
-        METRICS_FILE=${bam.baseName}.markDups_metrics.txt \\
-        REMOVE_DUPLICATES=false \\
-        ASSUME_SORTED=true \\
-        PROGRAM_RECORD_ID='null' \\
-        VALIDATION_STRINGENCY=LENIENT
-    samtools index ${bam.baseName}.markDups.bam
-    """
+  script:
+  if( !task.memory ){
+    log.info "[Picard MarkDuplicates] Available memory not known - defaulting to 3GB. Specify process memory requirements to change this."
+    avail_mem = 3
+  } else {
+    avail_mem = task.memory.toGiga()
+  }
+  """
+  picard -Xmx${avail_mem}g MarkDuplicates \\
+      INPUT=$bam \\
+      OUTPUT=${bam.baseName}.markDups.bam \\
+      METRICS_FILE=${bam.baseName}.markDups_metrics.txt \\
+      REMOVE_DUPLICATES=false \\
+      ASSUME_SORTED=true \\
+      PROGRAM_RECORD_ID='null' \\
+      VALIDATION_STRINGENCY=LENIENT
+  samtools index ${bam.baseName}.markDups.bam
+  """
 }
 
 
@@ -749,41 +725,40 @@ process markDuplicates {
  * STEP 6 - dupRadar
  */
 process dupradar {
+  tag "${bam_md.baseName - 'Aligned.sortedByCoord.out.markDups'}"
+  publishDir "${params.outdir}/dupradar", mode: 'copy',
+      saveAs: {filename ->
+          if (filename.indexOf("_duprateExpDens.pdf") > 0) "scatter_plots/$filename"
+          else if (filename.indexOf("_duprateExpBoxplot.pdf") > 0) "box_plots/$filename"
+          else if (filename.indexOf("_expressionHist.pdf") > 0) "histograms/$filename"
+          else if (filename.indexOf("_dupMatrix.txt") > 0) "gene_data/$filename"
+          else if (filename.indexOf("_duprateExpDensCurve.txt") > 0) "scatter_curve_data/$filename"
+          else if (filename.indexOf("_intercept_slope.txt") > 0) "intercepts_slopes/$filename"
+          else "$filename"
+      }
 
-    tag "${bam_md.baseName - 'Aligned.sortedByCoord.out.markDups'}"
-    publishDir "${params.outdir}/dupradar", mode: 'copy',
-        saveAs: {filename ->
-            if (filename.indexOf("_duprateExpDens.pdf") > 0) "scatter_plots/$filename"
-            else if (filename.indexOf("_duprateExpBoxplot.pdf") > 0) "box_plots/$filename"
-            else if (filename.indexOf("_expressionHist.pdf") > 0) "histograms/$filename"
-            else if (filename.indexOf("_dupMatrix.txt") > 0) "gene_data/$filename"
-            else if (filename.indexOf("_duprateExpDensCurve.txt") > 0) "scatter_curve_data/$filename"
-            else if (filename.indexOf("_intercept_slope.txt") > 0) "intercepts_slopes/$filename"
-            else "$filename"
-        }
+  when:
+    !params.skip_qc && !params.skip_dupradar
 
-    when:
-      !params.skip_qc && !params.skip_dupradar
+  input:
+  file bam_md
+  file gtf from gtf_dupradar.collect()
+  val parse_res from rseqc_results_dupradar
 
-    input:
-    file bam_md
-    file gtf from gtf_dupradar.collect()
-    val parse_res from rseqc_results_dupradar
+  output:
+  file "*.{pdf,txt}" into dupradar_results
 
-    output:
-    file "*.{pdf,txt}" into dupradar_results
-
-    script: // This script is bundled with the pipeline, in nfcore/rnaseq/bin/
-    def dupradar_direction = 0
-    if (parse_res == 'yes'){
-        dupradar_direction = 1
-    } else if ((parse_res == 'reverse')){
-        dupradar_direction = 2
-    }
-    def paired = params.singleEnd ? 'single' :  'paired'
-    """
-    dupRadar.r $bam_md $gtf $dupradar_direction $paired ${task.cpus}
-    """
+  script: // This script is bundled with the pipeline, in nfcore/rnaseq/bin/
+  def dupradar_direction = 0
+  if (parse_res == 'yes'){
+      dupradar_direction = 1
+  } else if ((parse_res == 'reverse')){
+      dupradar_direction = 2
+  }
+  def paired = params.singleEnd ? 'single' :  'paired'
+  """
+  dupRadar.r $bam_md $gtf $dupradar_direction $paired ${task.cpus}
+  """
 }
 
 
@@ -792,157 +767,156 @@ process dupradar {
  */
 
 process featureCounts {
-    tag "${bam_featurecounts.baseName - 'Aligned.sortedByCoord.out'}"
-    publishDir "${params.outdir}/featureCounts", mode: 'copy',
-        saveAs: {filename ->
-            if (filename.indexOf("_gene.featureCounts.txt.summary") > 0) "gene_count_summaries/$filename"
-            else if (filename.indexOf("_gene.featureCounts.txt") > 0) "gene_counts/$filename"
-            else "$filename"
-        }
+  tag "${bam_featurecounts.baseName - 'Aligned.sortedByCoord.out'}"
+  publishDir "${params.outdir}/featureCounts", mode: 'copy',
+      saveAs: {filename ->
+          if (filename.indexOf("_gene.featureCounts.txt.summary") > 0) "gene_count_summaries/$filename"
+          else if (filename.indexOf("_gene.featureCounts.txt") > 0) "gene_counts/$filename"
+          else "$filename"
+      }
 
-    when:
-    params.counts == 'featureCounts'
+  when:
+  params.counts == 'featureCounts'
 
-    input:
-    file bam_featurecounts
-    file gtf from gtf_featureCounts.collect()
-    val parse_res from rseqc_results_featureCounts
+  input:
+  file bam_featurecounts
+  file gtf from gtf_featureCounts.collect()
+  val parse_res from rseqc_results_featureCounts
 
-    output:
-    file "${bam_featurecounts.baseName}_gene.featureCounts.txt" into geneCounts, featureCounts_to_merge
-    file "${bam_featurecounts.baseName}_gene.featureCounts.txt.summary" into featureCounts_logs
+  output:
+  file "${bam_featurecounts.baseName}_gene.featureCounts.txt" into geneCounts, featureCounts_to_merge
+  file "${bam_featurecounts.baseName}_gene.featureCounts.txt.summary" into featureCounts_logs
 
-    script:
-    def featureCounts_direction = 0
-    def extraAttributes = params.fcExtraAttributes ? "--extraAttributes ${params.fcExtraAttributes}" : ''
-    if (parse_res == 'yes'){
-        featureCounts_direction = 1
-    } else if ((parse_res == 'reverse')){
-        featureCounts_direction = 2
-    }
+  script:
+  def featureCounts_direction = 0
+  def extraAttributes = params.fcExtraAttributes ? "--extraAttributes ${params.fcExtraAttributes}" : ''
+  if (parse_res == 'yes'){
+      featureCounts_direction = 1
+  } else if ((parse_res == 'reverse')){
+      featureCounts_direction = 2
+  }
 
-    // Try to get real sample name
-    sample_name = bam_featurecounts.baseName - 'Aligned.sortedByCoord.out'
-    """
-    featureCounts -a $gtf -g gene_id -o ${bam_featurecounts.baseName}_gene.featureCounts.txt $extraAttributes -p -s $featureCounts_direction $bam_featurecounts
-    """
+  // Try to get real sample name
+  sample_name = bam_featurecounts.baseName - 'Aligned.sortedByCoord.out'
+  """
+  featureCounts -a $gtf -g gene_id -o ${bam_featurecounts.baseName}_gene.featureCounts.txt $extraAttributes -p -s $featureCounts_direction $bam_featurecounts
+  """
 }
 
 process HTseqCounts {
-    tag "${bam_HTseqCounts.baseName - 'Aligned.sortedByCoord.out'}"
-    publishDir "${params.outdir}/HTseqCounts", mode: 'copy',
-        saveAs: {filename ->
-            if (filename.indexOf("_gene.HTseqCounts.txt.summary") > 0) "gene_count_summaries/$filename"
-            else if (filename.indexOf("_gene.HTseqCounts.txt") > 0) "gene_counts/$filename"
-            else "$filename"
-        }
-    when:
-    params.counts == 'HTseqCounts'
+  tag "${bam_HTseqCounts.baseName - 'Aligned.sortedByCoord.out'}"
+  publishDir "${params.outdir}/HTseqCounts", mode: 'copy',
+      saveAs: {filename ->
+          if (filename.indexOf("_gene.HTseqCounts.txt.summary") > 0) "gene_count_summaries/$filename"
+          else if (filename.indexOf("_gene.HTseqCounts.txt") > 0) "gene_counts/$filename"
+          else "$filename"
+      }
+  when:
+  params.counts == 'HTseqCounts'
 
-    input:
-    file bam_HTseqCounts
-    file gtf from gtf_HTseqCounts.collect()
-    val parse_res from  rseqc_results_HTseqCounts
+  input:
+  file bam_HTseqCounts
+  file gtf from gtf_HTseqCounts.collect()
+  val parse_res from  rseqc_results_HTseqCounts
 
-    output: 
-    file "*_counts.csv" into HTseqCounts_to_merge
+  output: 
+  file "*_counts.csv" into HTseqCounts_to_merge
 
-    script:
-    def stranded_opt = '-s no' 
-    if (parse_res == 'yes'){
-        stranded_opt= '-s yes'
-    } else if ((parse_res == 'reverse')){
-        stranded_opt= '-s reverse'
-    }
+  script:
+  def stranded_opt = '-s no' 
+  if (parse_res == 'yes'){
+      stranded_opt= '-s yes'
+  } else if ((parse_res == 'reverse')){
+      stranded_opt= '-s reverse'
+  }
 
-    // Try to get real sample name
-    sample_name = bam_HTseqCounts.baseName - 'Aligned.sortedByCoord.out'
-
-    """
-    htseq-count ${params.htseq_opts} $stranded_opt $bam_HTseqCounts $gtf > ${sample_name}_counts.csv
-    """
+  // Try to get real sample name
+  sample_name = bam_HTseqCounts.baseName - 'Aligned.sortedByCoord.out'
+  """
+  htseq-count ${params.htseq_opts} $stranded_opt $bam_HTseqCounts $gtf > ${sample_name}_counts.csv
+  """
 }
 
+/*
 process merge_featureCounts {
-    tag "${input_files[0].baseName - 'Aligned.sortedByCoord.out_gene.featureCounts'}"
-    publishDir "${params.outdir}/featureCounts", mode: 'copy'
+  tag "${input_files[0].baseName - 'Aligned.sortedByCoord.out_gene.featureCounts'}"
+  publishDir "${params.outdir}/featureCounts", mode: 'copy'
 
-    input:
-    file input_files from featureCounts_to_merge.collect()
+  input:
+  file input_files from featureCounts_to_merge.collect()
 
-    output:
-    file 'merged_gene_counts.txt'
+  output:
+  file 'merged_gene_counts.txt'
 
-    script:
-    //if we only have 1 file, just use cat and pipe output to csvtk. Else join all files first, and then remove unwanted column names.
-    def single = input_files instanceof Path ? 1 : input_files.size()
-    def merge = (single == 1) ? 'cat' : 'csvtk join -t -f "Geneid,Start,Length,End,Chr,Strand,gene_name"'
-    """
-    $merge $input_files | csvtk cut -t -f "-Start,-Chr,-End,-Length,-Strand" | sed 's/Aligned.sortedByCoord.out.markDups.bam//g' > merged_gene_counts.txt
-    """
+  script:
+  //if we only have 1 file, just use cat and pipe output to csvtk. Else join all files first, and then remove unwanted column names.
+  def single = input_files instanceof Path ? 1 : input_files.size()
+  def merge = (single == 1) ? 'cat' : 'csvtk join -t -f "Geneid,Start,Length,End,Chr,Strand,gene_name"'
+  """
+  $merge $input_files | csvtk cut -t -f "-Start,-Chr,-End,-Length,-Strand" | sed 's/Aligned.sortedByCoord.out.markDups.bam//g' > merged_gene_counts.txt
+  """
 }
-
+*/
 
 /*
  * Parse software version numbers
  */
 process get_software_versions {
+  output:
+  file 'software_versions_mqc.yaml' into software_versions_yaml
 
-    output:
-    file 'software_versions_mqc.yaml' into software_versions_yaml
-
-    script:
-    """
-    echo $workflow.manifest.version &> v_rnaseq.txt
-    echo $workflow.nextflow.version &> v_nextflow.txt
-    fastqc --version &> v_fastqc.txt
-    STAR --version &> v_star.txt
-    tophat2 --version &> v_tophat2.txt
-    hisat2 --version &> v_hisat2.txt
-    preseq &> v_preseq.txt
-    featureCounts -v &> v_featurecounts.txt
-    htseq-count -h | grep version  &> v_htseq.txt
-    picard MarkDuplicates --version &> v_markduplicates.txt  || true
-    samtools --version &> v_samtools.txt
-    multiqc --version &> v_multiqc.txt
-    scrape_software_versions.py &> software_versions_mqc.yaml
-    """
+  script:
+  """
+  echo $workflow.manifest.version &> v_rnaseq.txt
+  echo $workflow.nextflow.version &> v_nextflow.txt
+  fastqc --version &> v_fastqc.txt
+  STAR --version &> v_star.txt
+  tophat2 --version &> v_tophat2.txt
+  hisat2 --version &> v_hisat2.txt
+  preseq &> v_preseq.txt
+  infer_experiment.py --version &> v_rseqc.txt
+  featureCounts -v &> v_featurecounts.txt
+  htseq-count -h | grep version  &> v_htseq.txt
+  picard MarkDuplicates --version &> v_markduplicates.txt  || true
+  samtools --version &> v_samtools.txt
+  multiqc --version &> v_multiqc.txt
+  scrape_software_versions.py &> software_versions_mqc.yaml
+  """
 }
 
 /*
  * Pipeline parameters to go into MultiQC report
  */
 process workflow_summary_mqc {
+  when:
+  !params.skip_multiqc
 
-    when:
-    !params.skip_multiqc
+  output:
+  file 'workflow_summary_mqc.yaml' into workflow_summary_yaml
 
-    output:
-    file 'workflow_summary_mqc.yaml' into workflow_summary_yaml
-
-    exec:
-    def yaml_file = task.workDir.resolve('workflow_summary_mqc.yaml')
-    yaml_file.text  = """
-    id: 'nfcore-rnaseq-summary'
-    description: " - this information is collected when the pipeline is started."
-    section_name: 'nfcore/rnaseq Workflow Summary'
-    section_href: 'https://github.com/nf-core/rnaseq'
-    plot_type: 'html'
-    data: |
-        <dl class=\"dl-horizontal\">
+  exec:
+  def yaml_file = task.workDir.resolve('workflow_summary_mqc.yaml')
+  yaml_file.text  = """
+  id: 'nfcore-rnaseq-summary'
+  description: " - this information is collected when the pipeline is started."
+  section_name: 'nfcore/rnaseq Workflow Summary'
+  section_href: 'https://github.com/nf-core/rnaseq'
+  plot_type: 'html'
+  data: |
+      <dl class=\"dl-horizontal\">
 ${summary.collect { k,v -> "            <dt>$k</dt><dd><samp>${v ?: '<span style=\"color:#999999;\">N/A</a>'}</samp></dd>" }.join("\n")}
-        </dl>
-    """.stripIndent()
+      </dl>
+  """.stripIndent()
 }
 
 
-Counts_logs_choix = Channel.create()
+counts_logs = Channel.create()
 if( params.counts == 'featureCounts' ){
-    Counts_logs_choix = featureCounts_logs
+    counts_logs = featureCounts_logs
 } else if (params.counts == 'HTseqCounts'){
-    Counts_logs_choix = HTseqCounts_to_merge
+    counts_logs = HTseqCounts_to_merge
 }else if (params.counts == 'star'){
-    Counts_logs_choix = star_log
+    counts_logs = star_log
 }
 
 /*
@@ -961,7 +935,7 @@ process multiqc {
     file ('rseqc/*') from rseqc_results.collect().ifEmpty([])
     file ('preseq/*') from preseq_results.collect().ifEmpty([])
     file ('dupradar/*') from dupradar_results.collect().ifEmpty([])
-    file ('choiceCounts/*') from Counts_logs_choix.collect()
+    file ('choiceCounts/*') from counts_logs.collect()
     file ('software_versions/*') from software_versions_yaml.collect()
     file ('workflow_summary/*') from workflow_summary_yaml.collect()
 
