@@ -40,9 +40,15 @@ def helpMessage() {
       --singleEnd                   Specifies that the input is single end reads
 
     Strandedness:
-      --stranded                    Library strandness ['auto', 'yes', 'reverse', 'no']
+      --stranded                    Library strandness ['auto', 'yes', 'reverse', 'no']. Default: 'auto'
 
-    References                      If not specified in the configuration file or you wish to overwrite any of the references.
+    Mapping:
+      --aligner                     Tool for read alignments ['star', 'hisat2', 'tophat2']. Default: 'star'
+
+    Counts:
+      --counts                      Tool to use to estimate the raw counts per gene ['star', 'featureCounts', 'HTseqCounts']. Default: 'star'
+
+    References:                     If not specified in the configuration file or you wish to overwrite any of the references.
       --star_index                  Path to STAR index
       --hisat2_index                Path to HiSAT2 index
       --tophat2_index		    Path to TopHat2 index
@@ -216,6 +222,7 @@ if(params.aligner == 'star'){
   if(params.hisat2_index) summary['HISAT2 Index'] = params.hisat2_index
   if(params.splicesites) summary['Splice Sites'] = params.splicesites
 }
+summary['Counts'] = params.counts
 if(params.gtf)                 summary['GTF Annotation']  = params.gtf
 if(params.bed12)               summary['BED Annotation']  = params.bed12
 summary['Save Intermeds'] = params.saveAlignedIntermediates ? 'Yes' : 'No'
@@ -254,8 +261,7 @@ process fastqc {
     file "*_fastqc.{zip,html}" into fastqc_results
 
     script:
-    // TODO update reg exp
-    prefix = reads[0].toString() - ~/(_1M_1)?(_R1)?(_R2)?(.R1)?(.R2)?(_trimmed)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
+    prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_trimmed)(\.fq)?(\.fastq)?(\.gz)?$/
 
     """
     fastqc -q $reads
@@ -331,8 +337,7 @@ if (params.stranded == 'auto'){
     file("${prefix}_subsample.bam") into bam_rseqc
 
     script:
-    //TODO update regexp
-    prefix = reads[0].toString() - ~/(_1M_1)?(_R1)?(_R2)?(.R1)?(.R2)?(_trimmed)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
+    prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_trimmed)?(\.fq)?(\.fastq)?(\.gz)?$/
     if (params.singleEnd) {
        """
        bowtie2 --fast --end-to-end --reorder \\
@@ -539,8 +544,7 @@ if(params.aligner == 'hisat2'){
 
     script:
     index_base = hs2_indices[0].toString() - ~/.\d.ht2/
-    // TODO update regexp
-    prefix = reads[0].toString() - ~/(_1M_1)?(_R1)?(_R2)?(.R1)?(.R2)?(_trimmed)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
+    prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_trimmed)?(\.fq)?(\.fastq)?(\.gz)?$/
     seqCenter = params.seqCenter ? "--rg-id ${prefix} --rg CN:${params.seqCenter.replaceAll('\\s','_')}" : ''
     def rnastrandness = ''
     if (params.stranded=='yes'){
