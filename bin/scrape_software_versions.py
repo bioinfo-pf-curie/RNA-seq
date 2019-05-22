@@ -9,21 +9,23 @@ regexes = {
     'FastQC': ['v_fastqc.txt', r"FastQC v(\S+)"],
     'STAR': ['v_star.txt', r"(\S+)"],
     'HISAT2': ['v_hisat2.txt', r"version (\S+)"],
+    'TopHat2': ['v_tophat2.txt', r"version (\S+)"],
     'Picard MarkDuplicates': ['v_markduplicates.txt', r"([\d\.]+)-SNAPSHOT"],
     'Samtools': ['v_samtools.txt', r"samtools (\S+)"],
-    'featureCounts': ['v_featurecounts.txt', r"featureCounts v(\S+)"],
-    'htseqCounts': ['v_htseq.txt', r"HTSeqCounts v(\S+)"],
+    'FeatureCounts': ['v_featurecounts.txt', r"featureCounts v(\S+)"],
+    'HTSeqCounts': ['v_htseq.txt', r"HTSeqCounts v(\S+)"],
     'Preseq': ['v_preseq.txt', r"Version: (\S+)"],
-    'RSeQC': ['v_rseqc.txt', r"read_duplication.py ([\d\.]+)"],
+    'RSeQC': ['v_rseqc.txt', r"infer_experiment.py ([\d\.]+)"],
     'MultiQC': ['v_multiqc.txt', r"multiqc, version (\S+)"],
 }
 results = OrderedDict()
-results['nfcore/rnaseq'] = '<span style="color:#999999;\">N/A</span>'
+results['rnaseq'] = '<span style="color:#999999;\">N/A</span>'
 results['Nextflow'] = '<span style="color:#999999;\">N/A</span>'
 results['FastQC'] = '<span style="color:#999999;\">N/A</span>'
 results['STAR'] = False
 results['HISAT2'] = False
-results['Picard MarkDuplicates'] = '<span style="color:#999999;\">N/A</span>'
+results['HISAT2'] = False
+results['TopHat2'] = '<span style="color:#999999;\">N/A</span>'
 results['Samtools'] = '<span style="color:#999999;\">N/A</span>'
 results['featureCounts'] = '<span style="color:#999999;\">N/A</span>'
 results['htseqCounts'] = '<span style="color:#999999;\">N/A</span>'
@@ -47,8 +49,8 @@ for k in results:
 # Dump to YAML
 print ('''
 id: 'software_versions'
-section_name: 'nfcore/rnaseq Software Versions'
-section_href: 'https://github.com/nf-core/rnaseq'
+section_name: 'Software Versions'
+section_href: 'https://gitlab.curie.fr/rnaseq'
 plot_type: 'html'
 description: 'are collected at run time from the software output.'
 data: |

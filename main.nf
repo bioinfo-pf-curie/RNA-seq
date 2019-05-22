@@ -29,7 +29,7 @@ def helpMessage() {
     =======================================================
 
     Usage:
-    nextflow run nf-core/rnaseq --reads '*_R{1,2}.fastq.gz' --genome hg19 -profile conda
+    nextflow run rnaseq --reads '*_R{1,2}.fastq.gz' --genome hg19 -profile conda
 
     Mandatory arguments:
       --reads                       Path to input data (must be surrounded with quotes)
@@ -901,10 +901,10 @@ process workflow_summary_mqc {
   exec:
   def yaml_file = task.workDir.resolve('workflow_summary_mqc.yaml')
   yaml_file.text  = """
-  id: 'nfcore-rnaseq-summary'
+  id: 'summary'
   description: " - this information is collected when the pipeline is started."
-  section_name: 'nfcore/rnaseq Workflow Summary'
-  section_href: 'https://github.com/nf-core/rnaseq'
+  section_name: 'Workflow Summary'
+  section_href: 'https://gitlab.curie.fr/rnaseq'
   plot_type: 'html'
   data: |
       <dl class=\"dl-horizontal\">
@@ -954,13 +954,19 @@ process multiqc {
     if( params.counts == 'featureCounts' ){
         """
         multiqc . -f $rtitle $rfilename --config $multiqc_config \\
-        -m custom_content -m picard -m preseq -m rseqc -m featureCounts -m hisat2 -m star -m cutadapt -m fastqc
+        -m custom_content -m picard -m preseq -m rseqc -m featureCounts -m bowtie2 -m hisat2 -m star -m tophat -m cutadapt -m fastqc
+        """
+        }
+    else if( params.counts == 'HTseqCounts' ){
+        """
+        multiqc . -f $rtitle $rfilename --config $multiqc_config \\
+        -m custom_content -m picard -m preseq -m rseqc -m HTSeq -m bowtie2 -m hisat2 -m star -m tophat -m cutadapt -m fastqc
         """
         }
     else {
          """
         multiqc . -f $rtitle $rfilename --config $multiqc_config \\
-        -m custom_content -m picard -m preseq -m rseqc -m hisat2 -m star -m cutadapt -m fastqc
+        -m custom_content -m picard -m preseq -m rseqc -m bowtie2 -m hisat2 -m star -m tophat -m cutadapt -m fastqc
          """
     }
 }
@@ -982,27 +988,6 @@ process output_documentation {
     markdown_to_html.r $output_docs results_description.html
     """
 }
-
-/*
- * Workflow summary
- */
-def create_workflow_summary(summary) {
-    def yaml_file = workDir.resolve('workflow_summary_mqc.yaml')
-    yaml_file.text  = """
-    id: 'nf-core-mypipeline-summary'
-    description: " - this information is collected when the pipeline is started."
-    section_name: 'nf-core/mypipeline Workflow Summary'
-    section_href: 'https://github.com/nf-core/mypipeline'
-    plot_type: 'html'
-    data: |
-        <dl class=\"dl-horizontal\">
-${summary.collect { k,v -> "            <dt>$k</dt><dd><samp>${v ?: '<span style=\"color:#999999;\">N/A</a>'}</samp></dd>" }.join("\n")}
-        </dl>
-    """.stripIndent()
-
-   return yaml_file
-}
-
 
 /*
  * Completion e-mail notification
@@ -1083,10 +1068,6 @@ workflow.onComplete {
           log.info "[nfcore/rnaseq] Sent summary e-mail to $params.email (mail)"
         }
     }
-
-    // Switch the embedded MIME images with base64 encoded src
-    //ngirnaseqlogo = new File("$baseDir/assets/nfcore-rnaseq_logo.png").bytes.encodeBase64().toString()
-    //email_html = email_html.replaceAll(~/cid:ngilogo/, "data:image/png;base64,$ngilogo")
 
     // Write summary e-mail HTML to a file
     def output_d = new File( "${params.outdir}/pipeline_info/" )
