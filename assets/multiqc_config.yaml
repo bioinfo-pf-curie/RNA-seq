@@ -17,14 +17,19 @@ read_count_prefix: 'M'
 read_count_desc: 'millions'
 
 module_order:
-  - 'fastqc'
-  - 'rseqc'
-  - 'bowtie2'
-  - 'star'
-  - 'hisat2'
-  - 'tophat'
-  - 'preseq'
-  - 'picard'
+  - fastqc
+  - rseqc
+  - bowtie1:
+      name: 'rRNA Mapping'
+      info: 'This section of the report the fraction of reads aligned on ribosomal RNA.'
+      target: ''
+      path_filters:
+        - '*rrna.log'
+  - star
+  - hisat2
+  - tophat
+  - preseq
+  - picard
 
 report_section_order:
   DupRadar:

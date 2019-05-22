@@ -274,6 +274,13 @@ process fastqc {
 */
 process rRNA_mapping {
   tag "${prefix}"
+  publishDir "${params.outdir}/rRNA_mapping", mode: 'copy',
+      saveAs: {filename ->
+          if (filename.indexOf("sorted.bam") > 0 &&  params.saveAlignedIntermediates) filename
+	  else if (filename.indexOf("fastq.gz") > 0 &&  params.saveAlignedIntermediates) filename
+	  else if (filename.indexOf(".log") > 0) "logs/$filename"
+          else null
+      }
 
   when:
     !params.skip_rrna
@@ -284,6 +291,9 @@ process rRNA_mapping {
 
   output:
     set val(name), file("${prefix}_norRNA_{1,2}.fastq.gz") into rrna_mapping_res
+    file "*.log" into rrna_logs
+    file "*sorted.bam"
+
 
   script:
   prefix = reads[0].toString() - ~/(_1M_1)?(_R1)?(_R2)?(.R1)?(.R2)?(_trimmed)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
@@ -295,8 +305,8 @@ process rRNA_mapping {
      --un ${prefix}_norRNA.fastq \\
      --sam ${params.rrna} \\
      -1 ${reads} \\
-     ${prefix}.sam  && \
-     gzip -f ${prefix}_norRNA*.fastq
+     ${prefix}.sam  2> ${prefix}_rrna.log && \
+     gzip -f ${prefix}_norRNA*.fastq 
      samtools view -@  ${task.cpus} -bS ${prefix}.sam > ${prefix}.bam  && \
      samtools sort \\
           ${prefix}.bam \\
@@ -311,8 +321,8 @@ process rRNA_mapping {
      --sam ${params.rrna} \\
      -1 ${reads[0]} \\
      -2 ${reads[1]} \\
-     ${prefix}.sam  && \
-     gzip -f ${prefix}_norRNA_*.fastq
+     ${prefix}.sam  2> ${prefix}_rrna.log && \
+     gzip -f ${prefix}_norRNA_*.fastq 
      samtools view -@  ${task.cpus} -bS ${prefix}.sam > ${prefix}.bam  && \
      samtools sort \\
           ${prefix}.bam \\
@@ -935,6 +945,7 @@ process multiqc {
     input:
     file multiqc_config from ch_multiqc_config
     file (fastqc:'fastqc/*') from fastqc_results.collect().ifEmpty([])
+    file ('rrna/*') from rrna_logs.collect()
     file ('alignment/*') from alignment_logs.collect()
     file ('rseqc/*') from rseqc_results.collect().ifEmpty([])
     file ('preseq/*') from preseq_results.collect().ifEmpty([])
@@ -954,19 +965,19 @@ process multiqc {
     if( params.counts == 'featureCounts' ){
         """
         multiqc . -f $rtitle $rfilename --config $multiqc_config \\
-        -m custom_content -m picard -m preseq -m rseqc -m featureCounts -m bowtie2 -m hisat2 -m star -m tophat -m cutadapt -m fastqc
+        -m custom_content -m picard -m preseq -m rseqc -m featureCounts -m bowtie1 -m hisat2 -m star -m tophat -m cutadapt -m fastqc
         """
         }
     else if( params.counts == 'HTseqCounts' ){
         """
         multiqc . -f $rtitle $rfilename --config $multiqc_config \\
-        -m custom_content -m picard -m preseq -m rseqc -m HTSeq -m bowtie2 -m hisat2 -m star -m tophat -m cutadapt -m fastqc
+        -m custom_content -m picard -m preseq -m rseqc -m HTSeq -m bowtie1 -m hisat2 -m star -m tophat -m cutadapt -m fastqc
         """
         }
     else {
          """
         multiqc . -f $rtitle $rfilename --config $multiqc_config \\
-        -m custom_content -m picard -m preseq -m rseqc -m bowtie2 -m hisat2 -m star -m tophat -m cutadapt -m fastqc
+        -m custom_content -m picard -m preseq -m rseqc -m bowtie1 -m hisat2 -m star -m tophat -m cutadapt -m fastqc
          """
     }
 }
