@@ -23,15 +23,16 @@ module_order:
   - 'star'
   - 'hisat2'
   - 'tophat'
-  - 'picard'
-  - 'dupradar'
   - 'preseq'
+  - 'picard'
 
 report_section_order:
-    software_versions:
-        order: -1000
-    summary:
-        order: -1100
+  DupRadar:
+    order: -900 
+  software_versions:
+    order: -1000
+  summary:
+    order: -1100
 
 table_columns_visible:
     FastQC:
