@@ -21,7 +21,7 @@ module_order:
   - rseqc
   - bowtie1:
       name: 'rRNA Mapping'
-      info: 'This section of the report the fraction of reads aligned on ribosomal RNA.'
+      info: 'This section reports the fraction of reads aligned on ribosomal RNAs.'
       target: ''
       path_filters:
         - '*rrna.log'

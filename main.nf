@@ -486,7 +486,7 @@ if(params.aligner == 'star'){
     output:
     set file("*Log.final.out"), file ('*.bam') into star_aligned
     file "*.out" into alignment_logs
-    file "*.out.tab"
+    file "*.out.tab" into star_log_counts
     file "*Log.out" into star_log
     file "${prefix}Aligned.sortedByCoord.out.bam.bai" into bam_index_rseqc
 
@@ -930,7 +930,7 @@ if( params.counts == 'featureCounts' ){
 } else if (params.counts == 'HTseqCounts'){
     counts_logs = HTseqCounts_to_merge
 }else if (params.counts == 'star'){
-    counts_logs = star_log
+    counts_logs = star_log_counts
 }
 
 /*
@@ -950,7 +950,7 @@ process multiqc {
     file ('rseqc/*') from rseqc_results.collect().ifEmpty([])
     file ('preseq/*') from preseq_results.collect().ifEmpty([])
     file ('dupradar/*') from dupradar_results.collect().ifEmpty([])
-    file ('choiceCounts/*') from counts_logs.collect()
+    file ('counts/*') from counts_logs.collect()
     file ('software_versions/*') from software_versions_yaml.collect()
     file ('workflow_summary/*') from workflow_summary_yaml.collect()
 
