@@ -57,6 +57,7 @@ def helpMessage() {
       --saveAlignedIntermediates    Save the BAM files from the Aligment step  - not done by default
 
     Other options:
+      --metadata                    Add metadata file for multiQC report
       --outdir                      The output directory where the results will be saved
       -w/--work-dir                 The temporary directory where intermediate data will be saved
       --email                       Set this parameter to your e-mail address to get a summary e-mail with details of the run sent to you when the workflow exits
@@ -108,6 +109,7 @@ if( !(workflow.runName ==~ /[a-z]+_[a-z]+/) ){
 
 // Stage config files
 ch_multiqc_config = Channel.fromPath(params.multiqc_config)
+ch_multiqc_logo = Channel.fromPath("$baseDir/assets/institut_curie.jpg")
 ch_output_docs = Channel.fromPath("$baseDir/docs/output.md")
 
 /*
@@ -175,6 +177,11 @@ if( params.aligner == 'hisat2' && params.splicesites ){
         .into { indexing_splicesites; alignment_splicesites }
 }
 
+if ( params.metadata ){
+   Channel
+       .fromPath( params.metadata )
+       .set { ch_metadata }
+}
 
 /*
  * Create a channel for input read files
@@ -207,6 +214,7 @@ log.info """=======================================================
 ======================================================="""
 def summary = [:]
 summary['Run Name']     = custom_runName ?: workflow.runName
+summary['Metadata']	= params.metadata
 summary['Reads']        = params.reads
 summary['Data Type']    = params.singleEnd ? 'Single-End' : 'Paired-End'
 summary['Genome']       = params.genome
@@ -244,7 +252,7 @@ log.info "========================================="
 
 
 /*
- * STEP 1 - FastQC
+ * FastQC
  */
 process fastqc {
     tag "${prefix}"
@@ -261,7 +269,7 @@ process fastqc {
     file "*_fastqc.{zip,html}" into fastqc_results
 
     script:
-    prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_trimmed)(\.fq)?(\.fastq)?(\.gz)?$/
+    prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(trimmed)?(\.fq)?(\.fastq)?(\.gz)?$/
 
     """
     fastqc -q $reads
@@ -270,8 +278,8 @@ process fastqc {
 
 
 /*
- * STEP 2 - rRNA mapping 
-*/
+ * rRNA mapping 
+ */
 process rRNA_mapping {
   tag "${prefix}"
   publishDir "${params.outdir}/rRNA_mapping", mode: 'copy',
@@ -296,7 +304,7 @@ process rRNA_mapping {
 
 
   script:
-  prefix = reads[0].toString() - ~/(_1M_1)?(_R1)?(_R2)?(.R1)?(.R2)?(_trimmed)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
+  prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(trimmed)?(\.fq)?(\.fastq)?(\.gz)?$/
 
   if (params.singleEnd) {
      """
@@ -305,7 +313,7 @@ process rRNA_mapping {
      --un ${prefix}_norRNA.fastq \\
      --sam ${params.rrna} \\
      -1 ${reads} \\
-     ${prefix}.sam  2> ${prefix}_rrna.log && \
+     ${prefix}.sam  2> ${prefix}.log && \
      gzip -f ${prefix}_norRNA*.fastq 
      samtools view -@  ${task.cpus} -bS ${prefix}.sam > ${prefix}.bam  && \
      samtools sort \\
@@ -321,7 +329,7 @@ process rRNA_mapping {
      --sam ${params.rrna} \\
      -1 ${reads[0]} \\
      -2 ${reads[1]} \\
-     ${prefix}.sam  2> ${prefix}_rrna.log && \
+     ${prefix}.sam  2> ${prefix}.log && \
      gzip -f ${prefix}_norRNA_*.fastq 
      samtools view -@  ${task.cpus} -bS ${prefix}.sam > ${prefix}.bam  && \
      samtools sort \\
@@ -334,7 +342,7 @@ process rRNA_mapping {
 
 
 /*
- * STEP 2 - strandness
+ * Strandness
  */
 
 if (params.stranded == 'auto'){
@@ -347,7 +355,7 @@ if (params.stranded == 'auto'){
     file("${prefix}_subsample.bam") into bam_rseqc
 
     script:
-    prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_trimmed)?(\.fq)?(\.fastq)?(\.gz)?$/
+    prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(trimmed)?(\.fq)?(\.fastq)?(\.gz)?$/
     if (params.singleEnd) {
        """
        bowtie2 --fast --end-to-end --reorder \\
@@ -432,7 +440,7 @@ if (params.stranded == 'auto'){
 
 
 /*
- * STEP 3 - reads mapping
+ * Reads mapping
  */
 
 // From nf-core
@@ -491,7 +499,7 @@ if(params.aligner == 'star'){
     file "${prefix}Aligned.sortedByCoord.out.bam.bai" into bam_index_rseqc
 
     script:
-    prefix = reads[0].toString() - ~/(_1M_1)?(_norRNA_1)?(_R1)?(_R2)?(.R1)?(.R2)?(_trimmed)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
+    prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(trimmed)?(_norRNA)?(\.fq)?(\.fastq)?(\.gz)?$/
     def star_mem = task.memory ?: params.star_memory ?: false
     def avail_mem = star_mem ? "--limitBAMsortRAM ${star_mem.toBytes() - 100000000}" : ''
     def star_opt_add = params.counts == 'star' ? params.star_opts_counts : ''
@@ -554,7 +562,7 @@ if(params.aligner == 'hisat2'){
 
     script:
     index_base = hs2_indices[0].toString() - ~/.\d.ht2/
-    prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_trimmed)?(\.fq)?(\.fastq)?(\.gz)?$/
+    prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(trimmed)?(_norRNA)?(\.fq)?(\.fastq)?(\.gz)?$/
     seqCenter = params.seqCenter ? "--rg-id ${prefix} --rg CN:${params.seqCenter.replaceAll('\\s','_')}" : ''
     def rnastrandness = ''
     if (params.stranded=='yes'){
@@ -645,7 +653,7 @@ if(params.aligner == 'tophat2'){
     file "${prefix}.align_summary.txt" into alignment_logs
 
   script:
-    prefix = reads[0].toString() - ~/(_1M_1)?(_R1)?(_R2)?(.R1)?(.R2)?(_trimmed)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
+    prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(trimmed)?(_norRNA)?(\.fq)?(\.fastq)?(\.gz)?$/
     def avail_mem = task.memory ? "-m ${task.memory.toBytes() / task.cpus}" : ''
     def stranded_opt = '--library-type fr-unstranded'
     if (parse_res == 'yes'){
@@ -673,7 +681,7 @@ if(params.aligner == 'tophat2'){
 
 
 /*
- * STEP 4 - preseq analysis
+ * Saturation Curves
  */
 process preseq {
   tag "${bam_preseq.baseName - 'Aligned.sortedByCoord.out'}"
@@ -696,7 +704,7 @@ process preseq {
 
 
 /*
- * STEP 5 - Mark duplicates
+ * Duplicates
  */
 process markDuplicates {
   tag "${bam.baseName - 'Aligned.sortedByCoord.out'}"
@@ -734,10 +742,6 @@ process markDuplicates {
   """
 }
 
-
-/*
- * STEP 6 - dupRadar
- */
 process dupradar {
   tag "${bam_md.baseName - 'Aligned.sortedByCoord.out.markDups'}"
   publishDir "${params.outdir}/dupradar", mode: 'copy',
@@ -777,7 +781,7 @@ process dupradar {
 
 
 /*
- * STEP 8 - reads counts
+ * Counts
  */
 
 process featureCounts {
@@ -872,9 +876,20 @@ process merge_featureCounts {
 }
 */
 
+counts_logs = Channel.create()
+if( params.counts == 'featureCounts' ){
+    counts_logs = featureCounts_logs
+} else if (params.counts == 'HTseqCounts'){
+    counts_logs = HTseqCounts_to_merge
+}else if (params.counts == 'star'){
+    counts_logs = star_log_counts
+}
+
+
 /*
- * Parse software version numbers
+ * MultiQC
  */
+
 process get_software_versions {
   output:
   file 'software_versions_mqc.yaml' into software_versions_yaml
@@ -898,9 +913,6 @@ process get_software_versions {
   """
 }
 
-/*
- * Pipeline parameters to go into MultiQC report
- */
 process workflow_summary_mqc {
   when:
   !params.skip_multiqc
@@ -923,19 +935,6 @@ ${summary.collect { k,v -> "            <dt>$k</dt><dd><samp>${v ?: '<span style
   """.stripIndent()
 }
 
-
-counts_logs = Channel.create()
-if( params.counts == 'featureCounts' ){
-    counts_logs = featureCounts_logs
-} else if (params.counts == 'HTseqCounts'){
-    counts_logs = HTseqCounts_to_merge
-}else if (params.counts == 'star'){
-    counts_logs = star_log_counts
-}
-
-/*
- * STEP 12 MultiQC
- */
 process multiqc {
     publishDir "${params.outdir}/MultiQC", mode: 'copy'
 
@@ -943,13 +942,16 @@ process multiqc {
     !params.skip_multiqc
 
     input:
-    file multiqc_config from ch_multiqc_config
+    file metadata from ch_metadata.ifEmpty([])
+    file multiqc_config from ch_multiqc_config    
+    file multiqc_custom_logo from ch_multiqc_logo
     file (fastqc:'fastqc/*') from fastqc_results.collect().ifEmpty([])
     file ('rrna/*') from rrna_logs.collect()
     file ('alignment/*') from alignment_logs.collect()
     file ('rseqc/*') from rseqc_results.collect().ifEmpty([])
     file ('preseq/*') from preseq_results.collect().ifEmpty([])
     file ('dupradar/*') from dupradar_results.collect().ifEmpty([])
+    //file ('picard/*') from picard_results.collect().ifEmpty([])	
     file ('counts/*') from counts_logs.collect()
     file ('software_versions/*') from software_versions_yaml.collect()
     file ('workflow_summary/*') from workflow_summary_yaml.collect()
@@ -961,29 +963,28 @@ process multiqc {
     script:
     rtitle = custom_runName ? "--title \"$custom_runName\"" : ''
     rfilename = custom_runName ? "--filename " + custom_runName.replaceAll('\\W','_').replaceAll('_+','_') + "_multiqc_report" : ''
+    confs = params.metadata ? "--config $multiqc_config multiqc-config-metadata.yaml" : "--config $multiqc_config"
     
-    if( params.counts == 'featureCounts' ){
+    modules_list = "-m custom_content -m picard -m preseq -m rseqc -m bowtie1 -m hisat2 -m star -m tophat -m cutadapt -m fastqc"
+    modules_list = params.counts == 'featureCounts' ? "${modules_list} -m featureCounts" : "${modules_list}"  
+    modules_list = params.counts == 'HTSeqCounts' ? "${modules_list} -m HTSeq" : "${modules_list}"  
+
+    if ( params.metadata ){
         """
-        multiqc . -f $rtitle $rfilename --config $multiqc_config \\
-        -m custom_content -m picard -m preseq -m rseqc -m featureCounts -m bowtie1 -m hisat2 -m star -m tophat -m cutadapt -m fastqc
+    	metadata2multiqc.py ${metadata} > multiqc-config-metadata.yaml
         """
-        }
-    else if( params.counts == 'HTseqCounts' ){
-        """
-        multiqc . -f $rtitle $rfilename --config $multiqc_config \\
-        -m custom_content -m picard -m preseq -m rseqc -m HTSeq -m bowtie1 -m hisat2 -m star -m tophat -m cutadapt -m fastqc
-        """
-        }
-    else {
-         """
-        multiqc . -f $rtitle $rfilename --config $multiqc_config \\
-        -m custom_content -m picard -m preseq -m rseqc -m bowtie1 -m hisat2 -m star -m tophat -m cutadapt -m fastqc
-         """
     }
+
+    """
+    multiqc . -f $rtitle $rfilename $confs $modules_list
+    """    
 }
 
+
+
+
 /*
- * STEP 13 - Output Description HTML
+ * Sub-routine
  */
 process output_documentation {
     publishDir "${params.outdir}/pipeline_info", mode: 'copy'
@@ -1000,9 +1001,6 @@ process output_documentation {
     """
 }
 
-/*
- * Completion e-mail notification
- */
 workflow.onComplete {
 
     // Set up the e-mail variables
@@ -1109,5 +1107,4 @@ workflow.onComplete {
             }
         }
     }
-
 }
