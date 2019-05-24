@@ -65,7 +65,7 @@ def helpMessage() {
 
     QC options:
       --skip_qc                     Skip all QC steps apart from MultiQC
-      --skip_rrna		    Skip rRNA mapping
+      --skip_rrna                   Skip rRNA mapping
       --skip_fastqc                 Skip FastQC
       --skip_rseqc                  Skip RSeQC
       --skip_preseq                 Skip Preseq
@@ -150,8 +150,7 @@ if( params.gtf ){
     Channel
         .fromPath(params.gtf)
         .ifEmpty { exit 1, "GTF annotation file not found: ${params.gtf}" }
-        .into { gtf_makeSTARindex; gtf_makeHisatSplicesites; gtf_makeHISATindex; gtf_makeBED12;
-              gtf_star; gtf_dupradar; gtf_featureCounts; gtf_HTseqCounts; gtf_tophat}
+        .into { gtf_star; gtf_dupradar; gtf_featureCounts; gtf_HTseqCounts; gtf_tophat }
 } else {
     exit 1, "No GTF annotation specified!"
 }
@@ -160,14 +159,14 @@ if( params.bed12 ){
     bed12 = Channel
         .fromPath(params.bed12)
         .ifEmpty { exit 1, "BED12 annotation file not found: ${params.bed12}" }
-        .into {bed_rseqc; bed_genebody_coverage}
+        .set { bed_rseqc }
 }
 
 if( params.rrna ){
     Channel
         .fromPath(params.rrna)
-        .ifEmpty { exit 1, "RRNA annotation file not found: ${params.rrna}" }
-        .set {mapping}
+        .ifEmpty { exit 1, "rRNA annotation file not found: ${params.rrna}" }
+        .set { rrna_annot }
 }
 
 if( params.aligner == 'hisat2' && params.splicesites ){
@@ -180,6 +179,7 @@ if( params.aligner == 'hisat2' && params.splicesites ){
 if ( params.metadata ){
    Channel
        .fromPath( params.metadata )
+       .ifEmpty { exit 1, "Metadata file not found: ${params.metadata}" }
        .set { ch_metadata }
 }
 
@@ -295,7 +295,7 @@ process rRNA_mapping {
 
   input:
     set val(name), file(reads) from raw_reads_rna_mapping
-    file annot from mapping.collect()
+    file annot from rrna_annot.collect()
 
   output:
     set val(name), file("${prefix}_norRNA_{1,2}.fastq.gz") into rrna_mapping_res
@@ -433,9 +433,6 @@ if (params.stranded == 'auto'){
 }else{
    Channel.from( params.stranded )
      .into { rseqc_results_featureCounts; rseqc_results_HTseqCounts; rseqc_results_dupradar; rseqc_results_tophat }
-
-   //empty channel for multiQC
-   rseqc_results = Channel.create()
 }
 
 
@@ -946,9 +943,9 @@ process multiqc {
     file multiqc_config from ch_multiqc_config    
     file multiqc_custom_logo from ch_multiqc_logo
     file (fastqc:'fastqc/*') from fastqc_results.collect().ifEmpty([])
-    file ('rrna/*') from rrna_logs.collect()
+    file ('rrna/*') from rrna_logs.collect().ifEmpty([])
     file ('alignment/*') from alignment_logs.collect()
-    file ('rseqc/*') from rseqc_results.collect().ifEmpty([])
+    //file ('rseqc/*') from rseqc_results.collect().ifEmpty([])
     file ('preseq/*') from preseq_results.collect().ifEmpty([])
     file ('dupradar/*') from dupradar_results.collect().ifEmpty([])
     //file ('picard/*') from picard_results.collect().ifEmpty([])	
@@ -968,19 +965,13 @@ process multiqc {
     modules_list = "-m custom_content -m picard -m preseq -m rseqc -m bowtie1 -m hisat2 -m star -m tophat -m cutadapt -m fastqc"
     modules_list = params.counts == 'featureCounts' ? "${modules_list} -m featureCounts" : "${modules_list}"  
     modules_list = params.counts == 'HTSeqCounts' ? "${modules_list} -m HTSeq" : "${modules_list}"  
-
-    if ( params.metadata ){
-        """
-    	metadata2multiqc.py ${metadata} > multiqc-config-metadata.yaml
-        """
-    }
+ 
 
     """
+    //metadata2multiqc.py $metadata > multiqc-config-metadata.yaml
     multiqc . -f $rtitle $rfilename $confs $modules_list
     """    
 }
-
-
 
 
 /*
