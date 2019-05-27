@@ -67,7 +67,6 @@ def helpMessage() {
       --skip_qc                     Skip all QC steps apart from MultiQC
       --skip_rrna                   Skip rRNA mapping
       --skip_fastqc                 Skip FastQC
-      --skip_rseqc                  Skip RSeQC
       --skip_preseq                 Skip Preseq
       --skip_dupradar               Skip dupRadar (and Picard MarkDups)
       --skip_multiqc                Skip MultiQC
@@ -345,92 +344,98 @@ process rRNA_mapping {
  * Strandness
  */
 
-if (params.stranded == 'auto'){
-  process prep_rseqc {
-    tag "${prefix}"
-    input:
-    set val(name), file(reads) from raw_reads_prep_rseqc
+process prep_rseqc {
+  tag "${prefix}"
+  input:
+  set val(name), file(reads) from raw_reads_prep_rseqc
 
-    output:
-    file("${prefix}_subsample.bam") into bam_rseqc
+  output:
+  file("${prefix}_subsample.bam") into bam_rseqc
 
-    script:
-    prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(trimmed)?(\.fq)?(\.fastq)?(\.gz)?$/
-    if (params.singleEnd) {
-       """
-       bowtie2 --fast --end-to-end --reorder \\
-       -p ${task.cpus} \\
-       -u ${params.n_check} \\
-       -x ${params.bowtie2_index} \\
-       -U ${reads} > ${prefix}_subsample.bam 
+  when:
+  params.stranded == 'auto'
 
-       """
-    } else {
-       """
-       bowtie2 --fast --end-to-end --reorder \\
-       -p ${task.cpus} \\
-       -u ${params.n_check} \\
-       -x ${params.bowtie2_index} \\
-       -1 ${reads[0]} \\
-       -2 ${reads[1]} > ${prefix}_subsample.bam
-       """
-    }
+  script:
+  prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(trimmed)?(\.fq)?(\.fastq)?(\.gz)?$/
+  if (params.singleEnd) {
+     """
+     bowtie2 --fast --end-to-end --reorder \\
+     -p ${task.cpus} \\
+     -u ${params.n_check} \\
+     -x ${params.bowtie2_index} \\
+     -U ${reads} > ${prefix}_subsample.bam 
+     """
+  } else {
+     """
+     bowtie2 --fast --end-to-end --reorder \\
+     -p ${task.cpus} \\
+     -u ${params.n_check} \\
+     -x ${params.bowtie2_index} \\
+     -1 ${reads[0]} \\
+     -2 ${reads[1]} > ${prefix}_subsample.bam
+     """
   }
+}
 
-  process rseqc {
-    tag "${bam_rseqc.baseName - '_subsample'}"
-    publishDir "${params.outdir}/rseqc" , mode: 'copy',
-        saveAs: {filename ->
-                 if (filename.indexOf("bam_stat.txt") > 0) "bam_stat/$filename"
-            else if (filename.indexOf("infer_experiment.txt") > 0) "infer_experiment/$filename"
-            else filename
-        }
+process rseqc {
+  tag "${bam_rseqc.baseName - '_subsample'}"
+  publishDir "${params.outdir}/rseqc" , mode: 'copy',
+      saveAs: {filename ->
+               if (filename.indexOf("bam_stat.txt") > 0) "bam_stat/$filename"
+          else if (filename.indexOf("infer_experiment.txt") > 0) "infer_experiment/$filename"
+          else filename
+      }
 
-    input:
-    file bam_rseqc
-    file bed12 from bed_rseqc.collect()
+  when:
+  params.stranded == 'auto'
 
-    output:
-    file "*.{txt,pdf,r,xls}" into rseqc_results
-    file "${bam_rseqc.baseName}.ret_parserseq_output.txt" into parse_rseqc
+  input:
+  file bam_rseqc
+  file bed12 from bed_rseqc.collect()
+
+  output:
+  file "*.{txt,pdf,r,xls}" into rseqc_results
+  file "${bam_rseqc.baseName}.ret_parserseq_output.txt" into parse_rseqc
    
-    script:
-    pathworkdir = workDir
-    """
-    infer_experiment.py -i $bam_rseqc -r $bed12 > ${bam_rseqc.baseName}.infer_experiment.txt
-    parse_rseq_output.sh ${bam_rseqc.baseName}.infer_experiment.txt > ${bam_rseqc.baseName}.ret_parserseq_output.txt
-    cp ${bam_rseqc.baseName}.ret_parserseq_output.txt $workDir
-    """
-  }
+  script:
+  pathworkdir = workDir
+  """
+  infer_experiment.py -i $bam_rseqc -r $bed12 > ${bam_rseqc.baseName}.infer_experiment.txt
+  parse_rseq_output.sh ${bam_rseqc.baseName}.infer_experiment.txt > ${bam_rseqc.baseName}.ret_parserseq_output.txt
+  cp ${bam_rseqc.baseName}.ret_parserseq_output.txt $workDir
+  """
+}
 
-  process parse_infer_experiment {
-    tag "${name}"
+process parse_infer_experiment {
+  tag "${name}"
 
-    input:
-    file parse_rseqc
+  when:
+  params.stranded == 'auto'
 
-    output:
-    val parse_res into rseqc_results_featureCounts, rseqc_results_HTseqCounts, rseqc_results_dupradar, rseqc_results_tophat
+  input:
+  file parse_rseqc
 
-    script:
-    name = parse_rseqc[0].toString()
-    pathworkdir = workDir
-    lines = new File("${pathworkdir}/${name}").findAll { it.startsWith('') }
-    parse_res = lines[0] 
-    if (lines[0] == 'no'){  
-        unstranded = 1
-    }else if (lines[0] == 'yes'){  
-        forward_stranded = 1 
-    }else if (lines[0] == 'reverse'){ 
-        reverse_stranded = 1
-    } 
+  output:
+  val parse_res into rseqc_results_featureCounts, rseqc_results_HTseqCounts, rseqc_results_dupradar, rseqc_results_tophat
 
-    """
-    echo '${lines[0]}'  > res.stranded.txt
-   
-    """
-    }
-}else{
+  script:
+  name = parse_rseqc[0].toString()
+  pathworkdir = workDir
+  lines = new File("${pathworkdir}/${name}").findAll { it.startsWith('') }
+  parse_res = lines[0] 
+  if (lines[0] == 'no'){  
+      unstranded = 1
+  }else if (lines[0] == 'yes'){  
+      forward_stranded = 1 
+  }else if (lines[0] == 'reverse'){ 
+      reverse_stranded = 1
+  } 
+  """
+  echo '${lines[0]}'  > res.stranded.txt
+  """
+}
+
+if (params.stranded != 'auto'){
    Channel.from( params.stranded )
      .into { rseqc_results_featureCounts; rseqc_results_HTseqCounts; rseqc_results_dupradar; rseqc_results_tophat }
 }
@@ -796,7 +801,7 @@ process featureCounts {
   input:
   file bam_featurecounts
   file gtf from gtf_featureCounts.collect()
-  val parse_res from rseqc_results_featureCounts
+  val parse_res from rseqc_results_featureCounts.collect()
 
   output:
   file "${bam_featurecounts.baseName}_gene.featureCounts.txt" into geneCounts, featureCounts_to_merge
@@ -832,7 +837,7 @@ process HTseqCounts {
   input:
   file bam_HTseqCounts
   file gtf from gtf_HTseqCounts.collect()
-  val parse_res from  rseqc_results_HTseqCounts
+  val parse_res from  rseqc_results_HTseqCounts.collect()
 
   output: 
   file "*_counts.csv" into HTseqCounts_to_merge
@@ -945,7 +950,7 @@ process multiqc {
     file (fastqc:'fastqc/*') from fastqc_results.collect().ifEmpty([])
     file ('rrna/*') from rrna_logs.collect().ifEmpty([])
     file ('alignment/*') from alignment_logs.collect()
-    //file ('rseqc/*') from rseqc_results.collect().ifEmpty([])
+    file ('rseqc/*') from rseqc_results.collect().ifEmpty([])
     file ('preseq/*') from preseq_results.collect().ifEmpty([])
     file ('dupradar/*') from dupradar_results.collect().ifEmpty([])
     //file ('picard/*') from picard_results.collect().ifEmpty([])	
@@ -960,17 +965,22 @@ process multiqc {
     script:
     rtitle = custom_runName ? "--title \"$custom_runName\"" : ''
     rfilename = custom_runName ? "--filename " + custom_runName.replaceAll('\\W','_').replaceAll('_+','_') + "_multiqc_report" : ''
-    confs = params.metadata ? "--config $multiqc_config multiqc-config-metadata.yaml" : "--config $multiqc_config"
+    makemeta = params.metadata ? true : false
     
     modules_list = "-m custom_content -m picard -m preseq -m rseqc -m bowtie1 -m hisat2 -m star -m tophat -m cutadapt -m fastqc"
     modules_list = params.counts == 'featureCounts' ? "${modules_list} -m featureCounts" : "${modules_list}"  
-    modules_list = params.counts == 'HTSeqCounts' ? "${modules_list} -m HTSeq" : "${modules_list}"  
+    modules_list = params.counts == 'HTseqCounts' ? "${modules_list} -m HTSeq" : "${modules_list}"  
  
-
-    """
-    //metadata2multiqc.py $metadata > multiqc-config-metadata.yaml
-    multiqc . -f $rtitle $rfilename $confs $modules_list
-    """    
+    if ( makemeta ){
+      """
+      metadata2multiqc.py $metadata > multiqc-config-metadata.yaml
+      multiqc . -f $rtitle $rfilename --config $multiqc_config multiqc-config-metadata.yaml $modules_list
+      """    
+    }else{
+      """	
+      multiqc . -f $rtitle $rfilename --config $multiqc_config $modules_list
+      """
+    }
 }
 
 

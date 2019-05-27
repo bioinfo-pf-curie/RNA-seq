@@ -30,6 +30,8 @@ module_order:
   - rseqc
   - preseq
   - picard
+  - featureCounts
+  - HTSeq
 
 report_section_order:
   DupRadar:
