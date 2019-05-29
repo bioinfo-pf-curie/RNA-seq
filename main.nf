@@ -69,6 +69,7 @@ def helpMessage() {
       --skip_fastqc                 Skip FastQC
       --skip_preseq                 Skip Preseq
       --skip_dupradar               Skip dupRadar (and Picard MarkDups)
+      --skip_read_dist              Skip read distribution step
       --skip_multiqc                Skip MultiQC
 
     """.stripIndent()
@@ -351,7 +352,6 @@ process prep_rseqc {
 
   output:
   file("${prefix}_subsample.bam") into bam_rseqc
-  file("${prefix}_subsample.bam") into bam_read_dist
 
   when:
   params.stranded == 'auto'
@@ -377,28 +377,6 @@ process prep_rseqc {
      """
   }
 }
-
-
-process read_distribution {
-  tag "${bam_read_dist.baseName - '_subsample'}"
-  publishDir "${params.outdir}/read_distribution" , mode: 'copy'
-
-  when:
-  !params.skip_read_dist
-
-  input:
-  file bam_read_dist
-  file bed12 from bed_read_dist.collect()
-
-  output:
-  file "*.txt" into read_dist_results
-
-  script:
-  """
-  read_distribution.py -i $bam_read_dist -r $bed12 > ${bam_read_dist.baseName}.read_distribution.txt
-  """
-}
-
 
 process rseqc {
   tag "${bam_rseqc.baseName - '_subsample'}"
@@ -551,17 +529,17 @@ if(params.aligner == 'star'){
     star_aligned
         .filter { logs, bams -> check_log(logs) }
         .flatMap {  logs, bams -> bams }
-    .into { bam_count; bam_preseq; bam_markduplicates; bam_featurecounts; bam_HTseqCounts }
+    .into { bam_count; bam_preseq; bam_markduplicates; bam_featurecounts; bam_HTseqCounts; bam_read_dist }
 }
 
 
 // Update HiSat2 channel
-hisat2_raw_reads_choix = Channel.create()
+hisat2_raw_reads = Channel.create()
 if( params.rrna && !params.skip_rrna ){
-    hisat2_raw_reads_choix = rrna_mapping_res
+    hisat2_raw_reads = rrna_mapping_res
 }
 else {
-    hisat2_raw_reads_choix = raw_reads_hisat2 
+    hisat2_raw_reads = raw_reads_hisat2 
 }
 
 if(params.aligner == 'hisat2'){
@@ -577,7 +555,7 @@ if(params.aligner == 'hisat2'){
         }
 
     input:
-    set val(name), file(reads) from hisat2_raw_reads_choix 
+    set val(name), file(reads) from hisat2_raw_reads 
     file hs2_indices from hs2_indices.collect()
     file alignment_splicesites from alignment_splicesites.collect()
 
@@ -638,7 +616,7 @@ if(params.aligner == 'hisat2'){
       file hisat2_bam
 
       output:
-      file "${hisat2_bam.baseName}.sorted.bam" into bam_count, bam_preseq, bam_markduplicates, bam_featurecounts, bam_HTseqCounts 
+      file "${hisat2_bam.baseName}.sorted.bam" into bam_count, bam_preseq, bam_markduplicates, bam_featurecounts, bam_HTseqCounts, bam_read_dist 
       file "${hisat2_bam.baseName}.sorted.bam.bai" into bam_index_rseqc
  
       script:
@@ -654,12 +632,12 @@ if(params.aligner == 'hisat2'){
 }
 
 // Update channel for TopHat2
-tophat2_raw_reads_choix = Channel.create()
+tophat2_raw_reads = Channel.create()
 if( params.rrna && !params.skip_rrna ){
-    tophat2_raw_reads_choix = rrna_mapping_res
+    tophat2_raw_reads = rrna_mapping_res
 }
 else {
-    tophat2_raw_reads_choix = raw_reads_tophat2
+    tophat2_raw_reads = raw_reads_tophat2
 }
 
 if(params.aligner == 'tophat2'){
@@ -668,13 +646,13 @@ if(params.aligner == 'tophat2'){
   publishDir "${params.outdir}/tophat2", mode: 'copy'
 
   input:
-    set val(name), file(reads) from tophat2_raw_reads_choix 
+    set val(name), file(reads) from tophat2_raw_reads 
     file "tophat2" from tophat2_indices.collect()
     file gtf from gtf_tophat.collect()
     val parse_res from rseqc_results_tophat
 
   output:
-    file "${prefix}.bam" into bam_count, bam_preseq, bam_markduplicates, bam_featurecounts, bam_HTseqCounts
+    file "${prefix}.bam" into bam_count, bam_preseq, bam_markduplicates, bam_featurecounts, bam_HTseqCounts, bam_read_dist
     file "${prefix}.align_summary.txt" into alignment_logs
 
   script:
@@ -912,6 +890,32 @@ if( params.counts == 'featureCounts' ){
 
 
 /*
+ * Reads distribution
+ */
+
+process read_distribution {
+  tag "${bam_read_dist.baseName - '_subsample'}"
+  publishDir "${params.outdir}/read_distribution" , mode: 'copy'
+
+  when:
+  !params.skip_read_dist
+
+  input:
+  file bam_read_dist
+  file bed12 from bed_read_dist.collect()
+
+  output:
+  file "*.txt" into read_dist_results
+
+  script:
+  """
+  read_distribution.py -i ${bam_read_dist} -r ${bed12} > ${bam_read_dist.baseName}.read_distribution.txt
+  """
+}
+
+
+
+/*
  * MultiQC
  */
 
@@ -975,6 +979,7 @@ process multiqc {
     file ('rrna/*') from rrna_logs.collect().ifEmpty([])
     file ('alignment/*') from alignment_logs.collect()
     file ('rseqc/*') from rseqc_results.collect().ifEmpty([])
+    file ('rseqc/*') from read_dist_results.collect().ifEmpty([])
     file ('preseq/*') from preseq_results.collect().ifEmpty([])
     file ('dupradar/*') from dupradar_results.collect().ifEmpty([])
     //file ('picard/*') from picard_results.collect().ifEmpty([])	
