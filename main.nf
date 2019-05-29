@@ -158,7 +158,7 @@ if( params.bed12 ){
     bed12 = Channel
         .fromPath(params.bed12)
         .ifEmpty { exit 1, "BED12 annotation file not found: ${params.bed12}" }
-        .set { bed_rseqc }
+        .into { bed_rseqc; bed_read_dist} 
 }
 
 if( params.rrna ){
@@ -351,6 +351,7 @@ process prep_rseqc {
 
   output:
   file("${prefix}_subsample.bam") into bam_rseqc
+  file("${prefix}_subsample.bam") into bam_read_dist
 
   when:
   params.stranded == 'auto'
@@ -376,6 +377,28 @@ process prep_rseqc {
      """
   }
 }
+
+
+process read_distribution {
+  tag "${bam_read_dist.baseName - '_subsample'}"
+  publishDir "${params.outdir}/read_distribution" , mode: 'copy'
+
+  when:
+  !params.skip_read_dist
+
+  input:
+  file bam_read_dist
+  file bed12 from bed_read_dist.collect()
+
+  output:
+  file "*.txt" into read_dist_results
+
+  script:
+  """
+  read_distribution.py -i $bam_read_dist -r $bed12 > ${bam_read_dist.baseName}.read_distribution.txt
+  """
+}
+
 
 process rseqc {
   tag "${bam_rseqc.baseName - '_subsample'}"
@@ -906,6 +929,7 @@ process get_software_versions {
   hisat2 --version &> v_hisat2.txt
   preseq &> v_preseq.txt
   infer_experiment.py --version &> v_rseqc.txt
+  read_duplication.py --version &> v_read_duplication.txt
   featureCounts -v &> v_featurecounts.txt
   htseq-count -h | grep version  &> v_htseq.txt
   picard MarkDuplicates --version &> v_markduplicates.txt  || true
