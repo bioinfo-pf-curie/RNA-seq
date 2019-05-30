@@ -150,7 +150,7 @@ if( params.gtf ){
     Channel
         .fromPath(params.gtf)
         .ifEmpty { exit 1, "GTF annotation file not found: ${params.gtf}" }
-        .into { gtf_star; gtf_dupradar; gtf_featureCounts; gtf_HTseqCounts; gtf_tophat }
+        .into { gtf_star; gtf_dupradar; gtf_featureCounts; gtf_HTseqCounts; gtf_tophat; gtf_table }
 } else {
     exit 1, "No GTF annotation specified!"
 }
@@ -417,7 +417,7 @@ process parse_infer_experiment {
   file parse_rseqc
 
   output:
-  val parse_res into rseqc_results_featureCounts, rseqc_results_HTseqCounts, rseqc_results_dupradar, rseqc_results_tophat
+  val parse_res into rseqc_results_featureCounts, rseqc_results_HTseqCounts, rseqc_results_dupradar, rseqc_results_tophat, reseqc_table
 
   script:
   name = parse_rseqc[0].toString()
@@ -500,6 +500,7 @@ if(params.aligner == 'star'){
     file "*.out.tab" into star_log_counts
     file "*Log.out" into star_log
     file "${prefix}Aligned.sortedByCoord.out.bam.bai" into bam_index_rseqc
+    file "*ReadsPerGene.out.tab" optional true into star_counts_to_merge
 
     script:
     prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(trimmed)?(_norRNA)?(\.fq)?(\.fastq)?(\.gz)?$/
@@ -789,7 +790,7 @@ process dupradar {
 
 process featureCounts {
   tag "${bam_featurecounts.baseName - 'Aligned.sortedByCoord.out'}"
-  publishDir "${params.outdir}/featureCounts", mode: 'copy',
+  publishDir "${params.outdir}/counts", mode: 'copy',
       saveAs: {filename ->
           if (filename.indexOf("_gene.featureCounts.txt.summary") > 0) "gene_count_summaries/$filename"
           else if (filename.indexOf("_gene.featureCounts.txt") > 0) "gene_counts/$filename"
@@ -805,7 +806,7 @@ process featureCounts {
   val parse_res from rseqc_results_featureCounts.collect()
 
   output:
-  file "${bam_featurecounts.baseName}_gene.featureCounts.txt" into geneCounts, featureCounts_to_merge
+  file "${bam_featurecounts.baseName}_gene.featureCounts.txt" into geneCounts, featureCounts_counts_to_merge
   file "${bam_featurecounts.baseName}_gene.featureCounts.txt.summary" into featureCounts_logs
 
   script:
@@ -826,7 +827,7 @@ process featureCounts {
 
 process HTseqCounts {
   tag "${bam_HTseqCounts.baseName - 'Aligned.sortedByCoord.out'}"
-  publishDir "${params.outdir}/HTseqCounts", mode: 'copy',
+  publishDir "${params.outdir}/counts", mode: 'copy',
       saveAs: {filename ->
           if (filename.indexOf("_gene.HTseqCounts.txt.summary") > 0) "gene_count_summaries/$filename"
           else if (filename.indexOf("_gene.HTseqCounts.txt") > 0) "gene_counts/$filename"
@@ -841,7 +842,7 @@ process HTseqCounts {
   val parse_res from  rseqc_results_HTseqCounts.collect()
 
   output: 
-  file "*_counts.csv" into HTseqCounts_to_merge
+  file "*_counts.csv" into htseq_counts_to_merge
 
   script:
   def stranded_opt = '-s no' 
@@ -858,36 +859,44 @@ process HTseqCounts {
   """
 }
 
-/*
-process merge_featureCounts {
-  tag "${input_files[0].baseName - 'Aligned.sortedByCoord.out_gene.featureCounts'}"
-  publishDir "${params.outdir}/featureCounts", mode: 'copy'
+
+counts_to_merge = Channel.create()
+if( params.counts == 'featureCounts' ){
+    counts_to_merge = featureCounts_counts_to_merge
+} else if (params.counts == 'HTseqCounts'){
+    counts_to_merge = htseq_counts_to_merge
+}else if (params.counts == 'star'){
+    counts_to_merge = star_counts_to_merge
+}
+
+process merge_counts {
+  publishDir "${params.outdir}/counts", mode: 'copy'
 
   input:
-  file input_files from featureCounts_to_merge.collect()
+  file input_counts from counts_to_merge.collect()
+  file gtf from gtf_table.collect()
+  val parse_res from rseqc_results_tophat
+
 
   output:
   file 'merged_gene_counts.txt'
 
   script:
-  //if we only have 1 file, just use cat and pipe output to csvtk. Else join all files first, and then remove unwanted column names.
-  def single = input_files instanceof Path ? 1 : input_files.size()
-  def merge = (single == 1) ? 'cat' : 'csvtk join -t -f "Geneid,Start,Length,End,Chr,Strand,gene_name"'
   """
-  $merge $input_files | csvtk cut -t -f "-Start,-Chr,-End,-Length,-Strand" | sed 's/Aligned.sortedByCoord.out.markDups.bam//g' > merged_gene_counts.txt
+  echo -e ${input_counts} | tr " " "\n" > listofcounts.tsv
+  makeCountTable.r listofcounts.tsv ${gtf} ${params.counts} ${parse_res}
   """
 }
-*/
+
 
 counts_logs = Channel.create()
 if( params.counts == 'featureCounts' ){
     counts_logs = featureCounts_logs
 } else if (params.counts == 'HTseqCounts'){
-    counts_logs = HTseqCounts_to_merge
+    counts_logs = counts_to_merge
 }else if (params.counts == 'star'){
     counts_logs = star_log_counts
 }
-
 
 /*
  * Reads distribution

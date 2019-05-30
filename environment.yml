@@ -14,6 +14,7 @@ dependencies:
   - bioconda::bioconductor-dupradar=1.10.0
   - conda-forge::r-data.table=1.11.4
   - conda-forge::r-gplots=3.0.1
+  - bioconda::bioconductor-rtracklayer=1.42.1
   - bioconda::bioconductor-edger=3.22.5
   - conda-forge::r-markdown=0.8
   - bioconda::csvtk=0.15.0
