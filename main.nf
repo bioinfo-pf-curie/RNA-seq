@@ -869,6 +869,7 @@ if( params.counts == 'featureCounts' ){
     counts_to_merge = star_counts_to_merge
 }
 
+
 process merge_counts {
   publishDir "${params.outdir}/counts", mode: 'copy'
 
@@ -877,10 +878,10 @@ process merge_counts {
   file gtf from gtf_table.collect()
   val parse_res from rseqc_results_tophat
 
-
   output:
-  file 'merged_gene_counts.txt'
-
+  file 'tablecounts_raw.csv' into raw_counts
+  file 'tablecounts_tpm.csv' into tpm_counts
+  
   script:
   """
   echo -e ${input_counts} | tr " " "\n" > listofcounts.tsv
