@@ -70,6 +70,7 @@ def helpMessage() {
       --skip_preseq                 Skip Preseq
       --skip_dupradar               Skip dupRadar (and Picard MarkDups)
       --skip_read_dist              Skip read distribution step
+      --skip_expan                  Skip exploratory analysis
       --skip_multiqc                Skip MultiQC
 
     """.stripIndent()
@@ -111,6 +112,8 @@ if( !(workflow.runName ==~ /[a-z]+_[a-z]+/) ){
 ch_multiqc_config = Channel.fromPath(params.multiqc_config)
 ch_multiqc_logo = Channel.fromPath("$baseDir/assets/institut_curie.jpg")
 ch_output_docs = Channel.fromPath("$baseDir/docs/output.md")
+ch_pca_header = Channel.fromPath("$baseDir/assets/pca_header.txt")
+ch_heatmap_header = Channel.fromPath("$baseDir/assets/heatmap_header.txt")
 
 /*
  * CHANNELS
@@ -417,7 +420,7 @@ process parse_infer_experiment {
   file parse_rseqc
 
   output:
-  val parse_res into rseqc_results_featureCounts, rseqc_results_HTseqCounts, rseqc_results_dupradar, rseqc_results_tophat, reseqc_table
+  val parse_res into rseqc_results_featureCounts, rseqc_results_HTseqCounts, rseqc_results_dupradar, rseqc_results_tophat, rseqc_results_table
 
   script:
   name = parse_rseqc[0].toString()
@@ -438,7 +441,7 @@ process parse_infer_experiment {
 
 if (params.stranded != 'auto'){
    Channel.from( params.stranded )
-     .into { rseqc_results_featureCounts; rseqc_results_HTseqCounts; rseqc_results_dupradar; rseqc_results_tophat }
+     .into { rseqc_results_featureCounts; rseqc_results_HTseqCounts; rseqc_results_dupradar; rseqc_results_tophat; rseqc_results_table }
 }
 
 
@@ -500,7 +503,7 @@ if(params.aligner == 'star'){
     file "*.out.tab" into star_log_counts
     file "*Log.out" into star_log
     file "${prefix}Aligned.sortedByCoord.out.bam.bai" into bam_index_rseqc
-    file "*ReadsPerGene.out.tab" optional true into star_counts_to_merge
+    file "*ReadsPerGene.out.tab" optional true into star_counts_to_merge, star_counts_to_r
 
     script:
     prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(trimmed)?(_norRNA)?(\.fq)?(\.fastq)?(\.gz)?$/
@@ -803,10 +806,10 @@ process featureCounts {
   input:
   file bam_featurecounts
   file gtf from gtf_featureCounts.collect()
-  val parse_res from rseqc_results_featureCounts.collect()
+  val parse_res from rseqc_results_featureCounts
 
   output:
-  file "${bam_featurecounts.baseName}_gene.featureCounts.txt" into geneCounts, featureCounts_counts_to_merge
+  file "${bam_featurecounts.baseName}_gene.featureCounts.txt" into featureCounts_counts_to_merge, featureCounts_counts_to_r
   file "${bam_featurecounts.baseName}_gene.featureCounts.txt.summary" into featureCounts_logs
 
   script:
@@ -839,10 +842,10 @@ process HTseqCounts {
   input:
   file bam_HTseqCounts
   file gtf from gtf_HTseqCounts.collect()
-  val parse_res from  rseqc_results_HTseqCounts.collect()
+  val parse_res from  rseqc_results_HTseqCounts
 
   output: 
-  file "*_counts.csv" into htseq_counts_to_merge
+  file "*_counts.csv" into htseq_counts_to_merge, htseq_counts_to_r
 
   script:
   def stranded_opt = '-s no' 
@@ -861,14 +864,17 @@ process HTseqCounts {
 
 
 counts_to_merge = Channel.create()
+counts_to_r = Channel.create()
 if( params.counts == 'featureCounts' ){
     counts_to_merge = featureCounts_counts_to_merge
+    counts_to_r = featureCounts_counts_to_r
 } else if (params.counts == 'HTseqCounts'){
     counts_to_merge = htseq_counts_to_merge
+    counts_to_r = htseq_counts_to_r	
 }else if (params.counts == 'star'){
     counts_to_merge = star_counts_to_merge
+    counts_to_r = star_counts_to_r
 }
-
 
 process merge_counts {
   publishDir "${params.outdir}/counts", mode: 'copy'
@@ -876,25 +882,25 @@ process merge_counts {
   input:
   file input_counts from counts_to_merge.collect()
   file gtf from gtf_table.collect()
-  val parse_res from rseqc_results_tophat
+  val parse_res from rseqc_results_table.collect()
 
   output:
   file 'tablecounts_raw.csv' into raw_counts
   file 'tablecounts_tpm.csv' into tpm_counts
-  
+
   script:
   """
   echo -e ${input_counts} | tr " " "\n" > listofcounts.tsv
-  makeCountTable.r listofcounts.tsv ${gtf} ${params.counts} ${parse_res}
+  echo -e ${parse_res} | sed -e "s/\\[//" -e "s/\\]//" -e "s/,//" | tr " " "\n" > listofstrandness.tsv
+  makeCountTable.r listofcounts.tsv ${gtf} ${params.counts} listofstrandness.tsv
   """
 }
-
 
 counts_logs = Channel.create()
 if( params.counts == 'featureCounts' ){
     counts_logs = featureCounts_logs
 } else if (params.counts == 'HTseqCounts'){
-    counts_logs = counts_to_merge
+    counts_logs = HTSeqCounts_logs
 }else if (params.counts == 'star'){
     counts_logs = star_log_counts
 }
@@ -924,6 +930,38 @@ process read_distribution {
 }
 
 
+/*
+ * Exploratory analysis
+ */
+
+process exploratory_analysis {
+  publishDir "${params.outdir}/exploratory_analysis", mode: 'copy'
+
+  when:
+  !params.skip_expan
+
+  input:
+  file table_raw from raw_counts.collect()
+  file table_tpm from tpm_counts.collect()
+  val num_sample from counts_to_r.count()
+  file pca_header from ch_pca_header
+  file heatmap_header from ch_heatmap_header
+
+  output:
+  file "*.{txt,pdf,csv}" into exploratory_analysis_results
+
+  when:
+  num_sample > 1
+
+  script:
+  """
+  exploratory_analysis.r ${table_raw}
+  cat $pca_header deseq2_pca_coords_mqc.csv >> tmp_file
+  mv tmp_file deseq2_pca_coords_mqc.csv 
+  cat $heatmap_header vst_sample_cor_mqc.csv >> tmp_file
+  mv tmp_file vst_sample_cor_mqc.csv
+  """
+}
 
 /*
  * MultiQC
@@ -994,6 +1032,7 @@ process multiqc {
     file ('dupradar/*') from dupradar_results.collect().ifEmpty([])
     //file ('picard/*') from picard_results.collect().ifEmpty([])	
     file ('counts/*') from counts_logs.collect()
+    file ('exploratory_analysis_results/*') from exploratory_analysis_results.collect().ifEmpty([]) // If the Edge-R is not run create an Empty array
     file ('software_versions/*') from software_versions_yaml.collect()
     file ('workflow_summary/*') from workflow_summary_yaml.collect()
 

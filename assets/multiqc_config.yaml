@@ -35,7 +35,11 @@ module_order:
 
 report_section_order:
   DupRadar:
-    order: -900 
+    order: -500 
+  sample-pca:
+    order: -900
+  sample-correlation:
+    order: -950
   software_versions:
     order: -1000
   summary:

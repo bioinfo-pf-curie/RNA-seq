@@ -7,7 +7,7 @@ if (length(args) != 4) {
 inputFiles <- args[1]
 gtf <- args[2]
 count_tool <- toupper(args[3])
-stranded <- args[4]
+strandedList <- args[4]
 
 if (!require(rtracklayer)){
   source("http://bioconductor.org/biocLite.R")
@@ -111,18 +111,27 @@ getExonicGeneSize <- function(gtf.in){
 ##################################################################
 
 exprs.in <- as.vector(read.table(inputFiles, header=FALSE)[,1])
+stranded.list <- as.vector(read.table(strandedList, header=FALSE)[,1])
 
 if (count_tool == "STAR"){
   ## Load STAR data
   message("loading STAR gene counts ...")
-  counts.exprs <- lapply(exprs.in, read.csv, sep="\t", header=FALSE, row.names=1, check.names=FALSE)
-  if (stranded == "reverse"){
-    counts.exprs <- data.frame(lapply(counts.exprs, "[", 3))
-  }else if (stranded == "yes"){
-    counts.exprs <- data.frame(lapply(counts.exprs, "[", 2))
-  }else{
-    counts.exprs <- data.frame(lapply(counts.exprs, "[", 1))
-  }
+  counts.exprs <- lapply(1:length(exprs.in), function(i){
+    counts.exprs <- read.csv(exprs.in[i], sep="\t", header=FALSE, row.names=1, check.names=FALSE)
+    stranded <- stranded.list[i]
+    if (stranded == "reverse"){
+      counts.v <- counts.exprs[, 3]
+    }else if (stranded == "yes"){
+      counts.v <- counts.exprs[, 2]
+    }else if (stranded == "no"){
+      counts.v <- counts.exprs[, 1]
+    }else{
+      stop("Strandness is not known")
+    }
+    names(counts.v) <- rownames(counts.exprs)
+    return(counts.v)
+  })
+  counts.exprs <- data.frame(counts.exprs)
   colnames(counts.exprs) <- gsub("_norRNA", "", gsub("ReadsPerGene.out.tab","",sapply(exprs.in, basename)))
   ## remove first 4 lines
   counts.exprs <- counts.exprs[5:nrow(counts.exprs), , drop=FALSE]
