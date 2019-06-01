@@ -1,0 +1,75 @@
+#!/bin/bash
+
+aligner=$1
+is_pe=$2
+
+
+## Catch sample names from alignment folder
+if [ $aligner == "star" ]; then
+    all_samples=$(find alignment/ -name "*final.out" -printf "%f " | sed -e 's/_norRNA//g' -e 's/Log.final.out//g')
+elif [ $aligner == "tophat2" ]; then
+    all_samples=$(find alignment/ -name "*.align_summary.txt" -printf "%f " | sed -e 's/_norRNA//g' -e 's/.align_summary.txt//g')
+else
+    echo -e "Aligner not yet supported"
+    exit 1
+fi
+
+echo -e "Sample_identifier,Number_of_reads,Number_of_rRNA,Percent_of_rRNA,Number_of_aligned_reads,Percent_of_aligned_reads,Number_of_uniquely_aligned_reads,Percent_uniquely_aligned_reads,Number_of_multiple_aligned_reads,Percent_multiple_aligned,Number_of_duplicates,Percent_duplicates" > mq.stats
+
+for sample in $all_samples
+do
+
+    ##n_reads
+    if [ -d "rrna" ]; then
+	n_reads=$(grep "reads processed" rrna/${sample}.log | cut -d: -f 2 | sed -e 's/ //')
+    elif [ $aligner == "star" ]; then
+	n_reads=$(grep "Number of input reads" alignment/${sample}*Log.final.out | cut -d"|" -f 2 | sed -e 's/\t//g')
+    elif [ $aligner == "tophat" ]; then
+	n_reads=$(grep Input alignment/${sample}*align_summary.txt | uniq | cut -d: -f2 | sed -e 's/ //g')
+    fi
+
+    ##n_rRNA
+    if [ -d "rrna" ]; then
+	n_rrna=$(grep "reads with at least one reported alignment" rrna/${sample}.log | cut -d: -f 2 | tr "(|)" " " | cut -d" " -f2)
+	p_rrna=$(grep "reads with at least one reported alignment" rrna/${sample}.log | cut -d: -f 2 | tr "(|)" " " | cut -d" " -f4 | sed -e 's/%//')
+    else
+	n_rrna='NA'
+	p_rrna='NA'
+    fi
+
+    if [ $is_pe == "1" ]; then
+	if [ $aligner == "tophat2" ]; then
+	    n_mapped=$(grep "Aligned pairs" alignment/${sample}*align_summary.txt | cut -d: -f 2 | sed -e 's/ //g')
+	    n_multi=$(grep -a2 "Aligned pairs" alignment/${sample}*align_summary.txt | grep "multiple" | awk -F" " '{print $3}')
+	    n_unique=$(($n_mapped - $n_multi))
+	elif [ $aligner == "star" ]; then
+	    n_unique=$(grep "Uniquely mapped reads number" alignment/${sample}*Log.final.out | cut -d"|" -f 2 | sed -e 's/\t//g')
+	    n_multi=$(grep "Number of reads mapped to multiple loci" alignment/${sample}*Log.final.out | cut -d"|" -f 2 | sed -e 's/\t//g')
+	    n_mapped=$((n_unique + n_multi))
+	else
+	    echo -e "Aligner not yet supported"
+	    exit 1
+	    fi
+    else
+	echo -e "Single-end data are not yet supported !"
+	exit 1
+    fi
+
+    ##n_dup
+    if [ -d "picard" ]; then
+	n_dup=$(grep -a2 "## METRICS" picard/${sample}*markDups_metrics.txt | tail -1 | awk '{print $7}')
+	p_dup=$(echo "scale=2; (${n_dup}*100/${n_reads})" | bc -l)
+    else
+	n_dup='NA'
+	p_dup='NA'
+    fi
+
+    ## Calculate percentage
+    p_mapped=$(echo "scale=2; (${n_mapped}*100/${n_reads})" | bc -l)
+    p_unique=$(echo "scale=2; (${n_unique}*100/${n_reads})" | bc -l)
+    p_multi=$(echo "scale=2; (${n_multi}*100/${n_reads})" | bc -l)
+    
+
+    echo -e ${sample},${n_reads},${n_rrna},${p_rrna},${n_mapped},${p_mapped},${n_unique},${p_unique},${n_multi},${p_multi},${n_dup},${p_dup} >> mq.stats
+
+done

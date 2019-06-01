@@ -10,11 +10,29 @@ intro_text: >
 custom_logo: 'institut_curie.jpg'
 custom_logo_url: https://science.curie.fr/plateformes/sequencage-adn-haut-debit-ngs/
 custom_logo_title: Institut Curie
-skip_generalstats: false
+skip_generalstats: true
 
 read_count_multiplier: 0.000001
 read_count_prefix: 'M'
 read_count_desc: 'millions'
+
+custom_data:
+    my_stats:
+        file_format: 'csv'
+        section_name: 'Basic Metrics'
+        description: ' on aligned data'
+        plot_type: 'table'
+        pconfig:
+            namespace: 'stats'
+            title: 'Aligned reads'
+            id: 'stats'
+            scale: 'RdYlBu'
+            format: '{:,.0f}'
+            save_file: true
+
+sp:
+   my_stats:
+       fn: '*.stats'
 
 module_order:
   - fastqc
@@ -34,6 +52,8 @@ module_order:
   - HTSeq
 
 report_section_order:
+  stats:
+    order: 1
   DupRadar:
     order: -500 
   sample-pca:
@@ -48,5 +68,11 @@ report_section_order:
 table_columns_visible:
     FastQC:
         percent_duplicates: False
+    stats:
+        Number_of_aligned_reads: False
+        Number_of_duplicates: False
+        Number_of_uniquely_aligned_reads: False
+        Number_of_multiple_aligned_reads: False
+        Number_of_rRNA: False
 
 plots_force_interactive: True

@@ -1031,7 +1031,7 @@ process multiqc {
     file ('rseqc/*') from read_dist_results.collect().ifEmpty([])
     file ('preseq/*') from preseq_results.collect().ifEmpty([])
     file ('dupradar/*') from dupradar_results.collect().ifEmpty([])
-    //file ('picard/*') from picard_results.collect().ifEmpty([])	
+    file ('picard/*') from picard_results.collect().ifEmpty([])	
     file ('counts/*') from counts_logs.collect()
     file ('exploratory_analysis_results/*') from exploratory_analysis_results.collect().ifEmpty([]) // If the Edge-R is not run create an Empty array
     file ('software_versions/*') from software_versions_yaml.collect()
@@ -1045,6 +1045,7 @@ process multiqc {
     rtitle = custom_runName ? "--title \"$custom_runName\"" : ''
     rfilename = custom_runName ? "--filename " + custom_runName.replaceAll('\\W','_').replaceAll('_+','_') + "_multiqc_report" : ''
     makemeta = params.metadata ? true : false
+    isPE = params.singleEnd ? 0 : 1
     
     modules_list = "-m custom_content -m picard -m preseq -m rseqc -m bowtie1 -m hisat2 -m star -m tophat -m cutadapt -m fastqc"
     modules_list = params.counts == 'featureCounts' ? "${modules_list} -m featureCounts" : "${modules_list}"  
@@ -1053,10 +1054,12 @@ process multiqc {
     if ( makemeta ){
       """
       metadata2multiqc.py $metadata > multiqc-config-metadata.yaml
+      stats2multiqc.sh ${params.aligner} ${isPE}
       multiqc . -f $rtitle $rfilename --config $multiqc_config multiqc-config-metadata.yaml $modules_list
       """    
     }else{
       """	
+      stats2multiqc.sh ${params.aligner} ${isPE}
       multiqc . -f $rtitle $rfilename --config $multiqc_config $modules_list
       """
     }
