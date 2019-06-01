@@ -124,7 +124,10 @@ if (params.aligner != 'star' && params.aligner != 'hisat2' && params.aligner != 
     exit 1, "Invalid aligner option: ${params.aligner}. Valid options: 'star', 'hisat2', 'tophat2'"
 }
 if (params.counts != 'star' && params.counts != 'featureCounts' && params.counts != 'HTseqCounts'){
-    exit 1, "Invalid aligner option: ${params.counts}. Valid options: 'star', 'featureCounts', 'HTseqCounts'"
+    exit 1, "Invalid counts option: ${params.counts}. Valid options: 'star', 'featureCounts', 'HTseqCounts'"
+}
+if (params.counts == 'star' && params.aligner != 'star'){
+    exit 1, "Cannot run STAR counts without STAR aligner."
 }
 if (params.stranded != 'auto' && params.stranded != 'reverse' && params.stranded != 'yes' && params.stranded != 'no'){
     exit 1, "Invalid stranded option: ${params.stranded}. Valid options: 'auto', 'reverse', 'yes', 'no'"
@@ -195,19 +198,19 @@ if(params.readPaths){
             .from(params.readPaths)
             .map { row -> [ row[0], [file(row[1][0])]] }
             .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-            .into { raw_reads_fastqc; raw_reads_star; raw_reads_hisat2; raw_reads_tophat2; raw_reads_rna_mapping; raw_reads_prep_rseqc }
+            .into { raw_reads_fastqc; raw_reads_star; raw_reads_hisat2; raw_reads_tophat2; raw_reads_rna_mapping; raw_reads_prep_rseqc; }
     } else {
         Channel
             .from(params.readPaths)
             .map { row -> [ row[0], [file(row[1][0]), file(row[1][1])]] }
             .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-            .into { raw_reads_fastqc; raw_reads_star; raw_reads_hisat2; raw_reads_tophat2; raw_reads_rna_mapping; raw_reads_prep_rseqc }
+            .into { raw_reads_fastqc; raw_reads_star; raw_reads_hisat2; raw_reads_tophat2; raw_reads_rna_mapping; raw_reads_prep_rseqc; }
     }
 } else {
     Channel
         .fromFilePairs( params.reads, size: params.singleEnd ? 1 : 2 )
         .ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\nNB: Path needs to be enclosed in quotes!\nNB: Path requires at least one * wildcard!\nIf this is single-end data, please specify --singleEnd on the command line." }
-        .into { raw_reads_fastqc; raw_reads_star; raw_reads_hisat2; raw_reads_tophat2; raw_reads_rna_mapping; raw_reads_prep_rseqc }
+        .into { raw_reads_fastqc; raw_reads_star; raw_reads_hisat2; raw_reads_tophat2; raw_reads_rna_mapping; raw_reads_prep_rseqc; }
 }
 
 // Header log info
@@ -786,7 +789,6 @@ process dupradar {
   """
 }
 
-
 /*
  * Counts
  */
@@ -814,7 +816,6 @@ process featureCounts {
 
   script:
   def featureCounts_direction = 0
-  def extraAttributes = params.fcExtraAttributes ? "--extraAttributes ${params.fcExtraAttributes}" : ''
   if (parse_res == 'yes'){
       featureCounts_direction = 1
   } else if ((parse_res == 'reverse')){
@@ -824,7 +825,7 @@ process featureCounts {
   // Try to get real sample name
   sample_name = bam_featurecounts.baseName - 'Aligned.sortedByCoord.out'
   """
-  featureCounts -a $gtf -g gene_id -o ${bam_featurecounts.baseName}_gene.featureCounts.txt $extraAttributes -p -s $featureCounts_direction $bam_featurecounts
+  featureCounts ${params.featurecounts_opts} -T ${task.cpus} -a $gtf -o ${bam_featurecounts.baseName}_gene.featureCounts.txt -p -s $featureCounts_direction $bam_featurecounts
   """
 }
 
@@ -1083,9 +1084,9 @@ process output_documentation {
 workflow.onComplete {
 
     // Set up the e-mail variables
-    def subject = "[nfcore/rnaseq] Successful: $workflow.runName"
+    def subject = "[rnaseq] Successful: $workflow.runName"
     if(skipped_poor_alignment.size() > 0){
-        subject = "[nfcore/rnaseq] Partially Successful (${skipped_poor_alignment.size()} skipped): $workflow.runName"
+        subject = "[rnaseq] Partially Successful (${skipped_poor_alignment.size()} skipped): $workflow.runName"
     }
     if(!workflow.success){
       subject = "[nfcore/rnaseq] FAILED: $workflow.runName"
