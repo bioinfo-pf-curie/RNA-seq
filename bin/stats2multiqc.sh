@@ -14,7 +14,7 @@ else
     exit 1
 fi
 
-echo -e "Sample_identifier,Number_of_reads,Number_of_rRNA,Percent_of_rRNA,Number_of_aligned_reads,Percent_of_aligned_reads,Number_of_uniquely_aligned_reads,Percent_uniquely_aligned_reads,Number_of_multiple_aligned_reads,Percent_multiple_aligned,Number_of_duplicates,Percent_duplicates" > mq.stats
+echo -e "Sample_identifier,Number_of_reads,Number_of_rRNA,Percent_of_rRNA,Strandness,Number_of_aligned_reads,Percent_of_aligned_reads,Number_of_uniquely_aligned_reads,Percent_uniquely_aligned_reads,Number_of_multiple_aligned_reads,Percent_multiple_aligned,Number_of_duplicates,Percent_duplicates" > mq.stats
 
 for sample in $all_samples
 do
@@ -64,12 +64,15 @@ do
 	p_dup='NA'
     fi
 
+    ## Strandness
+    strandness=$(cat rseqc/${sample}_subsample.ret_parserseq_output.txt)
+
     ## Calculate percentage
     p_mapped=$(echo "scale=2; (${n_mapped}*100/${n_reads})" | bc -l)
     p_unique=$(echo "scale=2; (${n_unique}*100/${n_reads})" | bc -l)
     p_multi=$(echo "scale=2; (${n_multi}*100/${n_reads})" | bc -l)
     
 
-    echo -e ${sample},${n_reads},${n_rrna},${p_rrna},${n_mapped},${p_mapped},${n_unique},${p_unique},${n_multi},${p_multi},${n_dup},${p_dup} >> mq.stats
+    echo -e ${sample},${n_reads},${n_rrna},${p_rrna},${strandness},${n_mapped},${p_mapped},${n_unique},${p_unique},${n_multi},${p_multi},${n_dup},${p_dup} >> mq.stats
 
 done

@@ -110,7 +110,7 @@ if( !(workflow.runName ==~ /[a-z]+_[a-z]+/) ){
 
 // Stage config files
 ch_multiqc_config = Channel.fromPath(params.multiqc_config)
-ch_multiqc_logo = Channel.fromPath("$baseDir/assets/institut_curie.jpg")
+//ch_multiqc_logo = Channel.fromPath("$baseDir/assets/institut_curie.jpg")
 ch_output_docs = Channel.fromPath("$baseDir/docs/output.md")
 ch_pca_header = Channel.fromPath("$baseDir/assets/pca_header.txt")
 ch_heatmap_header = Channel.fromPath("$baseDir/assets/heatmap_header.txt")
@@ -1023,7 +1023,7 @@ process multiqc {
     input:
     file metadata from ch_metadata.ifEmpty([])
     file multiqc_config from ch_multiqc_config    
-    file multiqc_custom_logo from ch_multiqc_logo
+    //file multiqc_custom_logo from ch_multiqc_logo
     file (fastqc:'fastqc/*') from fastqc_results.collect().ifEmpty([])
     file ('rrna/*') from rrna_logs.collect().ifEmpty([])
     file ('alignment/*') from alignment_logs.collect()
@@ -1055,12 +1055,12 @@ process multiqc {
       """
       metadata2multiqc.py $metadata > multiqc-config-metadata.yaml
       stats2multiqc.sh ${params.aligner} ${isPE}
-      multiqc . -f $rtitle $rfilename --config $multiqc_config multiqc-config-metadata.yaml $modules_list
+      multiqc . -f $rtitle $rfilename -c $multiqc_config -c multiqc-config-metadata.yaml $modules_list
       """    
     }else{
       """	
       stats2multiqc.sh ${params.aligner} ${isPE}
-      multiqc . -f $rtitle $rfilename --config $multiqc_config $modules_list
+      multiqc . -f $rtitle $rfilename -c $multiqc_config $modules_list
       """
     }
 }
