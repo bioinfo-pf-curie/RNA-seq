@@ -11,16 +11,16 @@ The current workflow is based on the nf-core best practice. See the nf-core proj
 
 ### Pipline summary
 
-1- Run quality control of raw sequencing reads (fastqc)
-2- Align reads on ribosomal RNAs sequences when available (bowtie1)
-3- Align reads on reference genome (STAR/Tophat2/hisat)
-4- Infer reads orientation (rseqc)
-5- Dedicated quality controls
+1. Run quality control of raw sequencing reads (fastqc)
+2. Align reads on ribosomal RNAs sequences when available (bowtie1)
+3. Align reads on reference genome (STAR/Tophat2/hisat)
+4. Infer reads orientation (rseqc)
+5. Dedicated quality controls
   - Saturation curves (preseq)
   - Duplicates (dupRadar)
   - Reads annotation (rseqc)
-6- Generate counts table (STAR/featureCounts/HTSeqCounts)
-7- Exploratory analysis (R)
+6. Generate counts table (STAR/featureCounts/HTSeqCounts)
+7. Exploratory analysis (R)
 
 ### Quick help
 
@@ -32,7 +32,7 @@ rnaseq v2.0.0dev
 =======================================================
 
 Usage:
-nextflow run rnaseq --reads '*_R{1,2}.fastq.gz' --genome hg19 
+nextflow run rnaseq --reads '*_R{1,2}.fastq.gz' --genome 'hg19' 
 
 Mandatory arguments:
   --reads                       Path to input data (must be surrounded with quotes)
@@ -96,7 +96,7 @@ echo "nextflow run main.nf --reads '*.R{1,2}.fastq.gz' --genome 'hg19' --outdir 
 
 ```
 
-### Documentation
+### Full Documentation
 
 1. [Installation](docs/installation.md)
 2. Pipeline configuration
