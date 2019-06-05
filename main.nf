@@ -438,8 +438,14 @@ process parse_infer_experiment {
 }
 
 if (params.stranded != 'auto'){
-   Channel.from( params.stranded )
-     .into { rseqc_results_featureCounts; rseqc_results_HTseqCounts; rseqc_results_dupradar; rseqc_results_tophat; rseqc_results_table }
+    Channel
+      .fromFilePairs( params.reads)
+      .map { file -> 
+          def key = params.stranded 
+          return tuple(key)
+      }
+      .into { rseqc_results_featureCounts; rseqc_results_HTseqCounts; rseqc_results_dupradar; rseqc_results_tophat; rseqc_results_table }
+
 }
 
 
