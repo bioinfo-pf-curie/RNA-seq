@@ -953,7 +953,7 @@ process exploratory_analysis {
   file "*.{txt,pdf,csv}" into exploratory_analysis_results
 
   when:
-  num_sample > 1
+  num_sample > 2
 
   script:
   """
