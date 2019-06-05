@@ -405,11 +405,12 @@ process rseqc {
   file "${bam_rseqc.baseName}.ret_parserseq_output.txt" into parse_rseqc
    
   script:
-  pathworkdir = workDir
+  pathworkdir = "$baseDir/results/tmp" 
   """
   infer_experiment.py -i $bam_rseqc -r $bed12 > ${bam_rseqc.baseName}.infer_experiment.txt
   parse_rseq_output.sh ${bam_rseqc.baseName}.infer_experiment.txt > ${bam_rseqc.baseName}.ret_parserseq_output.txt
-  cp ${bam_rseqc.baseName}.ret_parserseq_output.txt $workDir
+  mkdir -p $pathworkdir
+  cp ${bam_rseqc.baseName}.ret_parserseq_output.txt $pathworkdir
   """
 }
 
@@ -427,24 +428,24 @@ process parse_infer_experiment {
 
   script:
   name = parse_rseqc[0].toString()
-  pathworkdir = workDir
+  pathworkdir = "$baseDir/results/tmp"  
   lines = new File("${pathworkdir}/${name}").findAll { it.startsWith('') }
   parse_res = lines[0] 
-  if (lines[0] == 'no'){  
-      unstranded = 1
-  }else if (lines[0] == 'yes'){  
-      forward_stranded = 1 
-  }else if (lines[0] == 'reverse'){ 
-      reverse_stranded = 1
-  } 
+  
   """
-  echo '${lines[0]}'  > res.stranded.txt
+  echo '${parse_res}'  > res.stranded.txt
   """
 }
 
 if (params.stranded != 'auto'){
-   Channel.from( params.stranded )
-     .into { rseqc_results_featureCounts; rseqc_results_HTseqCounts; rseqc_results_dupradar; rseqc_results_tophat; rseqc_results_table }
+    Channel
+      .fromFilePairs( params.reads)
+      .map { file -> 
+          def key = params.stranded 
+          return tuple(key)
+      }
+      .into { rseqc_results_featureCounts; rseqc_results_HTseqCounts; rseqc_results_dupradar; rseqc_results_tophat; rseqc_results_table }
+
 }
 
 
