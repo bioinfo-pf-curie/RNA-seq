@@ -893,7 +893,7 @@ process merge_counts {
   script:
   """
   echo -e ${input_counts} | tr " " "\n" > listofcounts.tsv
-  echo -e ${parse_res} | sed -e "s/\\[//" -e "s/\\]//" -e "s/,//" | tr " " "\n" > listofstrandness.tsv
+  echo -e ${parse_res} | sed -e "s/\\[//" -e "s/\\]//" -e "s/,//g" | tr " " "\n" > listofstrandness.tsv
   makeCountTable.r listofcounts.tsv ${gtf} ${params.counts} listofstrandness.tsv
   """
 }
