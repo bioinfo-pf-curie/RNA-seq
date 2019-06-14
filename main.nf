@@ -290,8 +290,7 @@ process rRNA_mapping {
   tag "${prefix}"
   publishDir "${params.outdir}/rRNA_mapping", mode: 'copy',
       saveAs: {filename ->
-          if (filename.indexOf("sorted.bam") > 0 &&  params.saveAlignedIntermediates) filename
-	  else if (filename.indexOf("fastq.gz") > 0 &&  params.saveAlignedIntermediates) filename
+	  if (filename.indexOf("fastq.gz") > 0 &&  params.saveAlignedIntermediates) filename
 	  else if (filename.indexOf(".log") > 0) "logs/$filename"
           else null
       }
@@ -305,8 +304,8 @@ process rRNA_mapping {
 
   output:
     set val(name), file("${prefix}_norRNA_{1,2}.fastq.gz") into rrna_mapping_res
+    set val(name), file("${prefix}.sam") into rrna_sam
     file "*.log" into rrna_logs
-    file "*sorted.bam"
 
 
   script:
@@ -321,11 +320,6 @@ process rRNA_mapping {
      -1 ${reads} \\
      ${prefix}.sam  2> ${prefix}.log && \
      gzip -f ${prefix}_norRNA*.fastq 
-     samtools view -@  ${task.cpus} -bS ${prefix}.sam > ${prefix}.bam  && \
-     samtools sort \\
-          ${prefix}.bam \\
-          -@ ${task.cpus} \\
-          -o ${prefix}.sorted.bam
     """
   } else {
      """
@@ -337,13 +331,41 @@ process rRNA_mapping {
      -2 ${reads[1]} \\
      ${prefix}.sam  2> ${prefix}.log && \
      gzip -f ${prefix}_norRNA_*.fastq 
-     samtools view -@  ${task.cpus} -bS ${prefix}.sam > ${prefix}.bam  && \
-     samtools sort \\
-          ${prefix}.bam \\
-          -@ ${task.cpus} \\
-          -o ${prefix}.sorted.bam
      """
   }  
+}
+
+
+process rRNA_sam {
+  tag "${name}"
+  publishDir "${params.outdir}/rRNA_mapping", mode: 'copy',
+      saveAs: {filename ->
+      if (filename.indexOf("sorted.bam") > 0 &&  params.saveAlignedIntermediates) filename
+	  else if (filename.indexOf(".log") > 0) "logs/$filename"
+          else null
+      }
+
+  when:
+    !params.skip_rrna
+
+  input:
+    set val(name), file(sam) from rrna_sam
+
+  output:
+    file "${name}.bam"
+    file "*sorted.bam"
+
+
+  script:
+
+  """
+     samtools view -@  ${task.cpus} -bS ${sam} > ${name}.bam  && \
+     samtools sort \\
+          ${name}.bam \\
+          -@ ${task.cpus} \\
+          ${params.samtools_sort_opts} \\
+          -o ${name}.sorted.bam
+    """ 
 }
 
 
@@ -502,33 +524,58 @@ if(params.aligner == 'star'){
     file gtf from gtf_star.collect()
 
     output:
-    set file("*Log.final.out"), file ('*.bam') into star_aligned
+    set val(prefix), file ("*Log.final.out"), file ('*.bam') into star_sam
     file "*.out" into alignment_logs
     file "*.out.tab" into star_log_counts
     file "*Log.out" into star_log
-    file "${prefix}Aligned.sortedByCoord.out.bam.bai" into bam_index_rseqc
     file "*ReadsPerGene.out.tab" optional true into star_counts_to_merge, star_counts_to_r
 
     script:
     prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(trimmed)?(_norRNA)?(\.fq)?(\.fastq)?(\.gz)?$/
-    def star_mem = task.memory ?: params.star_memory ?: false
-    def avail_mem = star_mem ? "--limitBAMsortRAM ${star_mem.toBytes() - 100000000}" : ''
     def star_opt_add = params.counts == 'star' ? params.star_opts_counts : ''
-    seqCenter = params.seqCenter ? "--outSAMattrRGline ID:$prefix 'CN:$params.seqCenter'" : ''
     """
     STAR --genomeDir $index \\
          --sjdbGTFfile $gtf \\
          --readFilesIn $reads  \\
          --runThreadN ${task.cpus} \\
          --runMode alignReads \\
-         --outSAMtype BAM SortedByCoordinate  \\
+         --outSAMtype BAM Unsorted  \\
          --readFilesCommand zcat \\
          --runDirPerm All_RWX \\
-         --outTmpDir /local/scratch/rnaseq_\$(date +%d%s%S) \\
+         --outTmpDir /local/scratch/rnaseq_\$(date +%d%s%S%N) \\
          --outFileNamePrefix $prefix  \\
          --outSAMattrRGline ID:$prefix SM:$prefix LB:Illumina PL:Illumina  \\
          ${params.star_opts} ${star_opt_add} 
             
+    """
+  }
+
+
+  process star_sam {
+    tag "$prefix"
+    publishDir "${params.outdir}/STAR", mode: 'copy',
+        saveAs: {filename ->
+            if (filename.indexOf(".bam") == -1) "logs/$filename"
+            else if (!params.saveAlignedIntermediates) filename
+            else if (params.saveAlignedIntermediates) filename
+            else null
+        }
+
+    input:
+    set val(prefix), file(Log_final_out), file (star_bam) from star_sam
+
+    output:
+    set file("${prefix}Log.final.out"), file ('*.bam') into  star_aligned  
+    file "${prefix}Aligned.sortedByCoord.out.bam.bai" into bam_index_rseqc
+
+    script:
+    """
+    samtools sort  \\
+        -@  ${task.cpus}  \\
+        ${params.samtools_sort_opts}  \\
+        -o ${prefix}Aligned.sortedByCoord.out.bam  \\
+        ${star_bam}   
+
     samtools index ${prefix}Aligned.sortedByCoord.out.bam
     """
     }
@@ -539,7 +586,6 @@ if(params.aligner == 'star'){
         .flatMap {  logs, bams -> bams }
     .into { bam_count; bam_preseq; bam_markduplicates; bam_featurecounts; bam_HTseqCounts; bam_read_dist }
 }
-
 
 // Update HiSat2 channel
 hisat2_raw_reads = Channel.create()
