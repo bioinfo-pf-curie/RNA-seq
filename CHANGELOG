@@ -1,3 +1,10 @@
+**********************************
+CHANGES IN VERSION 0.2.4
+
+BUG FIXES
+
+   o Increase memory for markdown report (4Gb)
+
 ***********************************
 CHANGES IN VERSION 0.2.3
 
