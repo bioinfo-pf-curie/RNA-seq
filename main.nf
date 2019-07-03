@@ -67,9 +67,9 @@ def helpMessage() {
       --skip_qc                     Skip all QC steps apart from MultiQC
       --skip_rrna                   Skip rRNA mapping
       --skip_fastqc                 Skip FastQC
-      --skip_preseq                 Skip Preseq
+      --skip_saturation             Skip Saturation qc
       --skip_dupradar               Skip dupRadar (and Picard MarkDups)
-      --skip_read_dist              Skip read distribution step
+      --skip_read_dist              Skip read distribution steps
       --skip_expan                  Skip exploratory analysis
       --skip_multiqc                Skip MultiQC
 
@@ -424,7 +424,7 @@ process parse_infer_experiment {
   file parse_rseqc
 
   output:
-  val parse_res into rseqc_results_featureCounts, rseqc_results_HTseqCounts, rseqc_results_dupradar, rseqc_results_tophat, rseqc_results_table
+  val parse_res into rseqc_results_featureCounts, rseqc_results_genetype, rseqc_results_HTseqCounts, rseqc_results_dupradar, rseqc_results_tophat, rseqc_results_table
 
   script:
   name = parse_rseqc[0].toString()
@@ -444,7 +444,7 @@ if (params.stranded != 'auto'){
           def key = params.stranded 
           return tuple(key)
       }
-      .into { rseqc_results_featureCounts; rseqc_results_HTseqCounts; rseqc_results_dupradar; rseqc_results_tophat; rseqc_results_table }
+      .into { rseqc_results_featureCounts; rseqc_results_genetype, rseqc_results_HTseqCounts; rseqc_results_dupradar; rseqc_results_tophat; rseqc_results_table }
 
 }
 
@@ -537,7 +537,7 @@ if(params.aligner == 'star'){
     star_aligned
         .filter { logs, bams -> check_log(logs) }
         .flatMap {  logs, bams -> bams }
-    .into { bam_count; bam_preseq; bam_markduplicates; bam_featurecounts; bam_HTseqCounts; bam_read_dist }
+    .into { bam_count; bam_preseq; bam_markduplicates; bam_featurecounts; bam_genetype; bam_HTseqCounts; bam_read_dist }
 }
 
 
@@ -624,7 +624,7 @@ if(params.aligner == 'hisat2'){
       file hisat2_bam
 
       output:
-      file "${hisat2_bam.baseName}.sorted.bam" into bam_count, bam_preseq, bam_markduplicates, bam_featurecounts, bam_HTseqCounts, bam_read_dist 
+      file "${hisat2_bam.baseName}.sorted.bam" into bam_count, bam_preseq, bam_markduplicates, bam_featurecounts, bam_genetype; bam_HTseqCounts, bam_read_dist 
       file "${hisat2_bam.baseName}.sorted.bam.bai" into bam_index_rseqc
  
       script:
@@ -660,7 +660,7 @@ if(params.aligner == 'tophat2'){
     val parse_res from rseqc_results_tophat
 
   output:
-    file "${prefix}.bam" into bam_count, bam_preseq, bam_markduplicates, bam_featurecounts, bam_HTseqCounts, bam_read_dist
+    file "${prefix}.bam" into bam_count, bam_preseq, bam_markduplicates, bam_featurecounts, bam_genetype, bam_HTseqCounts, bam_read_dist
     file "${prefix}.align_summary.txt" into alignment_logs
 
   script:
@@ -699,20 +699,36 @@ process preseq {
   publishDir "${params.outdir}/preseq", mode: 'copy'
 
   when:
-  !params.skip_qc && !params.skip_preseq
+  !params.skip_qc && !params.skip_saturation
 
   input:
   file bam_preseq
 
   output:
-  file "${bam_preseq.baseName}.ccurve.txt" into preseq_results
+  file "*ccurve.txt" into preseq_results
 
   script:
   """
-  preseq lc_extrap -v -B $bam_preseq -o ${bam_preseq.baseName}.ccurve.txt
+  preseq c_curve -v -B $bam_preseq -o ${bam_preseq.baseName}.ccurve.txt
+  preseq lc_extrap -v -B $bam_preseq -o ${bam_preseq.baseName}.extrap_ccurve.txt -e 200e+06
   """
 }
 
+process geneSaturation {
+  when:
+  !params.skip_qc && !params.skip_saturation
+
+  input:
+  file input_counts from counts_saturation.collect()
+
+  output:
+  file "*.gcurve.txt" into genesat_results
+
+  script:
+  """
+  gene_saturation.r input_counts counts.gcruve.txt
+  """
+}
 
 /*
  * Duplicates
@@ -887,7 +903,7 @@ process merge_counts {
   val parse_res from rseqc_results_table.collect()
 
   output:
-  file 'tablecounts_raw.csv' into raw_counts
+  file 'tablecounts_raw.csv' into raw_counts, counts_saturation
   file 'tablecounts_tpm.csv' into tpm_counts
 
   script:
@@ -931,6 +947,32 @@ process read_distribution {
   """
 }
 
+process getCountsPerGeneType {
+  publishDir "${params.outdir}/read_distribution", mode: 'copy'
+
+  when:
+  !params.skip_read_dist
+
+  input:
+  file bam_genetype
+  file gtf from gtf_featureCounts.collect()
+  val parse_res from rseqc_results_genetype
+
+  output:
+  file "${bam_genetype.baseName}_genetype.txt" into featureCounts_per_genetype
+
+  script:
+  def featureCounts_direction = 0
+  if (parse_res == 'yes'){
+      featureCounts_direction = 1
+  } else if ((parse_res == 'reverse')){
+      featureCounts_direction = 2
+  }
+
+  """
+  featureCounts ${params.featurecounts_opts} -T ${task.cpus} -a $gtf -o ${bam_genetype.baseName}_genetype.txt -p -g gene_type -s $featureCounts_direction $bam_genetype
+  """
+}
 
 /*
  * Exploratory analysis

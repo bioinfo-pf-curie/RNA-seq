@@ -75,4 +75,7 @@ table_columns_visible:
         Number_of_multiple_aligned_reads: False
         Number_of_rRNA: False
 
+preseq:
+   notrim: true
+
 plots_force_interactive: True
