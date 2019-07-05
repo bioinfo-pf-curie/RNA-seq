@@ -192,7 +192,24 @@ if ( params.metadata ){
 /*
  * Create a channel for input read files
  */
-if(params.readPaths){
+
+if(params.samplePlan){
+   if(params.singleEnd){
+      Channel
+         .from(file("${params.samplePlan}"))
+         .splitCsv(header: false)
+         .map{ row -> [ row[1], [file(row[2])]] }
+         .set { reads_links }
+   }else{
+      Channel
+         .from(file("${params.samplePlan}"))
+         .splitCsv(header: false)
+         .map{ row -> [ row[1], [file(row[2]), file(row[3])]] }
+         .set { reads_links }
+   }
+   params.reads=false
+}
+else if(params.readPaths){
     if(params.singleEnd){
         Channel
             .from(params.readPaths)
@@ -213,6 +230,7 @@ if(params.readPaths){
         .into { raw_reads_fastqc; raw_reads_star; raw_reads_hisat2; raw_reads_tophat2; raw_reads_rna_mapping; raw_reads_prep_rseqc; }
 }
 
+
 // Header log info
 log.info """=======================================================
 
@@ -221,7 +239,11 @@ log.info """=======================================================
 def summary = [:]
 summary['Run Name']     = custom_runName ?: workflow.runName
 summary['Metadata']	= params.metadata
-summary['Reads']        = params.reads
+if (params.samplePlan) {
+   summary['SamplePlan']   = params.samplePlan
+}else{
+   summary['Reads']        = params.reads
+}
 summary['Data Type']    = params.singleEnd ? 'Single-End' : 'Paired-End'
 summary['Genome']       = params.genome
 summary['Strandedness'] = params.stranded
@@ -256,12 +278,42 @@ if(params.email) summary['E-mail Address'] = params.email
 log.info summary.collect { k,v -> "${k.padRight(15)}: $v" }.join("\n")
 log.info "========================================="
 
+/*
+ * LinkFiles files in folder
+ * Used to deal with biological IDs when using a samplePlan
+ */
+
+process linkFiles {
+   when:
+      params.samplePlan   
+
+   input:
+      set val(name), file(reads) from reads_links
+
+   output:
+      set val(name), file("${name}_R{1,2}.fastq.gz") into raw_reads_fastqc, raw_reads_star, raw_reads_hisat2, raw_reads_tophat2, raw_reads_rna_mapping, raw_reads_prep_rseqc
+
+   script:
+   nameclean = name.toString() - ~/[^A-Za-z0-9]+/
+   if (params.singleEnd) {
+
+   """
+   ln -s reads[0] ${name}_R1.fastq.gz
+   """
+   }else{
+   """
+   ln -s ${reads[0]} ${nameclean}_R1.fastq.gz
+   ln -s ${reads[1]} ${nameclean}_R2.fastq.gz
+   """
+   }
+}
+
 
 /*
  * FastQC
  */
 process fastqc {
-    tag "${prefix}"
+    tag "${name}"
     publishDir "${params.outdir}/fastqc", mode: 'copy',
         saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
 
@@ -531,7 +583,7 @@ if(params.aligner == 'star'){
     file "*ReadsPerGene.out.tab" optional true into star_counts_to_merge, star_counts_to_r
 
     script:
-    prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(trimmed)?(_norRNA)?(\.fq)?(\.fastq)?(\.gz)?$/
+    prefix = reads[0].toString() - ~/?(trimmed)?(_norRNA)?(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)(\.fq)?(\.fastq)?(\.gz)?$/
     def star_opt_add = params.counts == 'star' ? params.star_opts_counts : ''
     """
     STAR --genomeDir $index \\
