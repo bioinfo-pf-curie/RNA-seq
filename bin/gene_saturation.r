@@ -2,16 +2,14 @@
 
 # Command line argument processing
 args = commandArgs(trailingOnly=TRUE)
-if (length(args) < 2) {
-  stop("Usage: gene_saturation.r <counts_table> <output_file> <R-package-location (optional)>", call.=FALSE)
+if (length(args) < 1) {
+  stop("Usage: gene_saturation.r <counts_table> <R-package-location (optional)>", call.=FALSE)
 }
 rawCounts <- args[1]
-ofile <- args[2]
-if (length(args) > 2) { .libPaths( c( args[3], .libPaths() ) ) }
+if (length(args) > 1) { .libPaths( c( args[2], .libPaths() ) ) }
 
 message("Raw count table (Arg 1):", rawCounts)
-message("Output file (Arg 2):", ofile)
-message("R package loc. (Arg 3: ", ifelse(length(args) > 2, args[3], "Not specified"))
+message("R package loc. (Arg 2: ", ifelse(length(args) > 2, args[2], "Not specified"))
 
 ## estimate_saturation
 ## Estimate saturation of genes based on rarefaction of reads
@@ -44,19 +42,21 @@ estimate_saturation <- function(counts, max_reads=Inf, ndepths=6, nreps=1, minco
     probs <- x / nreads ## calculate gene probabilities for the library
     probs <- probs[probs > 0] ## zero counts add nothing but computational time!
     ngenes <- length(probs)
+
     res <- lapply(depths, function(dp, nreps=1, ...){
-      rsim <- c(NA, NA)
-      if (extend.lines)
-        rsim <- c(ngenes_detected, NA)
-      if (dp <= nreads){
-        estim <- lapply(1:nreps, function(i, ngenes, dp, probs, mincounts){
-          csim <- sample(x=ngenes, size=dp, replace=TRUE, prob=probs)
-          length(which(runLength(Rle(sort(csim)))>=mincounts))
-        }, ngenes=ngenes, dp=dp, probs=probs, mincounts=mincounts)
-        rsim <- c(mean(unlist(estim)), var(unlist(estim)))
-      }
-      return(rsim)
+        rsim <- c(NA, NA)
+        if (extend.lines)
+            rsim <- c(ngenes_detected, NA)
+        if (dp <= nreads){
+            estim <- lapply(1:nreps, function(i, ngenes, dp, probs, mincounts){
+                csim <- sample(x=ngenes, size=dp, replace=TRUE, prob=probs)
+                length(which(runLength(Rle(sort(csim)))>=mincounts))
+            }, ngenes=ngenes, dp=dp, probs=probs, mincounts=mincounts)
+            rsim <- c(mean(unlist(estim)), var(unlist(estim)))
+        }
+        return(rsim)
     }, nreps=nreps, nreads=nreads,  ngenes=ngenes, probs=probs, mincounts=mincounts)
+    
     data.frame(depths=depths,
                sat.estimates=sapply(res, "[[", 1),
                sat.var.estimates=sapply(res, "[[", 2))
@@ -65,8 +65,11 @@ estimate_saturation <- function(counts, max_reads=Inf, ndepths=6, nreps=1, minco
   return(saturation)
 }##estimate_saturation
 
-
 counts <- read.csv(rawCounts, row.names=1, check.names=FALSE)
 sat <- estimate_saturation(counts=counts, ndepths=10, nreps=1, extend.lines=TRUE)
-write.table(sat, file=ofile, quote="", sep="\t")
 
+## save - one file per sample
+for (sname in names(sat)){
+    write.table(sat[[sname]][,c(1,2)], file=paste0(sname,"_gcurve.txt"),
+                quote=FALSE, sep="\t", col.names=FALSE, row.names=FALSE)
+}

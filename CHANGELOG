@@ -1,5 +1,19 @@
 ***********************************
-CHANGES IN VERSION 1.0.0dev
+CHANGES IN VERSION 2.0.1dev
+
+NEW FEATURES
+
+   o Updata conda environment
+
+   o Remove picard from multiQC report
+
+   o Add gene-based saturation curves [#57]
+
+   o Add gene type expression (gencode) [#58]
+
+
+***********************************
+CHANGES IN VERSION 2.0.0dev
 
 NEW FEATURES
 

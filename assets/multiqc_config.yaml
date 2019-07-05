@@ -30,9 +30,37 @@ custom_data:
             format: '{:,.2f}'
             save_file: true
 
+    gene_type:
+       file_format: 'csv'
+       section_name: 'Expressed Genes'
+       description: 'with a TPM value > 1 are considered. The number of expressed genes per sample was splitted into the 5 most abundant classes following the known gene annotations.'
+       plot_type: 'bargraph'
+       pconfig:
+            namespace: 'genetype'
+            id: 'genetype'
+            title: 'Expressed Genes'
+            ylab: 'Number of expressed genes (TPM>1)'
+            scale: 'Pastel1'
+
+    gene_saturation:
+       file_format: 'tsv'
+       section_name: 'Gene-based saturation'
+       description: 'plot showing the number of detected genes for a given set of subsampling values.'
+       plot_type: 'linegraph'
+       pconfig:
+            namespace: 'gene saturation'
+            id: 'genesaturation'
+            title: 'Gene-based Saturation'
+            ylab: 'Number of detected genes'
+            xlab: 'Number of reads'
+
 sp:
    my_stats:
-       fn: '*.stats'
+      fn: '*.stats'
+   gene_type:
+      fn: '*genetype.txt'
+   gene_saturation:
+      fn: '*gcurve.txt'
 
 module_order:
   - fastqc
@@ -46,20 +74,25 @@ module_order:
   - hisat2
   - tophat
   - rseqc
-  - preseq
-  - picard
   - featureCounts
   - HTSeq
+  - preseq:
+     name: 'Sequencing Complexity'
+     info: 'estimates the complexity of a library, showing how many additional unique reads are sequenced for increasing total read count. A shallow curve indicates complexity saturation. The dashed line shows a perfectly complex library where total reads = unique reads. The presented graph shows extrapolated curves up to 200M sequencing reads.'
 
 report_section_order:
   stats:
     order: 1
+  gene_saturation:
+    order: -400
+  gene_type:
+    order: -500
   DupRadar:
-    order: -500 
+    order: -600 
   sample-pca:
-    order: -900
+    order: -800
   sample-correlation:
-    order: -950
+    order: -900
   software_versions:
     order: -1000
   summary:

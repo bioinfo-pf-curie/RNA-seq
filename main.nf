@@ -156,7 +156,7 @@ if( params.gtf ){
     Channel
         .fromPath(params.gtf)
         .ifEmpty { exit 1, "GTF annotation file not found: ${params.gtf}" }
-        .into { gtf_star; gtf_dupradar; gtf_featureCounts; gtf_HTseqCounts; gtf_tophat; gtf_table }
+        .into { gtf_star; gtf_dupradar; gtf_featureCounts; gtf_genetype; gtf_HTseqCounts; gtf_tophat; gtf_table }
 } else {
     exit 1, "No GTF annotation specified!"
 }
@@ -444,7 +444,7 @@ if (params.stranded != 'auto'){
           def key = params.stranded 
           return tuple(key)
       }
-      .into { rseqc_results_featureCounts; rseqc_results_genetype, rseqc_results_HTseqCounts; rseqc_results_dupradar; rseqc_results_tophat; rseqc_results_table }
+      .into { rseqc_results_featureCounts; rseqc_results_genetype; rseqc_results_HTseqCounts; rseqc_results_dupradar; rseqc_results_tophat; rseqc_results_table }
 
 }
 
@@ -624,7 +624,7 @@ if(params.aligner == 'hisat2'){
       file hisat2_bam
 
       output:
-      file "${hisat2_bam.baseName}.sorted.bam" into bam_count, bam_preseq, bam_markduplicates, bam_featurecounts, bam_genetype; bam_HTseqCounts, bam_read_dist 
+      file "${hisat2_bam.baseName}.sorted.bam" into bam_count, bam_preseq, bam_markduplicates, bam_featurecounts, bam_genetype, bam_HTseqCounts, bam_read_dist 
       file "${hisat2_bam.baseName}.sorted.bam.bai" into bam_index_rseqc
  
       script:
@@ -711,22 +711,6 @@ process preseq {
   """
   preseq c_curve -v -B $bam_preseq -o ${bam_preseq.baseName}.ccurve.txt
   preseq lc_extrap -v -B $bam_preseq -o ${bam_preseq.baseName}.extrap_ccurve.txt -e 200e+06
-  """
-}
-
-process geneSaturation {
-  when:
-  !params.skip_qc && !params.skip_saturation
-
-  input:
-  file input_counts from counts_saturation.collect()
-
-  output:
-  file "*.gcurve.txt" into genesat_results
-
-  script:
-  """
-  gene_saturation.r input_counts counts.gcruve.txt
   """
 }
 
@@ -904,7 +888,7 @@ process merge_counts {
 
   output:
   file 'tablecounts_raw.csv' into raw_counts, counts_saturation
-  file 'tablecounts_tpm.csv' into tpm_counts
+  file 'tablecounts_tpm.csv' into tpm_counts, tpm_genetype
 
   script:
   """
@@ -922,6 +906,28 @@ if( params.counts == 'featureCounts' ){
 }else if (params.counts == 'star'){
     counts_logs = star_log_counts
 }
+
+
+/*
+ * Gene-based saturation
+ */
+
+process geneSaturation {
+  when:
+  !params.skip_qc && !params.skip_saturation
+
+  input:
+  file input_counts from counts_saturation.collect()
+
+  output:
+  file "*gcurve.txt" into genesat_results
+
+  script:
+  """
+  gene_saturation.r $input_counts counts.gcurve.txt
+  """
+}
+
 
 /*
  * Reads distribution
@@ -947,6 +953,7 @@ process read_distribution {
   """
 }
 
+
 process getCountsPerGeneType {
   publishDir "${params.outdir}/read_distribution", mode: 'copy'
 
@@ -954,25 +961,18 @@ process getCountsPerGeneType {
   !params.skip_read_dist
 
   input:
-  file bam_genetype
-  file gtf from gtf_featureCounts.collect()
-  val parse_res from rseqc_results_genetype
-
+  file tpm_genetype
+  file gtf from gtf_genetype.collect()
+ 
   output:
-  file "${bam_genetype.baseName}_genetype.txt" into featureCounts_per_genetype
+  file "*genetype.txt" into counts_per_genetype
 
   script:
-  def featureCounts_direction = 0
-  if (parse_res == 'yes'){
-      featureCounts_direction = 1
-  } else if ((parse_res == 'reverse')){
-      featureCounts_direction = 2
-  }
-
   """
-  featureCounts ${params.featurecounts_opts} -T ${task.cpus} -a $gtf -o ${bam_genetype.baseName}_genetype.txt -p -g gene_type -s $featureCounts_direction $bam_genetype
+  gene_type_expression.r ${tpm_genetype} ${gtf} counts_genetype.txt 
   """
 }
+
 
 /*
  * Exploratory analysis
@@ -1073,9 +1073,11 @@ process multiqc {
     file ('rseqc/*') from rseqc_results.collect().ifEmpty([])
     file ('rseqc/*') from read_dist_results.collect().ifEmpty([])
     file ('preseq/*') from preseq_results.collect().ifEmpty([])
+    file ('genesat/*') from genesat_results.collect().ifEmpty([])
     file ('dupradar/*') from dupradar_results.collect().ifEmpty([])
     file ('picard/*') from picard_results.collect().ifEmpty([])	
     file ('counts/*') from counts_logs.collect()
+    file ('genetype/*') from counts_per_genetype.collect().ifEmpty([])
     file ('exploratory_analysis_results/*') from exploratory_analysis_results.collect().ifEmpty([]) // If the Edge-R is not run create an Empty array
     file ('software_versions/*') from software_versions_yaml.collect()
     file ('workflow_summary/*') from workflow_summary_yaml.collect()
@@ -1090,7 +1092,7 @@ process multiqc {
     makemeta = params.metadata ? true : false
     isPE = params.singleEnd ? 0 : 1
     
-    modules_list = "-m custom_content -m picard -m preseq -m rseqc -m bowtie1 -m hisat2 -m star -m tophat -m cutadapt -m fastqc"
+    modules_list = "-m custom_content -m preseq -m rseqc -m bowtie1 -m hisat2 -m star -m tophat -m cutadapt -m fastqc"
     modules_list = params.counts == 'featureCounts' ? "${modules_list} -m featureCounts" : "${modules_list}"  
     modules_list = params.counts == 'HTseqCounts' ? "${modules_list} -m HTSeq" : "${modules_list}"  
  
