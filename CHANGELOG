@@ -1,9 +1,13 @@
-***********************************
+************************************
 CHANGES IN VERSION 2.0.1dev
 
 NEW FEATURES
 
-   o Updata conda environment
+   o Add tools.config [#56]
+
+   o Support sample_plan and reads as input [#60]
+
+   o Update conda environment
 
    o Remove picard from multiQC report
 
@@ -11,6 +15,11 @@ NEW FEATURES
 
    o Add gene type expression (gencode) [#58]
 
+   o Add exploratory analysis in multiQC report [#44]
+
+BUG FIXES
+
+   o Fix minor bugs [#48, #62, #63]
 
 ***********************************
 CHANGES IN VERSION 2.0.0dev

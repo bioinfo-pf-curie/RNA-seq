@@ -1,23 +1,19 @@
 #!/bin/bash
 
-aligner=$1
-is_pe=$2
+splan=$1
+aligner=$2
+is_pe=$3
 
 
-## Catch sample names from alignment folder
-if [ $aligner == "star" ]; then
-    all_samples=$(find alignment/ -name "*final.out" -printf "%f " | sed -e 's/_norRNA//g' -e 's/Log.final.out//g')
-elif [ $aligner == "tophat2" ]; then
-    all_samples=$(find alignment/ -name "*.align_summary.txt" -printf "%f " | sed -e 's/_norRNA//g' -e 's/.align_summary.txt//g')
-else
-    echo -e "Aligner not yet supported"
-    exit 1
-fi
+## Catch sample names
+all_samples=$(awk -F, '{print $2}' $splan)
 
-echo -e "Sample_identifier,Number_of_reads,Number_of_rRNA,Percent_of_rRNA,Strandness,Number_of_aligned_reads,Percent_of_aligned_reads,Number_of_uniquely_aligned_reads,Percent_uniquely_aligned_reads,Number_of_multiple_aligned_reads,Percent_multiple_aligned,Number_of_duplicates,Percent_duplicates" > mq.stats
+echo -e "Sample_id,Sample_name,Number_of_reads,Number_of_rRNA,Percent_of_rRNA,Strandness,Number_of_aligned_reads,Percent_of_aligned_reads,Number_of_uniquely_aligned_reads,Percent_uniquely_aligned_reads,Number_of_multiple_aligned_reads,Percent_multiple_aligned,Number_of_duplicates,Percent_duplicates" > mq.stats
 
 for sample in $all_samples
 do
+    ##id
+    id=$(awk -F, -v sname=$sample '$2==sname{print $1}' $splan)
 
     ##n_reads
     if [ -d "rrna" ]; then
@@ -65,7 +61,7 @@ do
     fi
 
     ## Strandness
-    strandness=$(cat rseqc/${sample}_subsample.ret_parserseq_output.txt)
+    strandness=$(cat rseqc/${sample}_parserseq.txt)
 
     ## Calculate percentage
     p_mapped=$(echo "scale=2; (${n_mapped}*100/${n_reads})" | bc -l)
@@ -73,6 +69,6 @@ do
     p_multi=$(echo "scale=2; (${n_multi}*100/${n_reads})" | bc -l)
     
 
-    echo -e ${sample},${n_reads},${n_rrna},${p_rrna},${strandness},${n_mapped},${p_mapped},${n_unique},${p_unique},${n_multi},${p_multi},${n_dup},${p_dup} >> mq.stats
+    echo -e ${id},${sample},${n_reads},${n_rrna},${p_rrna},${strandness},${n_mapped},${p_mapped},${n_unique},${p_unique},${n_multi},${p_multi},${n_dup},${p_dup} >> mq.stats
 
 done
