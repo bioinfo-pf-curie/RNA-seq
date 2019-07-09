@@ -92,8 +92,8 @@ if (params.help){
 
 // Configurable reference genomes
 if (params.genomes && params.genome && !params.genomes.containsKey(params.genome)) {
-    exit 1, "The provided genome '${params.genome}' is not available in the iGenomes file. Currently the available genomes are ${params.genomes.keySet().join(", ")}"
-  }
+   exit 1, "The provided genome '${params.genome}' is not available in the iGenomes file. Currently the available genomes are ${params.genomes.keySet().join(", ")}"
+}
 
 // Reference index path configuration
 // Define these here - after the profiles are loaded with the iGenomes paths
@@ -104,9 +104,9 @@ params.rrna = params.genome ? params.genomes[ params.genome ].rrna ?: false : fa
 params.gtf = params.genome ? params.genomes[ params.genome ].gtf ?: false : false
 params.bed12 = params.genome ? params.genomes[ params.genome ].bed12 ?: false : false
 
-// Tools option configuraiton
+// Tools option configuration
 // Add here the list of options that can change from a reference genome to another
-params.star_opts = params.genome ? params.genomes[ params.genome ].star_opts ?: params.star_opts : params.star_opts
+params.star_options = params.genomes[ params.genome ].star_opts ?: params.star_opts
 
 // Has the run name been specified by the user?
 // this has the bonus effect of catching both -name and --name
@@ -539,7 +539,7 @@ if(params.aligner == 'star'){
          --outTmpDir /local/scratch/rnaseq_\$(date +%d%s%S%N) \\
          --outFileNamePrefix $prefix  \\
          --outSAMattrRGline ID:$prefix SM:$prefix LB:Illumina PL:Illumina  \\
-         ${params.star_opts} ${star_opt_add} 
+         ${params.star_options} ${star_opt_add} 
             
     """
   }
