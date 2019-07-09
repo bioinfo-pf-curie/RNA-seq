@@ -30,13 +30,16 @@ def helpMessage() {
 
     Usage:
     nextflow run rnaseq --reads '*_R{1,2}.fastq.gz' --genome hg19 -profile conda
+    nextflow run rnaseq --samplePlan sample_plan --genome hg19 -profile conda
+
 
     Mandatory arguments:
       --reads                       Path to input data (must be surrounded with quotes)
+      --samplePlan                  Path to sample plan input file (cannot be used with --reads)
       -profile                      Configuration profile to use. test / curie / conda / docker / singularity
 
     Options:
-      --genome                      Name of genomes reference
+      --genome                      Name of genome reference
       --singleEnd                   Specifies that the input is single end reads
 
     Strandedness:
@@ -101,6 +104,10 @@ params.rrna = params.genome ? params.genomes[ params.genome ].rrna ?: false : fa
 params.gtf = params.genome ? params.genomes[ params.genome ].gtf ?: false : false
 params.bed12 = params.genome ? params.genomes[ params.genome ].bed12 ?: false : false
 
+// Tools option configuraiton
+// Add here the list of options that can change from a reference genome to another
+params.star_opts = params.genome ? params.genomes[ params.genome ].star_opts ?: params.star_opts : params.star_opts
+
 // Has the run name been specified by the user?
 // this has the bonus effect of catching both -name and --name
 custom_runName = params.name
@@ -131,6 +138,10 @@ if (params.counts == 'star' && params.aligner != 'star'){
 }
 if (params.stranded != 'auto' && params.stranded != 'reverse' && params.stranded != 'yes' && params.stranded != 'no'){
     exit 1, "Invalid stranded option: ${params.stranded}. Valid options: 'auto', 'reverse', 'yes', 'no'"
+}
+
+if ((params.reads && params.samplePlan) || (params.readPaths && params.samplePlan)){
+   exit 1, "Input reads must be defined using either '--reads' or '--samplePlan' parameter. Please choose one way"
 }
 
 if( params.star_index && params.aligner == 'star' ){
@@ -199,13 +210,13 @@ if(params.samplePlan){
          .from(file("${params.samplePlan}"))
          .splitCsv(header: false)
          .map{ row -> [ row[1], [file(row[2])]] }
-         .set { reads_links }
+         .into { raw_reads_fastqc; raw_reads_star; raw_reads_hisat2; raw_reads_tophat2; raw_reads_rna_mapping; raw_reads_prep_rseqc; }
    }else{
       Channel
          .from(file("${params.samplePlan}"))
          .splitCsv(header: false)
          .map{ row -> [ row[1], [file(row[2]), file(row[3])]] }
-         .set { reads_links }
+         .into { raw_reads_fastqc; raw_reads_star; raw_reads_hisat2; raw_reads_tophat2; raw_reads_rna_mapping; raw_reads_prep_rseqc; }
    }
    params.reads=false
 }
@@ -228,6 +239,30 @@ else if(params.readPaths){
         .fromFilePairs( params.reads, size: params.singleEnd ? 1 : 2 )
         .ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\nNB: Path needs to be enclosed in quotes!\nNB: Path requires at least one * wildcard!\nIf this is single-end data, please specify --singleEnd on the command line." }
         .into { raw_reads_fastqc; raw_reads_star; raw_reads_hisat2; raw_reads_tophat2; raw_reads_rna_mapping; raw_reads_prep_rseqc; }
+}
+
+/*
+ * Make sample plan if not available
+ */
+
+if (params.samplePlan){
+  ch_splan = Channel.fromPath(params.samplePlan)
+}else{
+  if (params.singleEnd){
+    Channel
+       .from(params.readPaths)
+       .collectFile() {
+         item -> ["sample_plan.csv", item[0] + ',' + item[0] + ',' + item[1][0] + '\n']
+        }
+       .set{ ch_splan }
+  }else{
+     Channel
+       .from(params.readPaths)
+       .collectFile() {
+         item -> ["sample_plan.csv", item[0] + ',' + item[0] + ',' + item[1][0] + ',' + item[1][1] + '\n']
+        }
+       .set{ ch_splan }
+  }
 }
 
 
@@ -278,60 +313,32 @@ if(params.email) summary['E-mail Address'] = params.email
 log.info summary.collect { k,v -> "${k.padRight(15)}: $v" }.join("\n")
 log.info "========================================="
 
-/*
- * LinkFiles files in folder
- * Used to deal with biological IDs when using a samplePlan
- */
-
-process linkFiles {
-   when:
-      params.samplePlan   
-
-   input:
-      set val(name), file(reads) from reads_links
-
-   output:
-      set val(name), file("${name}_R{1,2}.fastq.gz") into raw_reads_fastqc, raw_reads_star, raw_reads_hisat2, raw_reads_tophat2, raw_reads_rna_mapping, raw_reads_prep_rseqc
-
-   script:
-   nameclean = name.toString() - ~/[^A-Za-z0-9]+/
-   if (params.singleEnd) {
-
-   """
-   ln -s reads[0] ${name}_R1.fastq.gz
-   """
-   }else{
-   """
-   ln -s ${reads[0]} ${nameclean}_R1.fastq.gz
-   ln -s ${reads[1]} ${nameclean}_R2.fastq.gz
-   """
-   }
-}
 
 
 /*
  * FastQC
  */
 process fastqc {
-    tag "${name}"
-    publishDir "${params.outdir}/fastqc", mode: 'copy',
-        saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
+  tag "${prefix}"
+  publishDir "${params.outdir}/fastqc", mode: 'copy',
+      saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
 
-    when:
-    !params.skip_qc && !params.skip_fastqc
+  when:
+  !params.skip_qc && !params.skip_fastqc
 
-    input:
-    set val(name), file(reads) from raw_reads_fastqc
+  input:
+  set val(prefix), file(reads) from raw_reads_fastqc
 
-    output:
-    file "*_fastqc.{zip,html}" into fastqc_results
+  output:
+  file "*_fastqc.{zip,html}" into fastqc_results
 
-    script:
-    prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(trimmed)?(\.fq)?(\.fastq)?(\.gz)?$/
-
-    """
-    fastqc -q $reads
-    """
+  script:
+  pbase = reads[0].toString() - ~/(\.fq)?(\.fastq)?(\.gz)?$/
+  """
+  fastqc -q $reads
+  mv ${pbase}_fastqc.html ${prefix}_fastqc.html
+  mv ${pbase}_fastqc.zip ${prefix}_fastqc.zip
+  """
 }
 
 
@@ -351,18 +358,15 @@ process rRNA_mapping {
     !params.skip_rrna
 
   input:
-    set val(name), file(reads) from raw_reads_rna_mapping
+    set val(prefix), file(reads) from raw_reads_rna_mapping
     file annot from rrna_annot.collect()
 
   output:
-    set val(name), file("${prefix}_norRNA_{1,2}.fastq.gz") into rrna_mapping_res
-    set val(name), file("${prefix}.sam") into rrna_sam
+    set val(prefix), file("${prefix}_norRNA_{1,2}.fastq.gz") into rrna_mapping_res
+    set val(prefix), file("${prefix}.sam") into rrna_sam
     file "*.log" into rrna_logs
 
-
   script:
-  prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(trimmed)?(\.fq)?(\.fastq)?(\.gz)?$/
-
   if (params.singleEnd) {
      """
      bowtie ${params.bowtie_opts} \\
@@ -388,56 +392,21 @@ process rRNA_mapping {
 }
 
 
-process rRNA_sam {
-  tag "${name}"
-  publishDir "${params.outdir}/rRNA_mapping", mode: 'copy',
-      saveAs: {filename ->
-      if (filename.indexOf("sorted.bam") > 0 &&  params.saveAlignedIntermediates) filename
-	  else if (filename.indexOf(".log") > 0) "logs/$filename"
-          else null
-      }
-
-  when:
-    !params.skip_rrna
-
-  input:
-    set val(name), file(sam) from rrna_sam
-
-  output:
-    file "${name}.bam"
-    file "*sorted.bam"
-
-
-  script:
-
-  """
-     samtools view -@  ${task.cpus} -bS ${sam} > ${name}.bam  && \
-     samtools sort \\
-          ${name}.bam \\
-          -@ ${task.cpus} \\
-          ${params.samtools_sort_opts} \\
-          -o ${name}.sorted.bam
-    """ 
-}
-
-
 /*
  * Strandness
  */
-
 process prep_rseqc {
   tag "${prefix}"
   input:
-  set val(name), file(reads) from raw_reads_prep_rseqc
+  set val(prefix), file(reads) from raw_reads_prep_rseqc
 
   output:
-  file("${prefix}_subsample.bam") into bam_rseqc
+  set val("${prefix}"), file("${prefix}_subsample.bam") into bam_rseqc
 
   when:
   params.stranded == 'auto'
 
   script:
-  prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(trimmed)?(\.fq)?(\.fastq)?(\.gz)?$/
   if (params.singleEnd) {
      """
      bowtie2 --fast --end-to-end --reorder \\
@@ -459,56 +428,30 @@ process prep_rseqc {
 }
 
 process rseqc {
-  tag "${bam_rseqc.baseName - '_subsample'}"
+  tag "${prefix - '_subsample'}"
   publishDir "${params.outdir}/rseqc" , mode: 'copy',
       saveAs: {filename ->
-               if (filename.indexOf("bam_stat.txt") > 0) "bam_stat/$filename"
-          else if (filename.indexOf("infer_experiment.txt") > 0) "infer_experiment/$filename"
-          else filename
+       	  if (filename.indexOf(".txt") > 0) "infer_experiment/$filename"
+          else null
       }
 
   when:
   params.stranded == 'auto'
 
   input:
-  file bam_rseqc
+  set val(prefix), file(bam_rseqc) from bam_rseqc
   file bed12 from bed_rseqc.collect()
 
   output:
   file "*.{txt,pdf,r,xls}" into rseqc_results
-  file "${bam_rseqc.baseName}.ret_parserseq_output.txt" into parse_rseqc
+  stdout into (rseqc_results_featureCounts, rseqc_results_genetype, rseqc_results_HTseqCounts, rseqc_results_dupradar, rseqc_results_tophat, rseqc_results_table)
    
   script:
-  pathworkdir = "$baseDir/results/tmp" 
   """
-  infer_experiment.py -i $bam_rseqc -r $bed12 > ${bam_rseqc.baseName}.infer_experiment.txt
-  parse_rseq_output.sh ${bam_rseqc.baseName}.infer_experiment.txt > ${bam_rseqc.baseName}.ret_parserseq_output.txt
-  mkdir -p $pathworkdir
-  cp ${bam_rseqc.baseName}.ret_parserseq_output.txt $pathworkdir
-  """
-}
-
-process parse_infer_experiment {
-  tag "${name}"
-
-  when:
-  params.stranded == 'auto'
-
-  input:
-  file parse_rseqc
-
-  output:
-  val parse_res into rseqc_results_featureCounts, rseqc_results_genetype, rseqc_results_HTseqCounts, rseqc_results_dupradar, rseqc_results_tophat, rseqc_results_table
-
-  script:
-  name = parse_rseqc[0].toString()
-  pathworkdir = "$baseDir/results/tmp"  
-  lines = new File("${pathworkdir}/${name}").findAll { it.startsWith('') }
-  parse_res = lines[0] 
-  
-  """
-  echo '${parse_res}'  > res.stranded.txt
-  """
+  infer_experiment.py -i $bam_rseqc -r $bed12 > ${prefix}.txt
+  parse_rseq_output.sh ${prefix}.txt > ${prefix}_parserseq.txt
+  cat ${prefix}_parserseq.txt
+  """  
 }
 
 if (params.stranded != 'auto'){
@@ -519,7 +462,6 @@ if (params.stranded != 'auto'){
           return tuple(key)
       }
       .into { rseqc_results_featureCounts; rseqc_results_genetype; rseqc_results_HTseqCounts; rseqc_results_dupradar; rseqc_results_tophat; rseqc_results_table }
-
 }
 
 
@@ -571,7 +513,7 @@ if(params.aligner == 'star'){
         }
 
     input:
-    set val(name), file(reads) from star_raw_reads
+    set val(prefix), file(reads) from star_raw_reads
     file index from star_index.collect()
     file gtf from gtf_star.collect()
 
@@ -583,7 +525,7 @@ if(params.aligner == 'star'){
     file "*ReadsPerGene.out.tab" optional true into star_counts_to_merge, star_counts_to_r
 
     script:
-    prefix = reads[0].toString() - ~/?(trimmed)?(_norRNA)?(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)(\.fq)?(\.fastq)?(\.gz)?$/
+    //prefix = reads[0].toString() - ~/(trimmed)?(_norRNA)?(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
     def star_opt_add = params.counts == 'star' ? params.star_opts_counts : ''
     """
     STAR --genomeDir $index \\
@@ -603,7 +545,7 @@ if(params.aligner == 'star'){
   }
 
 
-  process star_sam {
+  process star_sort {
     tag "$prefix"
     publishDir "${params.outdir}/STAR", mode: 'copy',
         saveAs: {filename ->
@@ -624,7 +566,7 @@ if(params.aligner == 'star'){
     """
     samtools sort  \\
         -@  ${task.cpus}  \\
-        ${params.samtools_sort_opts}  \\
+        -m ${params.sort_max_memory} \\
         -o ${prefix}Aligned.sortedByCoord.out.bam  \\
         ${star_bam}   
 
@@ -661,17 +603,17 @@ if(params.aligner == 'hisat2'){
         }
 
     input:
-    set val(name), file(reads) from hisat2_raw_reads 
+    set val(prefix), file(reads) from hisat2_raw_reads 
     file hs2_indices from hs2_indices.collect()
     file alignment_splicesites from alignment_splicesites.collect()
 
     output:
-    file "${prefix}.bam" into hisat2_bam
+    set val(prefix), file("${prefix}.bam") into hisat2_bam
     file "${prefix}.hisat2_summary.txt" into alignment_logs
 
     script:
     index_base = hs2_indices[0].toString() - ~/.\d.ht2/
-    prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(trimmed)?(_norRNA)?(\.fq)?(\.fastq)?(\.gz)?$/
+    //prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(trimmed)?(_norRNA)?(\.fq)?(\.fastq)?(\.gz)?$/
     seqCenter = params.seqCenter ? "--rg-id ${prefix} --rg CN:${params.seqCenter.replaceAll('\\s','_')}" : ''
     def rnastrandness = ''
     if (params.stranded=='yes'){
@@ -709,7 +651,7 @@ if(params.aligner == 'hisat2'){
     }
   }
 
-  process hisat2_sortOutput {
+  process hisat2_sort {
       tag "${hisat2_bam.baseName}"
       publishDir "${params.outdir}/HISAT2", mode: 'copy',
           saveAs: { filename ->
@@ -731,6 +673,7 @@ if(params.aligner == 'hisat2'){
       samtools sort \\
           $hisat2_bam \\
           -@ ${task.cpus} $avail_mem \\
+          -m ${params.sort_max_memory} \\
           -o ${hisat2_bam.baseName}.sorted.bam
       samtools index ${hisat2_bam.baseName}.sorted.bam
       """
@@ -758,16 +701,16 @@ if(params.aligner == 'tophat2'){
     val parse_res from rseqc_results_tophat
 
   output:
-    file "${prefix}.bam" into bam_count, bam_preseq, bam_markduplicates, bam_featurecounts, bam_genetype, bam_HTseqCounts, bam_read_dist
-    file "${prefix}.align_summary.txt" into alignment_logs
+    set val(name), file("${name}.bam") into bam_count, bam_preseq, bam_markduplicates, bam_featurecounts, bam_genetype, bam_HTseqCounts, bam_read_dist
+    file "${name}.align_summary.txt" into alignment_logs
 
   script:
-    prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(trimmed)?(_norRNA)?(\.fq)?(\.fastq)?(\.gz)?$/
+    //prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(trimmed)?(_norRNA)?(\.fq)?(\.fastq)?(\.gz)?$/
     def avail_mem = task.memory ? "-m ${task.memory.toBytes() / task.cpus}" : ''
     def stranded_opt = '--library-type fr-unstranded'
     if (parse_res == 'yes'){
         stranded_opt = '--library-type fr-secondstrand'
-    } else if ((parse_res == 'reverse')){
+    }else if ((parse_res == 'reverse')){
         stranded_opt = '--library-type fr-firststrand'
     }
     def out = './mapping'
@@ -782,10 +725,10 @@ if(params.aligner == 'tophat2'){
     -o ${out} \\
     ${params.bowtie2_index} \\
     ${reads} && \\
-    mv ${out}/accepted_hits.bam ./${prefix}.bam
-    mv ${out}/align_summary.txt ./${prefix}.align_summary.txt
+    mv ${out}/accepted_hits.bam ./${name}.bam
+    mv ${out}/align_summary.txt ./${name}.align_summary.txt
     """
- }
+  }
 }
 
 
@@ -807,7 +750,6 @@ process preseq {
 
   script:
   """
-  preseq c_curve -v -B $bam_preseq -o ${bam_preseq.baseName}.ccurve.txt
   preseq lc_extrap -v -B $bam_preseq -o ${bam_preseq.baseName}.extrap_ccurve.txt -e 200e+06
   """
 }
@@ -920,9 +862,6 @@ process featureCounts {
   } else if ((parse_res == 'reverse')){
       featureCounts_direction = 2
   }
-
-  // Try to get real sample name
-  sample_name = bam_featurecounts.baseName - 'Aligned.sortedByCoord.out'
   """
   featureCounts ${params.featurecounts_opts} -T ${task.cpus} -a $gtf -o ${bam_featurecounts.baseName}_gene.featureCounts.txt -p -s $featureCounts_direction $bam_featurecounts
   """
@@ -954,9 +893,6 @@ process HTseqCounts {
   } else if ((parse_res == 'reverse')){
       stranded_opt= '-s reverse'
   }
-
-  // Try to get real sample name
-  sample_name = bam_HTseqCounts.baseName - 'Aligned.sortedByCoord.out'
   """
   htseq-count ${params.htseq_opts} $stranded_opt $bam_HTseqCounts $gtf > ${sample_name}_counts.csv
   """
@@ -991,7 +927,7 @@ process merge_counts {
   script:
   """
   echo -e ${input_counts} | tr " " "\n" > listofcounts.tsv
-  echo -e ${parse_res} | sed -e "s/\\[//" -e "s/\\]//" -e "s/,//g" | tr " " "\n" > listofstrandness.tsv
+  echo -e "${parse_res}" | sed -e "s/\\[//" -e "s/\\]//" -e "s/,//g" | tr " " "\n" > listofstrandness.tsv
   makeCountTable.r listofcounts.tsv ${gtf} ${params.counts} listofstrandness.tsv
   """
 }
@@ -1162,6 +1098,7 @@ process multiqc {
     !params.skip_multiqc
 
     input:
+    file splan from ch_splan.collect()
     file metadata from ch_metadata.ifEmpty([])
     file multiqc_config from ch_multiqc_config    
     //file multiqc_custom_logo from ch_multiqc_logo
@@ -1181,6 +1118,7 @@ process multiqc {
     file ('workflow_summary/*') from workflow_summary_yaml.collect()
 
     output:
+    file splan
     file "*multiqc_report.html" into multiqc_report
     file "*_data"
 
@@ -1197,12 +1135,12 @@ process multiqc {
     if ( makemeta ){
       """
       metadata2multiqc.py $metadata > multiqc-config-metadata.yaml
-      stats2multiqc.sh ${params.aligner} ${isPE}
+      stats2multiqc.sh ${splan} ${params.aligner} ${isPE}
       multiqc . -f $rtitle $rfilename -c $multiqc_config -c multiqc-config-metadata.yaml $modules_list
       """    
     }else{
       """	
-      stats2multiqc.sh ${params.aligner} ${isPE}
+      stats2multiqc.sh ${splan} ${params.aligner} ${isPE}
       multiqc . -f $rtitle $rfilename -c $multiqc_config $modules_list
       """
     }
