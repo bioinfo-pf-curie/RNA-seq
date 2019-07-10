@@ -47,8 +47,14 @@ do
 	    exit 1
 	    fi
     else
-	echo -e "Single-end data are not yet supported !"
-	exit 1
+	if [ $aligner == "star" ]; then
+            n_unique=$(grep "Uniquely mapped reads number" alignment/${sample}*Log.final.out | cut -d"|" -f 2 | sed -e 's/\t//g')
+            n_multi=$(grep "Number of reads mapped to multiple loci" alignment/${sample}*Log.final.out | cut -d"|" -f 2 | sed -e 's/\t//g')
+            n_mapped=$((n_unique + n_multi))
+        else
+            echo -e "Aligner not yet supported"
+            exit 1
+            fi
     fi
 
     ##n_dup

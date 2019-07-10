@@ -36,10 +36,10 @@ def helpMessage() {
     Mandatory arguments:
       --reads                       Path to input data (must be surrounded with quotes)
       --samplePlan                  Path to sample plan input file (cannot be used with --reads)
+      --genome                      Name of genome reference
       -profile                      Configuration profile to use. test / curie / conda / docker / singularity
 
     Options:
-      --genome                      Name of genome reference
       --singleEnd                   Specifies that the input is single end reads
 
     Strandedness:
@@ -362,8 +362,8 @@ process rRNA_mapping {
     file annot from rrna_annot.collect()
 
   output:
-    set val(prefix), file("${prefix}_norRNA_{1,2}.fastq.gz") into rrna_mapping_res
-    set val(prefix), file("${prefix}.sam") into rrna_sam
+    set val(prefix), file("*fastq.gz") into rrna_mapping_res
+    set val(prefix), file("*.sam") into rrna_sam
     file "*.log" into rrna_logs
 
   script:
@@ -373,7 +373,7 @@ process rRNA_mapping {
      -p ${task.cpus} \\
      --un ${prefix}_norRNA.fastq \\
      --sam ${params.rrna} \\
-     -1 ${reads} \\
+     ${reads} \\
      ${prefix}.sam  2> ${prefix}.log && \
      gzip -f ${prefix}_norRNA*.fastq 
     """
