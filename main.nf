@@ -210,13 +210,13 @@ if(params.samplePlan){
          .from(file("${params.samplePlan}"))
          .splitCsv(header: false)
          .map{ row -> [ row[1], [file(row[2])]] }
-         .into { raw_reads_fastqc; raw_reads_star; raw_reads_hisat2; raw_reads_tophat2; raw_reads_rna_mapping; raw_reads_prep_rseqc; raw_reads_strandness;}
+         .into { raw_reads_fastqc; raw_reads_star; raw_reads_hisat2; raw_reads_tophat2; raw_reads_rna_mapping; raw_reads_prep_rseqc; raw_reads_strandness; save_strandness}
    }else{
       Channel
          .from(file("${params.samplePlan}"))
          .splitCsv(header: false)
          .map{ row -> [ row[1], [file(row[2]), file(row[3])]] }
-         .into { raw_reads_fastqc; raw_reads_star; raw_reads_hisat2; raw_reads_tophat2; raw_reads_rna_mapping; raw_reads_prep_rseqc; raw_reads_strandness;}
+         .into { raw_reads_fastqc; raw_reads_star; raw_reads_hisat2; raw_reads_tophat2; raw_reads_rna_mapping; raw_reads_prep_rseqc; raw_reads_strandness; save_strandness}
    }
    params.reads=false
 }
@@ -226,19 +226,19 @@ else if(params.readPaths){
             .from(params.readPaths)
             .map { row -> [ row[0], [file(row[1][0])]] }
             .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-            .into { raw_reads_fastqc; raw_reads_star; raw_reads_hisat2; raw_reads_tophat2; raw_reads_rna_mapping; raw_reads_prep_rseqc; raw_reads_strandness;}
+            .into { raw_reads_fastqc; raw_reads_star; raw_reads_hisat2; raw_reads_tophat2; raw_reads_rna_mapping; raw_reads_prep_rseqc; raw_reads_strandness; save_strandness}
     } else {
         Channel
             .from(params.readPaths)
             .map { row -> [ row[0], [file(row[1][0]), file(row[1][1])]] }
             .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-            .into { raw_reads_fastqc; raw_reads_star; raw_reads_hisat2; raw_reads_tophat2; raw_reads_rna_mapping; raw_reads_prep_rseqc; raw_reads_strandness;}
+            .into { raw_reads_fastqc; raw_reads_star; raw_reads_hisat2; raw_reads_tophat2; raw_reads_rna_mapping; raw_reads_prep_rseqc; raw_reads_strandness; save_strandness}
     }
 } else {
     Channel
         .fromFilePairs( params.reads, size: params.singleEnd ? 1 : 2 )
         .ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\nNB: Path needs to be enclosed in quotes!\nNB: Path requires at least one * wildcard!\nIf this is single-end data, please specify --singleEnd on the command line." }
-        .into { raw_reads_fastqc; raw_reads_star; raw_reads_hisat2; raw_reads_tophat2; raw_reads_rna_mapping; raw_reads_prep_rseqc; raw_reads_strandness;}
+        .into { raw_reads_fastqc; raw_reads_star; raw_reads_hisat2; raw_reads_tophat2; raw_reads_rna_mapping; raw_reads_prep_rseqc; raw_reads_strandness; save_strandness}
 }
 
 /*
@@ -395,72 +395,96 @@ process rRNA_mapping {
 /*
  * Strandness
  */
-process prep_rseqc {
-  tag "${prefix}"
-  input:
-  set val(prefix), file(reads) from raw_reads_prep_rseqc
+strandness_results = Channel.create()
 
-  output:
-  set val("${prefix}"), file("${prefix}_subsample.bam") into bam_rseqc
+if (params.stranded == 'auto'){
 
-  when:
-  params.stranded == 'auto'
+  process prep_rseqc {
+    tag "${prefix}"
+    input:
+    set val(prefix), file(reads) from raw_reads_prep_rseqc
 
-  script:
-  if (params.singleEnd) {
-     """
-     bowtie2 --fast --end-to-end --reorder \\
+    output:
+    set val("${prefix}"), file("${prefix}_subsample.bam") into bam_rseqc
+
+    script:
+    if (params.singleEnd) {
+    """
+    bowtie2 --fast --end-to-end --reorder \\
      -p ${task.cpus} \\
      -u ${params.n_check} \\
      -x ${params.bowtie2_index} \\
      -U ${reads} > ${prefix}_subsample.bam 
      """
-  } else {
-     """
-     bowtie2 --fast --end-to-end --reorder \\
+    } else {
+    """
+    bowtie2 --fast --end-to-end --reorder \\
      -p ${task.cpus} \\
      -u ${params.n_check} \\
      -x ${params.bowtie2_index} \\
      -1 ${reads[0]} \\
      -2 ${reads[1]} > ${prefix}_subsample.bam
-     """
+    """
+    }
   }
-}
 
-process rseqc {
-  tag "${prefix - '_subsample'}"
-  publishDir "${params.outdir}/strandness" , mode: 'copy',
-      saveAs: {filename ->
-       	  if (filename.indexOf(".txt") > 0) "$filename"
-          else null
-      }
+  process rseqc {
+    tag "${prefix - '_subsample'}"
+    publishDir "${params.outdir}/strandness" , mode: 'copy',
+        saveAs: {filename ->
+         	  if (filename.indexOf(".txt") > 0) "$filename"
+                  else null
+        }
 
-  input:
-  set val(prefix), file(bam_rseqc) from bam_rseqc
-  file bed12 from bed_rseqc.collect()
+    input:
+    set val(prefix), file(bam_rseqc) from bam_rseqc
+    file bed12 from bed_rseqc.collect()
 
-  output:
-  file "*.{txt,pdf,r,xls}" into rseqc_results
-  stdout into (rseqc_results_featureCounts, rseqc_results_genetype, rseqc_results_HTseqCounts, rseqc_results_dupradar, rseqc_results_tophat, rseqc_results_table)
+    output:
+    file "*.{txt,pdf,r,xls}" into rseqc_results
+    stdout into (stranded_results_featureCounts, stranded_results_genetype, stranded_results_HTseqCounts, stranded_results_dupradar, stranded_results_tophat, stranded_results_table)
 
-  when:
-  params.stranded == 'auto'
+    when:
+    params.stranded == 'auto'
 
-  script:
-  """
-  infer_experiment.py -i $bam_rseqc -r $bed12 > ${prefix}.txt
-  parse_rseq_output.sh ${prefix}.txt > ${prefix}_parserseq.txt
-  cat ${prefix}_parserseq.txt
-  """  
-}
+    script:
+    """
+    infer_experiment.py -i $bam_rseqc -r $bed12 > ${prefix}.txt
+    parse_rseq_output.sh ${prefix}.txt > ${prefix}_strandness.txt
+    cat ${prefix}_strandness.txt
+    """  
+  }
 
-if (params.stranded != 'auto'){
+strandness_results = rseqc_results
+}else{
+
   raw_reads_strandness
     .map { file -> 
         def key = params.stranded 
         return tuple(key)
     }
-    .into { rseqc_results_featureCounts; rseqc_results_genetype; rseqc_results_HTseqCounts; rseqc_results_dupradar; rseqc_results_tophat; rseqc_results_table }
+    .into { stranded_results_featureCounts; stranded_results_genetype; stranded_results_HTseqCounts; stranded_results_dupradar; stranded_results_tophat; stranded_results_table }
+
+  // save strandness results
+  process save_strandness {
+  publishDir "${params.outdir}/strandness" , mode: 'copy',
+      saveAs: {filename ->
+          if (filename.indexOf(".txt") > 0) "$filename"
+          else null
+      }
+
+  input:
+  set val(prefix), file(reads) from save_strandness
+
+  output:
+  file "*.txt" into saved_strandness
+
+  script:
+  """
+  echo ${params.stranded} > ${prefix}_strandness.txt
+  """
+  }
+strandness_results = saved_strandness
 }
 
 
@@ -538,7 +562,8 @@ if(params.aligner == 'star'){
          --outTmpDir /local/scratch/rnaseq_\$(date +%d%s%S%N) \\
          --outFileNamePrefix $prefix  \\
          --outSAMattrRGline ID:$prefix SM:$prefix LB:Illumina PL:Illumina  \\
-         ${params.star_options} ${star_opt_add} 
+         ${params.star_options} \\
+	 ${star_opt_add} 
             
     """
   }
@@ -697,7 +722,7 @@ if(params.aligner == 'tophat2'){
     set val(name), file(reads) from tophat2_raw_reads 
     file "tophat2" from tophat2_indices.collect()
     file gtf from gtf_tophat.collect()
-    val parse_res from rseqc_results_tophat
+    val parse_res from stranded_results_tophat
 
   output:
     set val(name), file("${name}.bam") into bam_count, bam_preseq, bam_markduplicates, bam_featurecounts, bam_genetype, bam_HTseqCounts, bam_read_dist
@@ -811,7 +836,7 @@ process dupradar {
   input:
   file bam_md
   file gtf from gtf_dupradar.collect()
-  val parse_res from rseqc_results_dupradar
+  val parse_res from stranded_results_dupradar
 
   output:
   file "*.{pdf,txt}" into dupradar_results
@@ -848,7 +873,7 @@ process featureCounts {
   input:
   file bam_featurecounts
   file gtf from gtf_featureCounts.collect()
-  val parse_res from rseqc_results_featureCounts
+  val parse_res from stranded_results_featureCounts
 
   output:
   file "${bam_featurecounts.baseName}_counts.csv" into featureCounts_counts_to_merge, featureCounts_counts_to_r
@@ -880,7 +905,7 @@ process HTseqCounts {
   input:
   file bam_HTseqCounts
   file gtf from gtf_HTseqCounts.collect()
-  val parse_res from  rseqc_results_HTseqCounts
+  val parse_res from  stranded_results_HTseqCounts
 
   output: 
   file "*_counts.csv" into htseq_counts_to_merge, htseq_counts_to_r, HTSeqCounts_logs
@@ -917,7 +942,7 @@ process merge_counts {
   input:
   file input_counts from counts_to_merge.collect()
   file gtf from gtf_table.collect()
-  val parse_res from rseqc_results_table.collect()
+  val parse_res from stranded_results_table.collect()
 
   output:
   file 'tablecounts_raw.csv' into raw_counts, counts_saturation
@@ -1104,7 +1129,7 @@ process multiqc {
     file (fastqc:'fastqc/*') from fastqc_results.collect().ifEmpty([])
     file ('rrna/*') from rrna_logs.collect().ifEmpty([])
     file ('alignment/*') from alignment_logs.collect()
-    file ('rseqc/*') from rseqc_results.collect().ifEmpty([])
+    file ('strandness/*') from strandness_results.collect().ifEmpty([])
     file ('rseqc/*') from read_dist_results.collect().ifEmpty([])
     file ('preseq/*') from preseq_results.collect().ifEmpty([])
     file ('genesat/*') from genesat_results.collect().ifEmpty([])
@@ -1129,7 +1154,7 @@ process multiqc {
     
     modules_list = "-m custom_content -m preseq -m rseqc -m bowtie1 -m hisat2 -m star -m tophat -m cutadapt -m fastqc"
     modules_list = params.counts == 'featureCounts' ? "${modules_list} -m featureCounts" : "${modules_list}"  
-    modules_list = params.counts == 'HTseqCounts' ? "${modules_list} -m HTSeq" : "${modules_list}"  
+    modules_list = params.counts == 'HTseqCounts' ? "${modules_list} -m htseq" : "${modules_list}"  
  
     if ( makemeta ){
       """

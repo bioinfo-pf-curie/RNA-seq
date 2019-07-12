@@ -142,10 +142,13 @@ if (count_tool == "STAR"){
     data.frame(z[,6], row.names=rownames(z))
   })
   counts.exprs <- data.frame(counts.exprs)
-}else if (count_tool == "HTSEQCOUNT"){
+}else if (count_tool == "HTSEQCOUNTS"){
   ## Load HTSeq data
   counts.exprs <- lapply(exprs.in, read.csv, sep="\t", header=FALSE, row.names=1, check.names=FALSE)
   counts.exprs <- as.data.frame(counts.exprs)
+  counts.exprs <- counts.exprs[1:(nrow(counts.exprs)-5), , drop=FALSE]
+}else{
+  stop(paste0(count_tool, " unknown !"))
 }
 
 ## Renome samples

@@ -71,7 +71,7 @@ do
     fi
 
     ## Strandness
-    strandness=$(cat rseqc/${sample}_parserseq.txt)
+    strandness=$(cat strandness/${sample}_strandness.txt)
 
     ## Calculate percentage
     p_mapped=$(echo "scale=2; (${n_mapped}*100/${n_reads})" | bc -l)
