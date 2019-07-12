@@ -883,7 +883,7 @@ process HTseqCounts {
   val parse_res from  rseqc_results_HTseqCounts
 
   output: 
-  file "*_counts.csv" into htseq_counts_to_merge, htseq_counts_to_r
+  file "*_counts.csv" into htseq_counts_to_merge, htseq_counts_to_r, HTSeqCounts_logs
 
   script:
   def stranded_opt = '-s no' 
@@ -893,7 +893,7 @@ process HTseqCounts {
       stranded_opt= '-s reverse'
   }
   """
-  htseq-count ${params.htseq_opts} $stranded_opt $bam_HTseqCounts $gtf > ${sample_name}_counts.csv
+  htseq-count ${params.htseq_opts} $stranded_opt $bam_HTseqCounts $gtf > ${bam_HTseqCounts.baseName}_counts.csv
   """
 }
 
