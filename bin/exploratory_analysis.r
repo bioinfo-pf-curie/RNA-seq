@@ -28,7 +28,7 @@ if (!require("gplots")) {
 
 
 ## Load a raw count table from a csv file
-d <- read.csv(rawCounts, row.names = 1)
+d <- read.csv(rawCounts, row.names = 1, check.names=FALSE)
 d <- as.matrix(d)
 
 ## Convert to DESeq2 object

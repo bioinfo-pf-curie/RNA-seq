@@ -134,7 +134,7 @@ if (params.counts != 'star' && params.counts != 'featureCounts' && params.counts
     exit 1, "Invalid counts option: ${params.counts}. Valid options: 'star', 'featureCounts', 'HTseqCounts'"
 }
 if (params.counts == 'star' && params.aligner != 'star'){
-    exit 1, "Cannot run STAR counts without STAR aligner."
+    exit 1, "Cannot run STAR counts without STAR aligner. Please check the '--aligner' and '--counts' parameters."
 }
 if (params.stranded != 'auto' && params.stranded != 'reverse' && params.stranded != 'yes' && params.stranded != 'no'){
     exit 1, "Invalid stranded option: ${params.stranded}. Valid options: 'auto', 'reverse', 'yes', 'no'"
@@ -157,7 +157,7 @@ else if ( params.hisat2_index && params.aligner == 'hisat2' ){
 else if ( params.bowtie2_index && params.aligner == 'tophat2' ){
     Channel.fromPath("${params.bowtie2_index}*")
         .ifEmpty { exit 1, "TOPHAT2 index not found: ${params.bowtie2_index}" }
-        .into { tophat2_indices}
+        .set { tophat2_indices}
 }
 else {
     exit 1, "No reference genome specified!"
@@ -456,7 +456,7 @@ process rseqc {
 
 if (params.stranded != 'auto'){
     Channel
-      .fromFilePairs( params.reads)
+      .fromFilePairs(params.reads)
       .map { file -> 
           def key = params.stranded 
           return tuple(key)
@@ -758,7 +758,7 @@ process preseq {
  * Duplicates
  */
 process markDuplicates {
-  tag "${bam.baseName - 'Aligned.sortedByCoord.out'}"
+  tag "${bam.baseName} - 'Aligned.sortedByCoord.out'"
   publishDir "${params.outdir}/markDuplicates", mode: 'copy',
       saveAs: {filename -> filename.indexOf("_metrics.txt") > 0 ? "metrics/$filename" : "$filename"}
 

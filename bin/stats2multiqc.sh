@@ -59,8 +59,12 @@ do
 
     ##n_dup
     if [ -d "picard" ]; then
-	n_dup=$(grep -a2 "## METRICS" picard/${sample}*markDups_metrics.txt | tail -1 | awk '{print $7}')
-	p_dup=$(echo "scale=2; (${n_dup}*100/${n_reads})" | bc -l)
+	if [ $is_pe == "1" ]; then
+  	    n_dup=$(grep -a2 "## METRICS" picard/${sample}*markDups_metrics.txt | tail -1 | awk '{print $7}')
+	else
+	    n_dup=$(grep -a2 "## METRICS" picard/${sample}*markDups_metrics.txt | tail -1 | awk '{print $6}')
+	fi
+        p_dup=$(echo "scale=2; (${n_dup}*100/${n_reads})" | bc -l)
     else
 	n_dup='NA'
 	p_dup='NA'
