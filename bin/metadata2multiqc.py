@@ -58,7 +58,7 @@ if args.metadata is not None:
 
     ## Output
     custom_content = '\n'.join(multiqc_list)
-    print custom_content
+    print(custom_content)
 
 
 

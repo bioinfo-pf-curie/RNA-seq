@@ -68,7 +68,7 @@ parse_rseqc_output()
 	fi
     fi
     
-    echo $ret
+    echo -n "$ret"
 }
 
 parse_rseqc_output $rseq_output_file

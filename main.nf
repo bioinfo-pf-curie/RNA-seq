@@ -210,13 +210,13 @@ if(params.samplePlan){
          .from(file("${params.samplePlan}"))
          .splitCsv(header: false)
          .map{ row -> [ row[1], [file(row[2])]] }
-         .into { raw_reads_fastqc; raw_reads_star; raw_reads_hisat2; raw_reads_tophat2; raw_reads_rna_mapping; raw_reads_prep_rseqc; }
+         .into { raw_reads_fastqc; raw_reads_star; raw_reads_hisat2; raw_reads_tophat2; raw_reads_rna_mapping; raw_reads_prep_rseqc; raw_reads_strandness;}
    }else{
       Channel
          .from(file("${params.samplePlan}"))
          .splitCsv(header: false)
          .map{ row -> [ row[1], [file(row[2]), file(row[3])]] }
-         .into { raw_reads_fastqc; raw_reads_star; raw_reads_hisat2; raw_reads_tophat2; raw_reads_rna_mapping; raw_reads_prep_rseqc; }
+         .into { raw_reads_fastqc; raw_reads_star; raw_reads_hisat2; raw_reads_tophat2; raw_reads_rna_mapping; raw_reads_prep_rseqc; raw_reads_strandness;}
    }
    params.reads=false
 }
@@ -226,19 +226,19 @@ else if(params.readPaths){
             .from(params.readPaths)
             .map { row -> [ row[0], [file(row[1][0])]] }
             .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-            .into { raw_reads_fastqc; raw_reads_star; raw_reads_hisat2; raw_reads_tophat2; raw_reads_rna_mapping; raw_reads_prep_rseqc; }
+            .into { raw_reads_fastqc; raw_reads_star; raw_reads_hisat2; raw_reads_tophat2; raw_reads_rna_mapping; raw_reads_prep_rseqc; raw_reads_strandness;}
     } else {
         Channel
             .from(params.readPaths)
             .map { row -> [ row[0], [file(row[1][0]), file(row[1][1])]] }
             .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-            .into { raw_reads_fastqc; raw_reads_star; raw_reads_hisat2; raw_reads_tophat2; raw_reads_rna_mapping; raw_reads_prep_rseqc; }
+            .into { raw_reads_fastqc; raw_reads_star; raw_reads_hisat2; raw_reads_tophat2; raw_reads_rna_mapping; raw_reads_prep_rseqc; raw_reads_strandness;}
     }
 } else {
     Channel
         .fromFilePairs( params.reads, size: params.singleEnd ? 1 : 2 )
         .ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\nNB: Path needs to be enclosed in quotes!\nNB: Path requires at least one * wildcard!\nIf this is single-end data, please specify --singleEnd on the command line." }
-        .into { raw_reads_fastqc; raw_reads_star; raw_reads_hisat2; raw_reads_tophat2; raw_reads_rna_mapping; raw_reads_prep_rseqc; }
+        .into { raw_reads_fastqc; raw_reads_star; raw_reads_hisat2; raw_reads_tophat2; raw_reads_rna_mapping; raw_reads_prep_rseqc; raw_reads_strandness;}
 }
 
 /*
@@ -429,14 +429,11 @@ process prep_rseqc {
 
 process rseqc {
   tag "${prefix - '_subsample'}"
-  publishDir "${params.outdir}/rseqc" , mode: 'copy',
+  publishDir "${params.outdir}/strandness" , mode: 'copy',
       saveAs: {filename ->
-       	  if (filename.indexOf(".txt") > 0) "infer_experiment/$filename"
+       	  if (filename.indexOf(".txt") > 0) "$filename"
           else null
       }
-
-  when:
-  params.stranded == 'auto'
 
   input:
   set val(prefix), file(bam_rseqc) from bam_rseqc
@@ -445,7 +442,10 @@ process rseqc {
   output:
   file "*.{txt,pdf,r,xls}" into rseqc_results
   stdout into (rseqc_results_featureCounts, rseqc_results_genetype, rseqc_results_HTseqCounts, rseqc_results_dupradar, rseqc_results_tophat, rseqc_results_table)
-   
+
+  when:
+  params.stranded == 'auto'
+
   script:
   """
   infer_experiment.py -i $bam_rseqc -r $bed12 > ${prefix}.txt
@@ -455,13 +455,12 @@ process rseqc {
 }
 
 if (params.stranded != 'auto'){
-    Channel
-      .fromFilePairs(params.reads)
-      .map { file -> 
-          def key = params.stranded 
-          return tuple(key)
-      }
-      .into { rseqc_results_featureCounts; rseqc_results_genetype; rseqc_results_HTseqCounts; rseqc_results_dupradar; rseqc_results_tophat; rseqc_results_table }
+  raw_reads_strandness
+    .map { file -> 
+        def key = params.stranded 
+        return tuple(key)
+    }
+    .into { rseqc_results_featureCounts; rseqc_results_genetype; rseqc_results_HTseqCounts; rseqc_results_dupradar; rseqc_results_tophat; rseqc_results_table }
 }
 
 
@@ -927,7 +926,7 @@ process merge_counts {
   script:
   """
   echo -e ${input_counts} | tr " " "\n" > listofcounts.tsv
-  echo -e "${parse_res}" | sed -e "s/\\[//" -e "s/\\]//" -e "s/,//g" | tr " " "\n" > listofstrandness.tsv
+  echo -n "${parse_res}" | sed -e "s/\\[//" -e "s/\\]//" -e "s/,//g" | tr " " "\n" > listofstrandness.tsv
   makeCountTable.r listofcounts.tsv ${gtf} ${params.counts} listofstrandness.tsv
   """
 }
