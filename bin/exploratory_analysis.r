@@ -50,11 +50,11 @@ res.pca <- DESeq2::plotPCA(rld, ntop=1000, returnData=TRUE)
 write.csv(res.pca[,c("PC1", "PC2")], 'deseq2_pca_coords_mqc.csv', quote=FALSE, append=FALSE, col.names=FALSE)
 
 # Calculate the euclidean distances between samples
-dists <- as.dist(cor(assay(rld), method = "pearson"))
+dists <- as.matrix(cor(assay(rld), method = "pearson"))
 
 # Plot a heatmap of correlations
 pdf('vst_sample_cor_heatmap.pdf')
-hmap <- heatmap.2(as.matrix(dists),
+hmap <- heatmap.2(dists,
   main="Sample Correlations", key.title="Distance", trace="none",
   dendrogram="row", margin=c(9, 9)
 )

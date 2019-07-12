@@ -114,6 +114,7 @@ exprs.in <- as.vector(read.table(inputFiles, header=FALSE)[,1])
 stranded.list <- as.vector(read.table(strandedList, header=FALSE)[,1])
 
 if (count_tool == "STAR"){
+
   ## Load STAR data
   message("loading STAR gene counts ...")
   counts.exprs <- lapply(1:length(exprs.in), function(i){
@@ -132,7 +133,6 @@ if (count_tool == "STAR"){
     return(counts.v)
   })
   counts.exprs <- data.frame(counts.exprs)
-  colnames(counts.exprs) <- gsub("_norRNA", "", gsub("ReadsPerGene.out.tab","",sapply(exprs.in, basename)))
   ## remove first 4 lines
   counts.exprs <- counts.exprs[5:nrow(counts.exprs), , drop=FALSE]
 }else if (count_tool == "FEATURECOUNTS"){
@@ -142,13 +142,15 @@ if (count_tool == "STAR"){
     data.frame(z[,6], row.names=rownames(z))
   })
   counts.exprs <- data.frame(counts.exprs)
-  colnames(counts.exprs)<- gsub("_norRNA", "", gsub("_featurecounts.csv","",sapply(exprs.in, basename)))
 }else if (count_tool == "HTSEQCOUNT"){
   ## Load HTSeq data
   counts.exprs <- lapply(exprs.in, read.csv, sep="\t", header=FALSE, row.names=1, check.names=FALSE)
   counts.exprs <- as.data.frame(counts.exprs)
-  colnames(counts.exprs) <- gsub("_norRNA", "", gsub("_htseq.csv","",sapply(exprs.in, basename)))
 }
+
+## Renome samples
+require(Biobase)
+colnames(counts.exprs) <- gsub(lcSuffix(exprs.in), "", exprs.in)
 
 ## export count table(s)
 write.csv(ensembl2symbol(counts.exprs, gtf), file="tablecounts_raw.csv")

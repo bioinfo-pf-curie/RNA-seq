@@ -837,8 +837,8 @@ process featureCounts {
   tag "${bam_featurecounts.baseName - 'Aligned.sortedByCoord.out'}"
   publishDir "${params.outdir}/counts", mode: 'copy',
       saveAs: {filename ->
-          if (filename.indexOf("_gene.featureCounts.txt.summary") > 0) "gene_count_summaries/$filename"
-          else if (filename.indexOf("_gene.featureCounts.txt") > 0) "gene_counts/$filename"
+          if (filename.indexOf("_counts.csv.summary") > 0) "gene_count_summaries/$filename"
+          else if (filename.indexOf("_counts.csv") > 0) "gene_counts/$filename"
           else "$filename"
       }
 
@@ -851,8 +851,8 @@ process featureCounts {
   val parse_res from rseqc_results_featureCounts
 
   output:
-  file "${bam_featurecounts.baseName}_gene.featureCounts.txt" into featureCounts_counts_to_merge, featureCounts_counts_to_r
-  file "${bam_featurecounts.baseName}_gene.featureCounts.txt.summary" into featureCounts_logs
+  file "${bam_featurecounts.baseName}_counts.csv" into featureCounts_counts_to_merge, featureCounts_counts_to_r
+  file "${bam_featurecounts.baseName}_counts.csv.summary" into featureCounts_logs
 
   script:
   def featureCounts_direction = 0
@@ -862,7 +862,7 @@ process featureCounts {
       featureCounts_direction = 2
   }
   """
-  featureCounts ${params.featurecounts_opts} -T ${task.cpus} -a $gtf -o ${bam_featurecounts.baseName}_gene.featureCounts.txt -p -s $featureCounts_direction $bam_featurecounts
+  featureCounts ${params.featurecounts_opts} -T ${task.cpus} -a $gtf -o ${bam_featurecounts.baseName}_counts.csv -p -s $featureCounts_direction $bam_featurecounts
   """
 }
 
