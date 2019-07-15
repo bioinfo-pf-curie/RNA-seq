@@ -247,7 +247,7 @@ else if(params.readPaths){
 
 if (params.samplePlan){
   ch_splan = Channel.fromPath(params.samplePlan)
-}else{
+}else if(params.readPaths){
   if (params.singleEnd){
     Channel
        .from(params.readPaths)
@@ -263,6 +263,22 @@ if (params.samplePlan){
         }
        .set{ ch_splan }
   }
+}else{
+  if (params.singleEnd){
+    Channel
+       .fromFilePairs( params.reads, size: 1 )
+       .collectFile() {
+          item -> ["sample_plan.csv", item[0] + ',' + item[0] + ',' + item[1][0] + '\n']
+       }     
+       .set { ch_splan }
+  }else{
+    Channel
+       .fromFilePairs( params.reads, size: 2 )
+       .collectFile() {
+          item -> ["sample_plan.csv", item[0] + ',' + item[0] + ',' + item[1][0] + ',' + item[1][1] + '\n']
+       }     
+       .set { ch_splan }
+   }
 }
 
 
@@ -729,7 +745,6 @@ if(params.aligner == 'tophat2'){
     file "${name}.align_summary.txt" into alignment_logs
 
   script:
-    //prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(trimmed)?(_norRNA)?(\.fq)?(\.fastq)?(\.gz)?$/
     def avail_mem = task.memory ? "-m ${task.memory.toBytes() / task.cpus}" : ''
     def stranded_opt = '--library-type fr-unstranded'
     if (parse_res == 'yes'){
@@ -760,7 +775,7 @@ if(params.aligner == 'tophat2'){
  * Saturation Curves
  */
 process preseq {
-  tag "${bam_preseq.baseName - 'Aligned.sortedByCoord.out'}"
+  tag "${bam_preseq}"
   publishDir "${params.outdir}/preseq", mode: 'copy'
 
   when:
@@ -773,8 +788,9 @@ process preseq {
   file "*ccurve.txt" into preseq_results
 
   script:
+  prefix = bam_preseq.toString() - ~/(.bam)?$/
   """
-  preseq lc_extrap -v -B $bam_preseq -o ${bam_preseq.baseName}.extrap_ccurve.txt -e 200e+06
+  preseq lc_extrap -v -B $bam_preseq -o ${prefix}.extrap_ccurve.txt -e 200e+06
   """
 }
 
@@ -782,7 +798,7 @@ process preseq {
  * Duplicates
  */
 process markDuplicates {
-  tag "${bam.baseName} - 'Aligned.sortedByCoord.out'"
+  tag "${bam}"
   publishDir "${params.outdir}/markDuplicates", mode: 'copy',
       saveAs: {filename -> filename.indexOf("_metrics.txt") > 0 ? "metrics/$filename" : "$filename"}
 
@@ -804,6 +820,7 @@ process markDuplicates {
   } else {
     avail_mem = task.memory.toGiga()
   }
+  
   """
   picard -Xmx${avail_mem}g MarkDuplicates \\
       INPUT=$bam \\
@@ -818,7 +835,7 @@ process markDuplicates {
 }
 
 process dupradar {
-  tag "${bam_md.baseName - 'Aligned.sortedByCoord.out.markDups'}"
+  tag "${bam_md}"
   publishDir "${params.outdir}/dupradar", mode: 'copy',
       saveAs: {filename ->
           if (filename.indexOf("_duprateExpDens.pdf") > 0) "scatter_plots/$filename"
@@ -892,7 +909,7 @@ process featureCounts {
 }
 
 process HTseqCounts {
-  tag "${bam_HTseqCounts.baseName - 'Aligned.sortedByCoord.out'}"
+  tag "${bam_HTseqCounts}"
   publishDir "${params.outdir}/counts", mode: 'copy',
       saveAs: {filename ->
           if (filename.indexOf("_gene.HTseqCounts.txt.summary") > 0) "gene_count_summaries/$filename"
@@ -992,7 +1009,7 @@ process geneSaturation {
  */
 
 process read_distribution {
-  tag "${bam_read_dist.baseName - '_subsample'}"
+  tag "${bam_read_dist}"
   publishDir "${params.outdir}/read_distribution" , mode: 'copy'
 
   when:
