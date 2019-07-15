@@ -731,18 +731,18 @@ else {
 
 if(params.aligner == 'tophat2'){
  process tophat2 {
-  tag "${name}"
+  tag "${prefix}"
   publishDir "${params.outdir}/tophat2", mode: 'copy'
 
   input:
-    set val(name), file(reads) from tophat2_raw_reads 
+    set val(prefix), file(reads) from tophat2_raw_reads 
     file "tophat2" from tophat2_indices.collect()
     file gtf from gtf_tophat.collect()
     val parse_res from stranded_results_tophat
 
   output:
-    set val(name), file("${name}.bam") into bam_count, bam_preseq, bam_markduplicates, bam_featurecounts, bam_genetype, bam_HTseqCounts, bam_read_dist
-    file "${name}.align_summary.txt" into alignment_logs
+    file("${prefix}.bam") into bam_count, bam_preseq, bam_markduplicates, bam_featurecounts, bam_genetype, bam_HTseqCounts, bam_read_dist
+    file "${prefix}.align_summary.txt" into alignment_logs
 
   script:
     def avail_mem = task.memory ? "-m ${task.memory.toBytes() / task.cpus}" : ''
@@ -753,7 +753,7 @@ if(params.aligner == 'tophat2'){
         stranded_opt = '--library-type fr-firststrand'
     }
     def out = './mapping'
-    def sample = "--rg-id ${name} --rg-sample ${name} --rg-library Illumina --rg-platform Illumina --rg-platform-unit ${name}"
+    def sample = "--rg-id ${prefix} --rg-sample ${prefix} --rg-library Illumina --rg-platform Illumina --rg-platform-unit ${prefix}"
     """
     mkdir -p ${out}
     tophat2 -p ${task.cpus} \\
@@ -763,9 +763,10 @@ if(params.aligner == 'tophat2'){
     ${stranded_opt} \\
     -o ${out} \\
     ${params.bowtie2_index} \\
-    ${reads} && \\
-    mv ${out}/accepted_hits.bam ./${name}.bam
-    mv ${out}/align_summary.txt ./${name}.align_summary.txt
+    ${reads} 
+
+    mv ${out}/accepted_hits.bam ./${prefix}.bam
+    mv ${out}/align_summary.txt ./${prefix}.align_summary.txt
     """
   }
 }
