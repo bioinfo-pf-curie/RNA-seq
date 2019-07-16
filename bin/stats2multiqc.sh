@@ -22,8 +22,10 @@ do
 	n_reads=$(grep "Number of input reads" alignment/${sample}*Log.final.out | cut -d"|" -f 2 | sed -e 's/\t//g')
     elif [ $aligner == "tophat2" ]; then
 	n_reads=$(grep "Input" alignment/${sample}*align_summary.txt | uniq | cut -d: -f2 | sed -e 's/ //g')
-    elif [ $aligner == "hisat2" ]; then
+    elif [[ $aligner == "hisat2" && $is_pe == "1" ]]; then
 	n_reads=$(grep "Total pairs" alignment/${sample}.hisat2_summary.txt | cut -d: -f2 | sed -e 's/ //g')
+    elif [[ $aligner == "hisat2" && $is_pe == "0" ]]; then
+	n_reads=$(grep "Total reads" alignment/${sample}.hisat2_summary.txt | cut -d: -f2 | sed -e 's/ //g')
     fi
 
     ##n_rRNA
@@ -90,7 +92,6 @@ do
     ## Calculate percentage
     p_mapped=$(echo "scale=2; (${n_mapped}*100/${n_reads})" | bc -l)
     if [ $n_unique != 'NA' ]; then  
-	echo "toto"
 	p_unique=$(echo "scale=2; (${n_unique}*100/${n_reads})" | bc -l)
     else
 	p_unique='NA'
