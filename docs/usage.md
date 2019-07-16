@@ -1,42 +1,37 @@
-# nf-core/mypipeline: Usage
+# Usage
 
 ## Table of contents
 
 * [Introduction](#general-nextflow-info)
 * [Running the pipeline](#running-the-pipeline)
-* [Updating the pipeline](#updating-the-pipeline)
-* [Reproducibility](#reproducibility)
 * [Main arguments](#main-arguments)
     * [`-profile`](#-profile-single-dash)
-        * [`awsbatch`](#awsbatch)
         * [`conda`](#conda)
-        * [`docker`](#docker)
         * [`singularity`](#singularity)
         * [`test`](#test)
     * [`--reads`](#--reads)
-    * [`--singleEnd`](#--singleend)
+	* [`--samplePlan`](#--samplePlan)
+	* [`--singleEnd`](#--singleend)
+	* [`--stranded`](#--stranded)
+	* [`--aligner`](#--aligner)
+	* [`--counts`](#--counts)
 * [Reference genomes](#reference-genomes)
     * [`--genome`](#--genome)
-    * [`--fasta`](#--fasta)
-    * [`--igenomesIgnore`](#--igenomesignore)
+* [Tools parameters](#tools-parameters)
 * [Job resources](#job-resources)
 * [Automatic resubmission](#automatic-resubmission)
 * [Custom resource requests](#custom-resource-requests)
-* [AWS batch specific parameters](#aws-batch-specific-parameters)
-    * [`-awsbatch`](#-awsbatch)
-    * [`--awsqueue`](#--awsqueue)
-    * [`--awsregion`](#--awsregion)
 * [Other command line parameters](#other-command-line-parameters)
-    * [`--outdir`](#--outdir)
+    * [`--skip*`](#--skip*)
+	* [`--metadata`](#--metadta)
+	* [`--outdir`](#--outdir)
     * [`--email`](#--email)
     * [`-name`](#-name-single-dash)
     * [`-resume`](#-resume-single-dash)
     * [`-c`](#-c-single-dash)
-    * [`--custom_config_version`](#--custom_config_version)
     * [`--max_memory`](#--max_memory)
     * [`--max_time`](#--max_time)
     * [`--max_cpus`](#--max_cpus)
-    * [`--plaintext_email`](#--plaintext_email)
     * [`--multiqc_config`](#--multiqc_config)
 
 
@@ -202,7 +197,7 @@ params {
 }
 ```
 
-Note that these paths can be updated on command line using the following paramters:
+Note that these paths can be updated on command line using the following parameters:
 - `--star_index` - Path to STAR index
 - `--hisat2_index` - Path to HiSAT2 index
 - `--tophat2_index` - Path to TopHat2 index
@@ -210,7 +205,7 @@ Note that these paths can be updated on command line using the following paramte
 - `--bed12` - Path to gene bed12 file
 - `--saveAlignedIntermediates` - Save the BAM files from the Aligment step  - not done by default
 
-## Tool parameters
+## Tools parameters
 
 The `conf/tools.conf` configuration file can be used to specify some of the tools options.
 Note that these options can also be genome dependent. So far, only the `STAR` options can be changed from an organism to another.
