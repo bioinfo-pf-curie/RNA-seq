@@ -167,7 +167,7 @@ if( params.gtf ){
     Channel
         .fromPath(params.gtf)
         .ifEmpty { exit 1, "GTF annotation file not found: ${params.gtf}" }
-        .into { gtf_star; gtf_dupradar; gtf_featureCounts; gtf_genetype; gtf_HTseqCounts; gtf_tophat; gtf_table }
+        .into { gtf_star; gtf_dupradar; gtf_featureCounts; gtf_genetype; gtf_HTseqCounts; gtf_tophat; gtf_table; gtf_makeHisatSplicesites }
 } else {
     exit 1, "No GTF annotation specified!"
 }
@@ -186,12 +186,12 @@ if( params.rrna ){
         .set { rrna_annot }
 }
 
-if( params.aligner == 'hisat2' && params.splicesites ){
-    Channel
-        .fromPath(params.bed12)
-        .ifEmpty { exit 1, "HISAT2 splice sites file not found: $alignment_splicesites" }
-        .into { indexing_splicesites; alignment_splicesites }
-}
+//if( params.aligner == 'hisat2' && params.splicesites ){
+//    Channel
+//        .fromPath(params.bed12)
+//        .ifEmpty { exit 1, "HISAT2 splice sites file not found: $alignment_splicesites" }
+//        .into { indexing_splicesites; alignment_splicesites }
+//}
 
 if ( params.metadata ){
    Channel
@@ -307,7 +307,7 @@ if(params.aligner == 'star'){
 } else if(params.aligner == 'hisat2') {
   summary['Aligner'] = "HISAT2"
   if(params.hisat2_index) summary['HISAT2 Index'] = params.hisat2_index
-  if(params.splicesites) summary['Splice Sites'] = params.splicesites
+  //if(params.splicesites) summary['Splice Sites'] = params.splicesites
 }
 summary['Counts'] = params.counts
 if(params.gtf)                 summary['GTF Annotation']  = params.gtf
@@ -539,6 +539,9 @@ else {
   star_raw_reads = raw_reads_star
 }
 
+
+// STAR
+
 if(params.aligner == 'star'){
   hisat_stdout = Channel.from(false)
   process star {
@@ -584,7 +587,6 @@ if(params.aligner == 'star'){
     """
   }
 
-
   process star_sort {
     tag "$prefix"
     publishDir "${params.outdir}/STAR", mode: 'copy',
@@ -621,7 +623,9 @@ if(params.aligner == 'star'){
     .into { bam_count; bam_preseq; bam_markduplicates; bam_featurecounts; bam_genetype; bam_HTseqCounts; bam_read_dist }
 }
 
-// Update HiSat2 channel
+
+// HiSat2
+
 hisat2_raw_reads = Channel.create()
 if( params.rrna && !params.skip_rrna ){
     hisat2_raw_reads = rrna_mapping_res
@@ -632,9 +636,27 @@ else {
 
 if(params.aligner == 'hisat2'){
   star_log = Channel.from(false)
+  
+  process makeHisatSplicesites {
+     tag "$gtf"
+     publishDir path: { params.saveAlignedIntermediates ? "${params.outdir}/HiSat2" : params.outdir },
+                saveAs: { params.saveReference ? it : null }, mode: 'copy'
+
+     input:
+     file gtf from gtf_makeHisatSplicesites
+
+     output:
+     file "${gtf.baseName}.hisat2_splice_sites.txt" into alignment_splicesites
+
+     script:
+     """
+     hisat2_extract_splice_sites.py $gtf > ${gtf.baseName}.hisat2_splice_sites.txt
+     """
+  }
+
   process hisat2Align {
     tag "$prefix"
-    publishDir "${params.outdir}/HISAT2", mode: 'copy',
+    publishDir "${params.outdir}/HiSat2", mode: 'copy',
         saveAs: {filename ->
             if (filename.indexOf(".hisat2_summary.txt") > 0) "logs/$filename"
             else if (!params.saveAlignedIntermediates) filename
@@ -741,7 +763,7 @@ if(params.aligner == 'tophat2'){
     val parse_res from stranded_results_tophat
 
   output:
-    file("${prefix}.bam") into bam_count, bam_preseq, bam_markduplicates, bam_featurecounts, bam_genetype, bam_HTseqCounts, bam_read_dist
+    file "${prefix}.bam" into bam_count, bam_preseq, bam_markduplicates, bam_featurecounts, bam_genetype, bam_HTseqCounts, bam_read_dist
     file "${prefix}.align_summary.txt" into alignment_logs
 
   script:
