@@ -72,7 +72,7 @@ def helpMessage() {
       --skip_fastqc                 Skip FastQC
       --skip_saturation             Skip Saturation qc
       --skip_dupradar               Skip dupRadar (and Picard MarkDups)
-      --skip_read_dist              Skip read distribution steps
+      --skip_readdist              Skip read distribution steps
       --skip_expan                  Skip exploratory analysis
       --skip_multiqc                Skip MultiQC
 
@@ -1038,7 +1038,7 @@ process read_distribution {
   publishDir "${params.outdir}/read_distribution" , mode: 'copy'
 
   when:
-  !params.skip_read_dist
+  !params.skip_readdist
 
   input:
   file bam_read_dist
@@ -1058,7 +1058,7 @@ process getCountsPerGeneType {
   publishDir "${params.outdir}/read_distribution", mode: 'copy'
 
   when:
-  !params.skip_read_dist
+  !params.skip_readdist
 
   input:
   file tpm_genetype

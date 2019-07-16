@@ -1,11 +1,10 @@
-# nf-core/mypipeline: Reference Genomes Configuration
+# Reference Genomes Configuration
 
-The nf-core/mypipeline pipeline needs a reference genome for alignment and annotation.
+The pipeline needs a reference genome for alignment and annotation.
 
 These paths can be supplied on the command line at run time (see the [usage docs](../usage.md)),
 but for convenience it's often better to save these paths in a nextflow config file.
 See below for instructions on how to do this.
-Read [Adding your own system](adding_your_own.md) to find out how to set up custom config files.
 
 ## Adding paths to a config file
 Specifying long paths every time you run the pipeline is a pain.

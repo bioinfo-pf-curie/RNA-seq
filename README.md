@@ -80,7 +80,7 @@ QC options:
   --skip_fastqc                 Skip FastQC
   --skip_saturation             Skip Saturation qc
   --skip_dupradar               Skip dupRadar (and Picard MarkDups)
-  --skip_read_dist              Skip read distribution steps
+  --skip_readdist              Skip read distribution steps
   --skip_expan                  Skip exploratory analysis
   --skip_multiqc                Skip MultiQC
 
@@ -118,11 +118,6 @@ A sample plan is a csv file (comma separated) that list all samples with their b
 
 Sample ID | Sample Name | Path R1 .fastq file | [Path R2 .fastq file]
 
-
-### Contacts
-
-For any question, bug or suggestion, please use the issues system or contact the bioinformatics core facility
-
 ### Full Documentation
 
 1. [Installation](docs/installation.md)
@@ -134,4 +129,10 @@ For any question, bug or suggestion, please use the issues system or contact the
 5. [Troubleshooting](docs/troubleshooting.md)
 
 ### Credits
+
 This pipeline has been written by the bioinformatics platform of the Institut Curie (P. La Rosa, N. Servant)
+
+### Contacts
+
+For any question, bug or suggestion, please use the issues system or contact the bioinformatics core facility
+
