@@ -5,7 +5,7 @@
 [![Nextflow](https://img.shields.io/badge/nextflow-%E2%89%A50.32.0-brightgreen.svg)](https://www.nextflow.io/)
 [![MultiQC](https://img.shields.io/badge/MultiQC-1.6-blue.svg)](https://multiqc.info/)
 [![Install with](https://anaconda.org/anaconda/conda-build/badges/installer/conda.svg)](https://conda.anaconda.org/anaconda)
-![Singularity Container available](https://img.shields.io/badge/singularity-available-7E4C74.svg)
+[![Singularity Container available](https://img.shields.io/badge/singularity-available-7E4C74.svg)](https://singularity.lbl.gov/)
 
 ### Introduction
 
@@ -17,16 +17,17 @@ See the [nf-core](https://nf-co.re/) project for more details.
 
 ### Pipline summary
 
-1. Run quality control of raw sequencing reads (fastqc)
-2. Align reads on ribosomal RNAs sequences when available (bowtie1)
-3. Align reads on reference genome (STAR/Tophat2/hisat2)
-4. Infer reads orientation (rseqc)
+1. Run quality control of raw sequencing reads ([`fastqc`](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/))
+2. Align reads on ribosomal RNAs sequences when available ([`bowtie1`](http://bowtie-bio.sourceforge.net/index.shtml))
+3. Align reads on reference genome ([`STAR`](https://github.com/alexdobin/STAR) / [`tophat2`](http://ccb.jhu.edu/software/tophat/index.shtml) / [`hisat2`](http://ccb.jhu.edu/software/hisat2/index.shtml))
+4. Infer reads orientation ([`rseqc`](http://rseqc.sourceforge.net/))
 5. Dedicated quality controls
-  - Saturation curves (preseq/home made)
-  - Duplicates (dupRadar)
-  - Reads annotation (rseqc/home made)
-6. Generate counts table (STAR/featureCounts/HTSeqCounts)
-7. Exploratory analysis (R)
+  - Saturation curves ([`preseq`](http://smithlabresearch.org/software/preseq/) / [`R`](https://www.r-project.org/))
+  - Duplicates ([`picard`](https://broadinstitute.github.io/picard/) / [`dupRadar`](https://bioconductor.org/packages/release/bioc/html/dupRadar.html))
+  - Reads annotation ([`rseqc`](http://rseqc.sourceforge.net/) / [`R`](https://www.r-project.org/))
+6. Generate counts table (STAR / [`featureCounts`](http://bioinf.wehi.edu.au/featureCounts/) / [`HTSeqCounts`](https://htseq.readthedocs.io/en/release_0.11.1/count.html))
+7. Exploratory analysis ([`R`](https://www.r-project.org/))
+8. Present all QC results in a final report ([`MultiQC`](http://multiqc.info/))
 
 ### Quick help
 
@@ -92,14 +93,14 @@ The pipeline can be run on any infrastructure from a list of input files or from
 #### Run the pipeline locally
 
 ```
-nextflow run rnaseq --reads '*_R{1,2}.fastq.gz' --genome 'hg19' --outdir MY_OUTPUT_DIR
+nextflow run main.nf --reads '*_R{1,2}.fastq.gz' --genome 'hg19' --outdir MY_OUTPUT_DIR
 
 ```
 
 #### Run the pipeline from a sample plan
 
 ```
-nextflow run rnaseq --samplePlan MY_SAMPLE_PLAN --genome 'hg19' --outdir MY_OUTPUT_DIR
+nextflow run main.nf --samplePlan MY_SAMPLE_PLAN --genome 'hg19' --outdir MY_OUTPUT_DIR
 
 ```
 
@@ -114,8 +115,13 @@ echo "nextflow run main.nf --reads '*.R{1,2}.fastq.gz' --genome 'hg19' --outdir 
 
 A sample plan is a csv file (comma separated) that list all samples with their biological IDs.
 
+
 Sample ID | Sample Name | Path R1 .fastq file | [Path R2 .fastq file]
 
+
+### Contacts
+
+For any question, bug or suggestion, please use the issues system or contact the bioinformatics core facility
 
 ### Full Documentation
 
