@@ -20,7 +20,7 @@ do
 	n_reads=$(grep "reads processed" rrna/${sample}.log | cut -d: -f 2 | sed -e 's/ //')
     elif [ $aligner == "star" ]; then
 	n_reads=$(grep "Number of input reads" alignment/${sample}*Log.final.out | cut -d"|" -f 2 | sed -e 's/\t//g')
-    elif [ $aligner == "tophat" ]; then
+    elif [ $aligner == "tophat2" ]; then
 	n_reads=$(grep "Input" alignment/${sample}*align_summary.txt | uniq | cut -d: -f2 | sed -e 's/ //g')
     elif [ $aligner == "hisat2" ]; then
 	n_reads=$(grep "Total pairs" alignment/${sample}.hisat2_summary.txt | cut -d: -f2 | sed -e 's/ //g')
@@ -54,9 +54,9 @@ do
 	    fi
     else
 	if [ $aligner == "tophat2" ]; then
-	    n_mapped=$(grep "Aligned pairs" alignment/${sample}*align_summary.txt | cut -d: -f 2 | sed -e 's/ //g')
-	    n_multi=$(grep -a2 "Aligned pairs" alignment/${sample}*align_summary.txt | grep "multiple" | awk -F" " '{print $3}')
-	    n_unique=$(($n_mapped - $n_multi))
+	    n_mapped=$(grep "Mapped" alignment/${sample}*align_summary.txt | cut -d: -f 2 | cut -d"(" -f1 | sed -e 's/ //g')
+	    n_multi='NA'
+	    n_unique='NA'
 	elif [ $aligner == "star" ]; then
             n_unique=$(grep "Uniquely mapped reads number" alignment/${sample}*Log.final.out | cut -d"|" -f 2 | sed -e 's/\t//g')
             n_multi=$(grep "Number of reads mapped to multiple loci" alignment/${sample}*Log.final.out | cut -d"|" -f 2 | sed -e 's/\t//g')
@@ -64,6 +64,7 @@ do
 	elif [ $aligner == "hisat2" ]; then
 	    n_unique=$(grep " 1 time" alignment/${sample}.hisat2_summary.txt | cut -d: -f 2 | sed -e 's/ //g' | awk -F"(" 'BEGIN{s=0}{s=s+$1}END{print s}')
 	    n_multi=$(grep ">1 time" alignment/${sample}.hisat2_summary.txt | cut -d: -f 2 | sed -e 's/ //g' | awk -F"(" 'BEGIN{s=0}{s=s+$1}END{print s}')
+	    n_mapped=$((n_unique + n_multi))
 	else
             echo -e "Aligner not yet supported"
             exit 1
@@ -88,9 +89,18 @@ do
 
     ## Calculate percentage
     p_mapped=$(echo "scale=2; (${n_mapped}*100/${n_reads})" | bc -l)
-    p_unique=$(echo "scale=2; (${n_unique}*100/${n_reads})" | bc -l)
-    p_multi=$(echo "scale=2; (${n_multi}*100/${n_reads})" | bc -l)
-    
+    if [ $n_unique != 'NA' ]; then  
+	echo "toto"
+	p_unique=$(echo "scale=2; (${n_unique}*100/${n_reads})" | bc -l)
+    else
+	p_unique='NA'
+    fi
+    if [ $n_multi != 'NA' ]; then  
+	p_multi=$(echo "scale=2; (${n_multi}*100/${n_reads})" | bc -l); 
+    else
+	p_multi='NA'
+    fi
+
 
     echo -e ${id},${sample},${n_reads},${n_rrna},${p_rrna},${strandness},${n_mapped},${p_mapped},${n_unique},${p_unique},${n_multi},${p_multi},${n_dup},${p_dup} >> mq.stats
 
