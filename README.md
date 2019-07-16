@@ -1,25 +1,30 @@
 # RNA-seq 
 
+**Institut Curie - Nextflow rna-seq analysis pipeline**
+
 [![Nextflow](https://img.shields.io/badge/nextflow-%E2%89%A50.32.0-brightgreen.svg)](https://www.nextflow.io/)
 [![MultiQC](https://img.shields.io/badge/MultiQC-1.6-blue.svg)](https://multiqc.info/)
+[![Install with](https://anaconda.org/anaconda/conda-build/badges/installer/conda.svg)](https://conda.anaconda.org/anaconda)
+![Singularity Container available](https://img.shields.io/badge/singularity-available-7E4C74.svg)
 
 ### Introduction
 
 The pipeline is built using [Nextflow](https://www.nextflow.io), a workflow tool to run tasks across multiple compute infrastructures in a very portable manner. 
-It comes with docker / singularity containers making installation trivial and results highly reproducible.
+It comes with conda / singularity containers making installation easier and results highly reproducible.
 
-The current workflow is based on the nf-core best practice. See the nf-core project from details on [guidelines](https://nf-co.re/).
+The first version of this pipeline was cloned from the [nf-core/rnaseq](https://github.com/nf-core/rnaseq) pipeline. 
+See the [nf-core](https://nf-co.re/) project for more details.
 
 ### Pipline summary
 
 1. Run quality control of raw sequencing reads (fastqc)
 2. Align reads on ribosomal RNAs sequences when available (bowtie1)
-3. Align reads on reference genome (STAR/Tophat2/hisat)
+3. Align reads on reference genome (STAR/Tophat2/hisat2)
 4. Infer reads orientation (rseqc)
 5. Dedicated quality controls
-  - Saturation curves (preseq)
+  - Saturation curves (preseq/home made)
   - Duplicates (dupRadar)
-  - Reads annotation (rseqc)
+  - Reads annotation (rseqc/home made)
 6. Generate counts table (STAR/featureCounts/HTSeqCounts)
 7. Exploratory analysis (R)
 
@@ -37,10 +42,11 @@ nextflow run rnaseq --reads '*_R{1,2}.fastq.gz' --genome 'hg19'
 
 Mandatory arguments:
   --reads                       Path to input data (must be surrounded with quotes)
+  --samplePlan                  Path to sample plan input file (cannot be used with --reads)
+  --genome                      Name of genome reference
   -profile                      Configuration profile to use. test / curie / conda / docker / singularity
 
 Options:
-  --genome                      Name of genomes reference
   --singleEnd                   Specifies that the input is single end reads
 
 Strandedness:
@@ -55,7 +61,7 @@ Counts:
 References:                     If not specified in the configuration file or you wish to overwrite any of the references.
   --star_index                  Path to STAR index
   --hisat2_index                Path to HiSAT2 index
-  --tophat2_index		    Path to TopHat2 index
+  --tophat2_index		         Path to TopHat2 index
   --gtf                         Path to GTF file
   --bed12                       Path to gene bed12 file
   --saveAlignedIntermediates    Save the BAM files from the Aligment step  - not done by default
@@ -71,9 +77,9 @@ QC options:
   --skip_qc                     Skip all QC steps apart from MultiQC
   --skip_rrna                   Skip rRNA mapping
   --skip_fastqc                 Skip FastQC
-  --skip_preseq                 Skip Preseq
+  --skip_saturation             Skip Saturation qc
   --skip_dupradar               Skip dupRadar (and Picard MarkDups)
-  --skip_read_dist              Skip read distribution step
+  --skip_read_dist              Skip read distribution steps
   --skip_expan                  Skip exploratory analysis
   --skip_multiqc                Skip MultiQC
 
@@ -81,7 +87,7 @@ QC options:
 
 ### Quick run
 
-The pipeline can be run on any infrastructure as follow
+The pipeline can be run on any infrastructure from a list of input files or from a sample plan as follow
 
 #### Run the pipeline locally
 
@@ -90,12 +96,26 @@ nextflow run rnaseq --reads '*_R{1,2}.fastq.gz' --genome 'hg19' --outdir MY_OUTP
 
 ```
 
+#### Run the pipeline from a sample plan
+
+```
+nextflow run rnaseq --samplePlan MY_SAMPLE_PLAN --genome 'hg19' --outdir MY_OUTPUT_DIR
+
+```
+
 #### Run the pipeline on the Institut Curie cluster
 
 ```
-echo "nextflow run main.nf --reads '*.R{1,2}.fastq.gz' --genome 'hg19' --outdir MY_OUTPUT_DIR --queue 'batch'" | qsub -q mpi -N rnaseq-2.0
+echo "nextflow run main.nf --reads '*.R{1,2}.fastq.gz' --genome 'hg19' --outdir MY_OUTPUT_DIR -profile curie" | qsub -N rnaseq-2.0
 
 ```
+
+### Sample Plan
+
+A sample plan is a csv file (comma separated) that list all samples with their biological IDs.
+
+Sample ID | Sample Name | Path R1 .fastq file | [Path R2 .fastq file]
+
 
 ### Full Documentation
 
