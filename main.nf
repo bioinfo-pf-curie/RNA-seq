@@ -670,7 +670,7 @@ if(params.aligner == 'hisat2'){
     file alignment_splicesites from alignment_splicesites.collect()
 
     output:
-    set val(prefix), file("${prefix}.bam") into hisat2_bam
+    file("${prefix}.bam") into hisat2_bam
     file "${prefix}.hisat2_summary.txt" into alignment_logs
 
     script:
