@@ -106,8 +106,9 @@ params.bed12 = params.genome ? params.genomes[ params.genome ].bed12 ?: false : 
 
 // Tools option configuration
 // Add here the list of options that can change from a reference genome to another
-params.star_options = params.genomes[ params.genome ].star_opts ?: params.star_opts
-
+if (params.genome){
+  params.star_options = params.genomes[ params.genome ].star_opts ?: params.star_opts
+}
 // Has the run name been specified by the user?
 // this has the bonus effect of catching both -name and --name
 custom_runName = params.name
@@ -458,7 +459,7 @@ if (params.stranded == 'auto'){
 
     output:
     file "*.{txt,pdf,r,xls}" into rseqc_results
-    stdout into (stranded_results_featureCounts, stranded_results_genetype, stranded_results_HTseqCounts, stranded_results_dupradar, stranded_results_tophat, stranded_results_table)
+    stdout into (stranded_results_featureCounts, stranded_results_genetype, stranded_results_HTseqCounts, stranded_results_dupradar, stranded_results_tophat, stranded_results_hisat, stranded_results_table)
 
     when:
     params.stranded == 'auto'
@@ -479,7 +480,7 @@ strandness_results = rseqc_results
         def key = params.stranded 
         return tuple(key)
     }
-    .into { stranded_results_featureCounts; stranded_results_genetype; stranded_results_HTseqCounts; stranded_results_dupradar; stranded_results_tophat; stranded_results_table }
+    .into { stranded_results_featureCounts; stranded_results_genetype; stranded_results_HTseqCounts; stranded_results_dupradar; stranded_results_tophat; stranded_results_hisat; stranded_results_table }
 
   // save strandness results
   process save_strandness {
@@ -668,6 +669,7 @@ if(params.aligner == 'hisat2'){
     set val(prefix), file(reads) from hisat2_raw_reads 
     file hs2_indices from hs2_indices.collect()
     file alignment_splicesites from alignment_splicesites.collect()
+    val parse_res from stranded_results_hisat
 
     output:
     file("${prefix}.bam") into hisat2_bam
@@ -678,9 +680,9 @@ if(params.aligner == 'hisat2'){
     //prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(trimmed)?(_norRNA)?(\.fq)?(\.fastq)?(\.gz)?$/
     seqCenter = params.seqCenter ? "--rg-id ${prefix} --rg CN:${params.seqCenter.replaceAll('\\s','_')}" : ''
     def rnastrandness = ''
-    if (params.stranded=='yes'){
+    if (parse_res=='yes'){
         rnastrandness = params.singleEnd ? '--rna-strandness F' : '--rna-strandness FR'
-    } else if (params.stranded=='reverse'){
+    } else if (parse_res=='reverse'){
         rnastrandness = params.singleEnd ? '--rna-strandness R' : '--rna-strandness RF'
     }
     if (params.singleEnd) {
