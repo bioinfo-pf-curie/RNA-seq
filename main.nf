@@ -54,7 +54,7 @@ def helpMessage() {
     References:                     If not specified in the configuration file or you wish to overwrite any of the references.
       --star_index                  Path to STAR index
       --hisat2_index                Path to HiSAT2 index
-      --tophat2_index		    Path to TopHat2 index
+      --tophat2_index               Path to TopHat2 index
       --gtf                         Path to GTF file
       --bed12                       Path to gene bed12 file
       --saveAlignedIntermediates    Save the intermediate files from the Aligment step  - not done by default
@@ -72,7 +72,7 @@ def helpMessage() {
       --skip_fastqc                 Skip FastQC
       --skip_saturation             Skip Saturation qc
       --skip_dupradar               Skip dupRadar (and Picard MarkDups)
-      --skip_readdist              Skip read distribution steps
+      --skip_readdist               Skip read distribution steps
       --skip_expan                  Skip exploratory analysis
       --skip_multiqc                Skip MultiQC
 
