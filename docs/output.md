@@ -175,6 +175,8 @@ Note that only expressed genes (TPM>1) are considered.
 [DupRadar](https://bioconductor.org/packages/release/bioc/html/dupRadar.html) is a Bioconductor package for R. It plots the duplication rate against expression (RPKM) for every gene. A good sample with little technical duplication will only show high numbers of duplicates for highly expressed genes. Samples with technical duplication will have high duplication for all genes, irrespective of transcription level.
 For details about the dupRadar results, see the [help page](https://www.bioconductor.org/packages/devel/bioc/vignettes/dupRadar/inst/doc/dupRadar.html).
 
+>**NB:** Note that dupRadar requires bam file marked for duplicates with `Picard` tool. The markdup files are saved only if the `--saveAlignedIntermediate` option is used.
+
 **Output directory: `results/dupradar`**
 
 * `sample_markDups.bam_duprateExpDens.pdf`

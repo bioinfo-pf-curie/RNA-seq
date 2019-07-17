@@ -5,12 +5,9 @@ To start using the nf-core/mypipeline pipeline, follow the steps below:
 
 1. [Install Nextflow](#1-install-nextflow)
 2. [Install the pipeline](#2-install-the-pipeline)
-    * [Automatic](#21-automatic)
-    * [Offline](#22-offline)
-    * [Development](#23-development)
 3. [Pipeline configuration](#3-pipeline-configuration)
-    * [Software deps: Docker and Singularity](#31-software-deps-docker-and-singularity)
-    * [Software deps: Bioconda](#32-software-deps-bioconda)
+    * [Software deps: Singularity](#31-software-deps-singularity)
+    * [Software deps: Conda](#32-software-deps-conda)
     * [Configuration profiles](#33-configuration-profiles)
 4. [Reference genomes](#4-reference-genomes)
 

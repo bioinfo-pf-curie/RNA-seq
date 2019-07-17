@@ -55,7 +55,7 @@ dists <- as.matrix(cor(assay(rld), method = "pearson"))
 # Plot a heatmap of correlations
 pdf('vst_sample_cor_heatmap.pdf')
 hmap <- heatmap.2(dists,
-  main="Sample Correlations", key.title="Distance", trace="none",
+  main="Sample Correlations", key.title="Pearson Cor", trace="none",
   dendrogram="row", margin=c(9, 9)
 )
 dev.off()

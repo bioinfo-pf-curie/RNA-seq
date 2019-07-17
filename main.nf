@@ -42,7 +42,7 @@ def helpMessage() {
     Options:
       --singleEnd                   Specifies that the input is single end reads
 
-    Strandedness:
+    Strandness:
       --stranded                    Library strandness ['auto', 'yes', 'reverse', 'no']. Default: 'auto'
 
     Mapping:
@@ -57,7 +57,7 @@ def helpMessage() {
       --tophat2_index		    Path to TopHat2 index
       --gtf                         Path to GTF file
       --bed12                       Path to gene bed12 file
-      --saveAlignedIntermediates    Save the BAM files from the Aligment step  - not done by default
+      --saveAlignedIntermediates    Save the intermediate files from the Aligment step  - not done by default
 
     Other options:
       --metadata                    Add metadata file for multiQC report
@@ -186,13 +186,6 @@ if( params.rrna ){
         .ifEmpty { exit 1, "rRNA annotation file not found: ${params.rrna}" }
         .set { rrna_annot }
 }
-
-//if( params.aligner == 'hisat2' && params.splicesites ){
-//    Channel
-//        .fromPath(params.bed12)
-//        .ifEmpty { exit 1, "HISAT2 splice sites file not found: $alignment_splicesites" }
-//        .into { indexing_splicesites; alignment_splicesites }
-//}
 
 if ( params.metadata ){
    Channel
@@ -547,11 +540,11 @@ if(params.aligner == 'star'){
   hisat_stdout = Channel.from(false)
   process star {
     tag "$prefix"
-    publishDir "${params.outdir}/STAR", mode: 'copy',
+    publishDir "${params.outdir}/mapping", mode: 'copy',
         saveAs: {filename ->
             if (filename.indexOf(".bam") == -1) "logs/$filename"
-            else if (!params.saveAlignedIntermediates) filename
-            else if (params.saveAlignedIntermediates) filename
+            else if (filename.indexOf("ReadsPerGene.out.tab") > 0) "counts/$filename"
+	    else if (params.saveAlignedIntermediates) filename
             else null
         }
 
@@ -568,7 +561,6 @@ if(params.aligner == 'star'){
     file "*ReadsPerGene.out.tab" optional true into star_counts_to_merge, star_counts_to_r
 
     script:
-    //prefix = reads[0].toString() - ~/(trimmed)?(_norRNA)?(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
     def star_opt_add = params.counts == 'star' ? params.star_opts_counts : ''
     """
     STAR --genomeDir $index \\
@@ -590,20 +582,14 @@ if(params.aligner == 'star'){
 
   process star_sort {
     tag "$prefix"
-    publishDir "${params.outdir}/STAR", mode: 'copy',
-        saveAs: {filename ->
-            if (filename.indexOf(".bam") == -1) "logs/$filename"
-            else if (!params.saveAlignedIntermediates) filename
-            else if (params.saveAlignedIntermediates) filename
-            else null
-        }
-
+    publishDir "${params.outdir}/mapping", mode: 'copy'
+ 
     input:
     set val(prefix), file(Log_final_out), file (star_bam) from star_sam
 
     output:
     set file("${prefix}Log.final.out"), file ('*.bam') into  star_aligned  
-    file "${prefix}Aligned.sortedByCoord.out.bam.bai" into bam_index_rseqc
+    file "${prefix}Aligned.sortedByCoord.out.bam.bai" into bam_index_star
 
     script:
     """
@@ -640,9 +626,11 @@ if(params.aligner == 'hisat2'){
   
   process makeHisatSplicesites {
      tag "$gtf"
-     publishDir path: { params.saveAlignedIntermediates ? "${params.outdir}/HiSat2" : params.outdir },
-                saveAs: { params.saveReference ? it : null }, mode: 'copy'
-
+     publishDir "${params.outdir}/mapping", mode: 'copy',
+                saveAs: { filename ->
+		   if (params.saveAlignedIntermediates) filename
+		   else null
+		}
      input:
      file gtf from gtf_makeHisatSplicesites
 
@@ -657,11 +645,10 @@ if(params.aligner == 'hisat2'){
 
   process hisat2Align {
     tag "$prefix"
-    publishDir "${params.outdir}/HiSat2", mode: 'copy',
+    publishDir "${params.outdir}/mapping", mode: 'copy',
         saveAs: {filename ->
             if (filename.indexOf(".hisat2_summary.txt") > 0) "logs/$filename"
-            else if (!params.saveAlignedIntermediates) filename
-            else if (params.saveAlignedIntermediates) filename
+	    else if (params.saveAlignedIntermediates) filename
             else null
         }
 
@@ -672,12 +659,12 @@ if(params.aligner == 'hisat2'){
     val parse_res from stranded_results_hisat
 
     output:
-    file("${prefix}.bam") into hisat2_bam
+    file "${prefix}.bam" into hisat2_bam
     file "${prefix}.hisat2_summary.txt" into alignment_logs
 
     script:
     index_base = hs2_indices[0].toString() - ~/.\d.ht2/
-    //prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(trimmed)?(_norRNA)?(\.fq)?(\.fastq)?(\.gz)?$/
+  
     seqCenter = params.seqCenter ? "--rg-id ${prefix} --rg CN:${params.seqCenter.replaceAll('\\s','_')}" : ''
     def rnastrandness = ''
     if (parse_res=='yes'){
@@ -717,19 +704,14 @@ if(params.aligner == 'hisat2'){
 
   process hisat2_sort {
       tag "${hisat2_bam.baseName}"
-      publishDir "${params.outdir}/HISAT2", mode: 'copy',
-          saveAs: { filename ->
-              if (!params.saveAlignedIntermediates) filename
-              else if (params.saveAlignedIntermediates) "aligned_sorted/$filename"
-              else null
-          }
+      publishDir "${params.outdir}/mapping", mode: 'copy'
 
       input:
       file hisat2_bam
 
       output:
       file "${hisat2_bam.baseName}.sorted.bam" into bam_count, bam_preseq, bam_markduplicates, bam_featurecounts, bam_genetype, bam_HTseqCounts, bam_read_dist 
-      file "${hisat2_bam.baseName}.sorted.bam.bai" into bam_index_rseqc
+      file "${hisat2_bam.baseName}.sorted.bam.bai" into bam_index_hisat
  
       script:
       def avail_mem = task.memory ? "-m ${task.memory.toBytes() / task.cpus}" : ''
@@ -756,7 +738,11 @@ else {
 if(params.aligner == 'tophat2'){
  process tophat2 {
   tag "${prefix}"
-  publishDir "${params.outdir}/tophat2", mode: 'copy'
+  publishDir "${params.outdir}/mapping", mode: 'copy',
+        saveAs: {filename ->
+            if (filename.indexOf(".align_summary.txt") > 0) "logs/$filename"
+            else filename
+        }
 
   input:
     set val(prefix), file(reads) from tophat2_raw_reads 
@@ -767,6 +753,7 @@ if(params.aligner == 'tophat2'){
   output:
     file "${prefix}.bam" into bam_count, bam_preseq, bam_markduplicates, bam_featurecounts, bam_genetype, bam_HTseqCounts, bam_read_dist
     file "${prefix}.align_summary.txt" into alignment_logs
+    file "${prefix}.bam.bai" into bam_index_tophat
 
   script:
     def avail_mem = task.memory ? "-m ${task.memory.toBytes() / task.cpus}" : ''
@@ -789,8 +776,9 @@ if(params.aligner == 'tophat2'){
     ${params.bowtie2_index} \\
     ${reads} 
 
-    mv ${out}/accepted_hits.bam ./${prefix}.bam
-    mv ${out}/align_summary.txt ./${prefix}.align_summary.txt
+    mv ${out}/accepted_hits.bam ${prefix}.bam
+    mv ${out}/align_summary.txt ${prefix}.align_summary.txt
+    samtools index ${prefix}.bam
     """
   }
 }
@@ -825,7 +813,10 @@ process preseq {
 process markDuplicates {
   tag "${bam}"
   publishDir "${params.outdir}/markDuplicates", mode: 'copy',
-      saveAs: {filename -> filename.indexOf("_metrics.txt") > 0 ? "metrics/$filename" : "$filename"}
+      saveAs: {filename -> 
+      	      if (filename.indexOf("_metrics.txt") > 0) "metrics/$filename" 
+	      else if (params.saveAlignedIntermediates) filename
+	      }
 
   when:
   !params.skip_qc && !params.skip_dupradar
@@ -1013,6 +1004,8 @@ if( params.counts == 'featureCounts' ){
  */
 
 process geneSaturation {
+  publishDir "${params.outdir}/gene_saturation" , mode: 'copy'
+
   when:
   !params.skip_qc && !params.skip_saturation
 
