@@ -61,7 +61,7 @@ The current pipeline allows the user to specify the strandness using the `--stra
 Note that we decided to use the HTSeqCounts nomenclature with :
 - `yes`: stranded protocols
 - `reverse`: reverse-stranded protocols
-- 'no': unstranded protocols
+- `no`: unstranded protocols
 
 By default, or if you do not have the information (`--stranded 'auto'`), the pipeline used the RSeQC tool to infer the strandness of the experiment on a subset of reads (200000 by default)
 This script predicts the mode of library preparation (sense-stranded or antisense-stranded) according to how aligned reads overlay gene features in the reference genome.
@@ -75,8 +75,9 @@ For further detail on the infer experiment tool see the [RSeQC help page](http:/
   * Readable Strandness information
 
 ## Genome Mapping
+
 Raw (or rRNA-cleaned) sequencing data are then aligned on the reference genome.
-The current version includes the following RNA reads mappers: TopHat2, STAR, HiSat2.
+The current version includes the following RNA reads mappers: `TopHat2`, `STAR`, `HiSat2`.
 
 For details about these mapper, see their help page:
 - [`STAR`](https://github.com/alexdobin/STAR) 
@@ -139,13 +140,13 @@ In addition to library complexity, we use a custom R script to infer the library
 
 Several tools can be used to generate a raw counts table showing the number of reads per genes and per samples.
 By default, the STAR mapper allows to align and to counts reads per gene. Addition tools such as `featureCounts` or `HTSeqCounts` are still commonly used.
-For details about these tools, see the [featureCounts help page](http://bioinf.wehi.edu.au/featureCounts/) or the [HTSeqCounts help page](https://htseq.readthedocs.io/en/release_0.11.1/count.html))
+For details about these tools, see the [featureCounts help page](http://bioinf.wehi.edu.au/featureCounts/) or the [HTSeqCounts help page](https://htseq.readthedocs.io/en/release_0.11.1/count.html).
 
 According to the tool used, MultiQC should report the number of reads assigned to a gene features. A high fraction of non assigned reads usually means that many reads do not overlap coding regions.
 
-Counts files are firt generated per sample, and are then merged using a custom R script. At this step, we also generate a TPM (transcript per million)-normalized count table.
+>**NB:** Counts files are firt generated per sample, and are then merged using a custom R script. At this step, we also generate a TPM (transcript per million)-normalized count table.
 The TPM file can be seen as a table of expression values. However, note that this type of normalization is not adviced for downstream analysis such as differential analysis.
-For furhter information about TPM calculation, see the [RNAseq blog page](https://www.rna-seqblog.com/rpkm-fpkm-and-tpm-clearly-explained/)
+For furhter information about TPM calculation, see the [RNAseq blog page](https://www.rna-seqblog.com/rpkm-fpkm-and-tpm-clearly-explained/).
 
 **Output directory: `results/counts`**
 
@@ -172,7 +173,7 @@ Note that only expressed genes (TPM>1) are considered.
 ## DupRadar
 
 [DupRadar](https://bioconductor.org/packages/release/bioc/html/dupRadar.html) is a Bioconductor package for R. It plots the duplication rate against expression (RPKM) for every gene. A good sample with little technical duplication will only show high numbers of duplicates for highly expressed genes. Samples with technical duplication will have high duplication for all genes, irrespective of transcription level.
-For details about the dupRadar results, see the [help page)[https://www.bioconductor.org/packages/devel/bioc/vignettes/dupRadar/inst/doc/dupRadar.html).
+For details about the dupRadar results, see the [help page](https://www.bioconductor.org/packages/devel/bioc/vignettes/dupRadar/inst/doc/dupRadar.html).
 
 **Output directory: `results/dupradar`**
 
