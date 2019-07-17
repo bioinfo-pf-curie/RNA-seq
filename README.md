@@ -90,6 +90,15 @@ QC options:
 
 The pipeline can be run on any infrastructure from a list of input files or from a sample plan as follow
 
+#### Run the pipeline on a test dataset
+See the conf/test.conf to set your test dataset.
+
+```
+nextflow run main.nf -profile test
+
+```
+
+
 #### Run the pipeline locally
 
 ```
