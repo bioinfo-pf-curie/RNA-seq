@@ -25,6 +25,7 @@ See the [nf-core](https://nf-co.re/) project for more details.
   - Saturation curves ([`preseq`](http://smithlabresearch.org/software/preseq/) / [`R`](https://www.r-project.org/))
   - Duplicates ([`picard`](https://broadinstitute.github.io/picard/) / [`dupRadar`](https://bioconductor.org/packages/release/bioc/html/dupRadar.html))
   - Reads annotation ([`rseqc`](http://rseqc.sourceforge.net/) / [`R`](https://www.r-project.org/))
+  - Gene body coverage ([`rseqc`](http://rseqc.sourceforge.net/))
 6. Generate counts table (STAR / [`featureCounts`](http://bioinf.wehi.edu.au/featureCounts/) / [`HTSeqCounts`](https://htseq.readthedocs.io/en/release_0.11.1/count.html))
 7. Exploratory analysis ([`R`](https://www.r-project.org/))
 8. Present all QC results in a final report ([`MultiQC`](http://multiqc.info/))

@@ -2,8 +2,6 @@
 
 This document describes the output produced by the pipeline. Most of the plots are taken from the MultiQC report, which summarises results at the end of the pipeline.
 
-<!-- TODO nf-core: Write this documentation describing your workflow's output -->
-
 ## Pipeline overview
 The pipeline is built using [Nextflow](https://www.nextflow.io/)
 and processes data using the following steps:
@@ -110,6 +108,18 @@ See the read_distribution tool from [RSeQC](http://rseqc.sourceforge.net/) for d
 
 * `sample.read_distribution.txt`
   * Results file with the number of reads assigned to each annotation.
+
+## Gene Body Coverage
+
+This script calculates the reads coverage across gene bodies. This makes it easy to identify 3' or 5' skew in libraries. A skew towards increased 3' coverage can happen in degraded samples prepared with poly-A selection, or in 3'-seq experiments.
+
+> **NB:** Note that following nfcore recommandation, we subsample the BAM to 1 Million reads. This speeds up this task significantly and has no to little effect on the results.
+
+**Output directory: `results/read_distribution`**
+
+* `sample_rseqc.geneBodyCoverage.curves.pdf`
+* `sample_rseqc.geneBodyCoverage.r`
+* `sample_rseqc.geneBodyCoverage.txt`
 
 
 ## Complexity Curves

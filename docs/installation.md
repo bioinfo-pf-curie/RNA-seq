@@ -1,7 +1,7 @@
 # Installation
 
 This help page was originally cloned from the [nf-core](https://nf-co.re/) project.
-To start using the nf-core/mypipeline pipeline, follow the steps below:
+To start using this pipeline, follow the steps below:
 
 1. [Install Nextflow](#1-install-nextflow)
 2. [Install the pipeline](#2-install-the-pipeline)

@@ -826,7 +826,7 @@ process bam_subsample {
  */
 process genebody_coverage {
     tag "${bam.baseName - '.sorted'}"
-       publishDir "${params.outdir}/rseqc" , mode: 'copy',
+       publishDir "${params.outdir}/genecov" , mode: 'copy',
         saveAs: {filename ->
             if (filename.indexOf("geneBodyCoverage.curves.pdf") > 0)       "geneBodyCoverage/$filename"
             else if (filename.indexOf("geneBodyCoverage.r") > 0)           "geneBodyCoverage/rscripts/$filename"
