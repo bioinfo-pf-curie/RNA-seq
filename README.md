@@ -29,7 +29,7 @@ See the [nf-core](https://nf-co.re/) project for more details.
 7. Exploratory analysis ([`R`](https://www.r-project.org/))
 8. Present all QC results in a final report ([`MultiQC`](http://multiqc.info/))
 
-### Quick help
+### `Quick help`
 
 ```bash
 nextflow run main.nf --help
@@ -96,7 +96,7 @@ Available Profiles
 		  
 ```
 
-### Quick run
+### `Quick run`
 
 The pipeline can be run on any infrastructure from a list of input files or from a sample plan as follow
 
@@ -122,7 +122,7 @@ echo "nextflow run main.nf --reads '*.R{1,2}.fastq.gz' --genome 'hg19' --outdir 
 
 ```
 
-### Defining the `-profile`
+### Defining the '-profile'
 
 By default (whithout any profile), Nextflow will excute the pipeline locally, expecting that all tools are available from your `PATH` variable.
 In addition, we set up a few profiles that should allow you i/ to use containers instead of local installation, ii/ to run the pipeline on a cluster instead of on a local architecture.
@@ -142,28 +142,29 @@ Here are a few examples of how to set the profile option.
 
 ```
 
-### Sample Plan
+### `Sample Plan`
 
 A sample plan is a csv file (comma separated) that list all samples with their biological IDs.
 
 
 Sample ID | Sample Name | Path R1 .fastq file | [Path R2 .fastq file]
 
-### Full Documentation
+### `Full Documentation`
 
 1. [Installation](docs/installation.md)
 2. Pipeline configuration
-    * [Local installation](docs/configuration/local.md)
-    * [Reference genomes](docs/configuration/reference_genomes.md)  
+    * [Reference genomes](docs/configuration/reference_genomes.md)
+    * [Adding your own system](configuration/adding_your_own.md)
 3. [Running the pipeline](docs/usage.md)
 4. [Output and how to interpret the results](docs/output.md)
 5. [Troubleshooting](docs/troubleshooting.md)
 
-### Credits
+
+#### Credits
 
 This pipeline has been written by the bioinformatics platform of the Institut Curie (P. La Rosa, N. Servant)
 
-### Contacts
+#### Contacts
 
 For any question, bug or suggestion, please use the issues system or contact the bioinformatics core facility
 
