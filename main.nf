@@ -37,9 +37,9 @@ def helpMessage() {
       --reads                       Path to input data (must be surrounded with quotes)
       --samplePlan                  Path to sample plan input file (cannot be used with --reads)
       --genome                      Name of genome reference
-      -profile                      Configuration profile to use. test / curie / conda / docker / singularity
+      -profile                      Configuration profile to use. test / curie / conda / docker / singularity / cluster (see below)
 
-    Options:
+    Sequencing:
       --singleEnd                   Specifies that the input is single end reads
 
     Strandness:
@@ -76,6 +76,16 @@ def helpMessage() {
       --skip_readdist               Skip read distribution steps
       --skip_expan                  Skip exploratory analysis
       --skip_multiqc                Skip MultiQC
+
+    =======================================================
+    Available Profiles
+
+      -profile test                Set up the test dataset
+      -profile curie               Use the global Curie conda environment
+      -profile conda               Build a new conda environment before running the pipeline
+      -profile singularity         Use the Singularity images for each process
+
+      -profile cluster             Run the workflow on the cluster, instead of locally
 
     """.stripIndent()
 }

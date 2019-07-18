@@ -45,7 +45,7 @@ Mandatory arguments:
   --reads                       Path to input data (must be surrounded with quotes)
   --samplePlan                  Path to sample plan input file (cannot be used with --reads)
   --genome                      Name of genome reference
-  -profile                      Configuration profile to use. test / curie / conda / docker / singularity
+  -profile                      Configuration profile to use. test / curie / conda / docker / singularity / cluster
 
 Options:
   --singleEnd                   Specifies that the input is single end reads
@@ -78,12 +78,22 @@ QC options:
   --skip_qc                     Skip all QC steps apart from MultiQC
   --skip_rrna                   Skip rRNA mapping
   --skip_fastqc                 Skip FastQC
+  --skip_genebody_coverage      Skip calculating genebody coverage 
   --skip_saturation             Skip Saturation qc
   --skip_dupradar               Skip dupRadar (and Picard MarkDups)
   --skip_readdist               Skip read distribution steps
   --skip_expan                  Skip exploratory analysis
   --skip_multiqc                Skip MultiQC
 
+=======================================================
+Available Profiles
+
+  -profile test                Set up the test dataset
+  -profile curie               Use the global Curie conda environment
+  -profile conda               Build a new conda environment before running the pipeline
+  -profile singularity         Use the Singularity images for each process
+  -profile cluster             Run the workflow on the cluster, instead of locally
+		  
 ```
 
 ### Quick run
@@ -94,30 +104,41 @@ The pipeline can be run on any infrastructure from a list of input files or from
 See the conf/test.conf to set your test dataset.
 
 ```
-nextflow run main.nf -profile test
-
-```
-
-
-#### Run the pipeline locally
-
-```
-nextflow run main.nf --reads '*_R{1,2}.fastq.gz' --genome 'hg19' --outdir MY_OUTPUT_DIR
+nextflow run main.nf -profile test,curie
 
 ```
 
 #### Run the pipeline from a sample plan
 
 ```
-nextflow run main.nf --samplePlan MY_SAMPLE_PLAN --genome 'hg19' --outdir MY_OUTPUT_DIR
+nextflow run main.nf --samplePlan MY_SAMPLE_PLAN --genome 'hg19' --outdir MY_OUTPUT_DIR -profile curie
 
 ```
 
 #### Run the pipeline on the Institut Curie cluster
 
 ```
-echo "nextflow run main.nf --reads '*.R{1,2}.fastq.gz' --genome 'hg19' --outdir MY_OUTPUT_DIR -profile curie" | qsub -N rnaseq-2.0
+echo "nextflow run main.nf --reads '*.R{1,2}.fastq.gz' --genome 'hg19' --outdir MY_OUTPUT_DIR -profile singularity,cluster" | qsub -N rnaseq-2.0
 
+```
+
+### Defining the `-profile`
+
+By default (whithout any profile), Nextflow will excute the pipeline locally, expecting that all tools are available from your `PATH` variable.
+In addition, we set up a few profiles that should allow you i/ to use containers instead of local installation, ii/ to run the pipeline on a cluster instead of on a local architecture.
+The description of each profile is available on the help message (see above).
+Here are a few examples of how to set the profile option.
+
+
+```
+## Run the pipeline locally, using the global Curie conda environment
+-profile curie
+
+## Run the pipeline on the cluster, using the Singularity environments
+-profile cluster,singularity
+
+## Run the pipeline on the cluster, building a new conda environment
+-profile cluster,conda
 ```
 
 ### Sample Plan
