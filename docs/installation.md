@@ -10,6 +10,7 @@ To start using this pipeline, follow the steps below:
     * [Software dependencies](#32-software-dependencies)
     * [Other configurations](#33-other-configurations)
 4. [Reference genomes](#4-reference-genomes)
+5. ddddddd
 
 
 ## 1) Install NextFlow
