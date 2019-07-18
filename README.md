@@ -29,7 +29,7 @@ See the [nf-core](https://nf-co.re/) project for more details.
 7. Exploratory analysis ([`R`](https://www.r-project.org/))
 8. Present all QC results in a final report ([`MultiQC`](http://multiqc.info/))
 
-### `Quick help`
+### Quick help
 
 ```bash
 nextflow run main.nf --help
@@ -96,7 +96,7 @@ Available Profiles
 		  
 ```
 
-### `Quick run`
+### Quick run
 
 The pipeline can be run on any infrastructure from a list of input files or from a sample plan as follow
 
@@ -142,7 +142,7 @@ Here are a few examples of how to set the profile option.
 
 ```
 
-### `Sample Plan`
+### Sample Plan
 
 A sample plan is a csv file (comma separated) that list all samples with their biological IDs.
 
