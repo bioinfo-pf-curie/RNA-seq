@@ -125,10 +125,11 @@ echo "nextflow run main.nf --reads '*.R{1,2}.fastq.gz' --genome 'hg19' --outdir 
 ### Defining the '-profile'
 
 By default (whithout any profile), Nextflow will excute the pipeline locally, expecting that all tools are available from your `PATH` variable.
+
 In addition, we set up a few profiles that should allow you i/ to use containers instead of local installation, ii/ to run the pipeline on a cluster instead of on a local architecture.
 The description of each profile is available on the help message (see above).
-Here are a few examples of how to set the profile option.
 
+Here are a few examples of how to set the profile option.
 
 ```
 ## Run the pipeline locally, using the global Curie conda environment
@@ -149,7 +150,7 @@ A sample plan is a csv file (comma separated) that list all samples with their b
 
 Sample ID | Sample Name | Path R1 .fastq file | [Path R2 .fastq file]
 
-### `Full Documentation`
+### Full Documentation
 
 1. [Installation](docs/installation.md)
 2. Pipeline configuration

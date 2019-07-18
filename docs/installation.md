@@ -6,9 +6,9 @@ To start using the nf-core/mypipeline pipeline, follow the steps below:
 1. [Install Nextflow](#1-install-nextflow)
 2. [Install the pipeline](#2-install-the-pipeline)
 3. [Pipeline configuration](#3-pipeline-configuration)
-    * [Software deps: Singularity](#31-software-deps-singularity)
-    * [Software deps: Conda](#32-software-deps-conda)
-    * [Configuration profiles](#33-configuration-profiles)
+    * [Cluster environment](#31-cluster-environment)
+    * [Software dependencies](#32-software-dependencies)
+    * [Other configurations](#33-other-configurations)
 4. [Reference genomes](#4-reference-genomes)
 
 ## 1) Install NextFlow
@@ -56,9 +56,7 @@ Be warned of two important points about this default configuration:
 2. Nextflow will expect all software to be installed and available on the `PATH`
     * It's expected to use an additional config profile for singularity or conda support. See below.
 
-## 4) Define the profile
-
-#### 4.1) Cluster environment
+#### 3.1) Cluster environment
 
 In order to run the pipeline on a computational cluster, we define the `cluster` profile.
 In this case, instead of running locally, each process is submitted to the cluster through your workflow management system.
@@ -76,7 +74,7 @@ It could therefore be useful to also submit the master job to the cluster
 echo "nextflow run main.nf -profile cluster" | qsub -l "mem=1gb,nodes=1:ppn=1"
 ```
 
-#### 4.1) Software dependencies
+#### 3.2) Software dependencies
 
 If you do not want to locally install all software dependencies, then `conda` or `singularity` are your best friends.
 The process is very similar: running the pipeline with the option `-profile singularity` or `-profile conda` tells Nextflow to enable singularity (resp. conda) for this run. 
@@ -107,7 +105,7 @@ Will build a new conda environment from the .yaml file before running the pipeli
 The pipeline ships with a conda environment file and nextflow has built-in support for this.
 To use it first ensure that you have conda installed (we recommend [miniconda](https://conda.io/miniconda.html))
 
-#### 3.3) Configuration profiles
+#### 3.3) Other configurations
 
 See [`docs/configuration/adding_your_own.md`](configuration/adding_your_own.md)
 
