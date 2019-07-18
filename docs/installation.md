@@ -54,32 +54,58 @@ Be warned of two important points about this default configuration:
     * All jobs are run in the login session. If you're using a simple server, this may be fine. If you're using a compute cluster, this is bad as all jobs will run on the head node.
     * See the [nextflow docs](https://www.nextflow.io/docs/latest/executor.html) for information about running with other hardware backends. Most job scheduler systems are natively supported.
 2. Nextflow will expect all software to be installed and available on the `PATH`
-    * It's expected to use an additional config profile for docker, singularity or conda support. See below.
+    * It's expected to use an additional config profile for singularity or conda support. See below.
 
-#### 3.1) Software deps: Singularity
-If you're not able to use Conda then [Singularity](http://singularity.lbl.gov/) is a great alternative.
-The process is very similar: running the pipeline with the option `-profile singularity` tells Nextflow to enable singularity for this run. An image containing all of the software requirements will be automatically fetched and used from singularity hub.
+## 4) Define the profile
 
-If running offline with Singularity, you'll need to download and transfer the Singularity image first:
+#### 4.1) Cluster environment
 
-```bash
-singularity pull --name nf-core-mypipeline.simg shub://nf-core/mypipeline
-```
-
-Once transferred, use `-with-singularity` and specify the path to the image file:
+In order to run the pipeline on a computational cluster, we define the `cluster` profile.
+In this case, instead of running locally, each process is submitted to the cluster through your workflow management system.
 
 ```bash
-nextflow run /path/to/nf-core-mypipeline -with-singularity nf-core-mypipeline.simg
+## Send the jobs to a cluster
+nextflow run main.nf -profile cluster
 ```
 
-Remember to pull updated versions of the singularity image if you update the pipeline.
+Note that in this case, the master job will still be run locally (whereas all processes will be submitted to the cluster).
+It could therefore be useful to also submit the master job to the cluster
 
+```bash
+## PBS/Torque submission
+echo "nextflow run main.nf -profile cluster" | qsub -l "mem=1gb,nodes=1:ppn=1"
+```
 
-#### 3.2) Software deps: conda
-If you're not able to use Docker _or_ Singularity, you can instead use conda to manage the software requirements.
+#### 4.1) Software dependencies
+
+If you do not want to locally install all software dependencies, then `conda` or `singularity` are your best friends.
+The process is very similar: running the pipeline with the option `-profile singularity` or `-profile conda` tells Nextflow to enable singularity (resp. conda) for this run. 
+If you're not able to use Singularity, you can instead use conda to manage the software requirements.
 This is slower and less reproducible than the above, but is still better than having to install all requirements yourself!
+
+In the current version of the pipeline, we offer several options:
+
+```bash
+nextflow run main.nf -profile curie
+```
+
+Will run the pipeline using a global conda environment available from our local institutional cluster (see conf/curie.config).
+
+```bash
+nextflow run main.nf -profile singularity
+```
+
+Will run the pipeline using singularity images for each processes. These images have to be defined in the conf/singularity.config.
+Note that so far, there is no way to automatically fetch these images from a web server.
+
+
+```bash
+nextflow run main.nf -profile conda
+```
+
+Will build a new conda environment from the .yaml file before running the pipeline.
 The pipeline ships with a conda environment file and nextflow has built-in support for this.
-To use it first ensure that you have conda installed (we recommend [miniconda](https://conda.io/miniconda.html)), then follow the same pattern as above and use the flag `-profile conda`
+To use it first ensure that you have conda installed (we recommend [miniconda](https://conda.io/miniconda.html))
 
 #### 3.3) Configuration profiles
 

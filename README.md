@@ -139,6 +139,7 @@ Here are a few examples of how to set the profile option.
 
 ## Run the pipeline on the cluster, building a new conda environment
 -profile cluster,conda
+
 ```
 
 ### Sample Plan

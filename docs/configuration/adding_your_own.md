@@ -1,8 +1,6 @@
-# nf-core/hic: Configuration for other clusters
+# Configuration for other clusters
 
 It is entirely possible to run this pipeline on other clusters, though you will need to set up your own config file so that the pipeline knows how to work with your cluster.
-
-> If you think that there are other people using the pipeline who would benefit from your configuration (eg. other common cluster setups), please let us know. We can add a new configuration and profile which can used by specifying `-profile <name>` when running the pipeline. The config file will then be hosted at `nf-core/configs` and will be pulled automatically before the pipeline is executed.
 
 If you are the only person to be running this pipeline, you can create your config file as `~/.nextflow/config` and it will be applied every time you run Nextflow. Alternatively, save the file anywhere and reference it when running the pipeline with `-c path/to/config` (see the [Nextflow documentation](https://www.nextflow.io/docs/latest/config.html) for more).
 
@@ -35,19 +33,15 @@ To run the pipeline, several software packages are required. How you satisfy the
 Please see the [`installation documentation`](../installation.md) for how to run using the below as a one-off. These instructions are about configuring a config file for repeated use.
 
 ### Docker
-Docker is a great way to run nf-core/hic, as it manages all software installations and allows the pipeline to be run in an identical software environment across a range of systems.
+Docker is a great way to run pipelines, as it manages all software installations and allows the pipeline to be run in an identical software environment across a range of systems.
 
-Nextflow has [excellent integration](https://www.nextflow.io/docs/latest/docker.html) with Docker, and beyond installing the two tools, not much else is required - nextflow will automatically fetch the [nfcore/hic](https://hub.docker.com/r/nfcore/hic/) image that we have created and is hosted at dockerhub at run time.
-
+Nextflow has [excellent integration](https://www.nextflow.io/docs/latest/docker.html) with Docker and DockerHub.
 To add docker support to your own config file, add the following:
 
 ```nextflow
 docker.enabled = true
-process.container = "nfcore/hic"
+process.container = "path/to/dockerhub/project"
 ```
-
-Note that the dockerhub organisation name annoyingly can't have a hyphen, so is `nfcore` and not `nf-core`.
-
 
 ### Singularity image
 Many HPC environments are not able to run Docker due to security issues.
@@ -57,25 +51,18 @@ To specify singularity usage in your pipeline config file, add the following:
 
 ```nextflow
 singularity.enabled = true
-process.container = "shub://nf-core/hic"
+process.container = "shub://path/to/singularityhub/project"
 ```
 
 If you intend to run the pipeline offline, nextflow will not be able to automatically download the singularity image for you.
 Instead, you'll have to do this yourself manually first, transfer the image file and then point to that.
-
-First, pull the image file where you have an internet connection:
-
-```bash
-singularity pull --name nf-core-hic.simg shub://nf-core/hic
-```
-
-Then transfer this file and point the config file to the image:
 
 ```nextflow
 singularity.enabled = true
 process.container = "/path/to/nf-core-hic.simg"
 ```
 
+Note that you can also defined a Singularity image per process. See the conf/singularity.config file for details.
 
 ### Conda
 If you're not able to use Docker or Singularity, you can instead use conda to manage the software requirements.
