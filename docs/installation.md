@@ -11,6 +11,7 @@ To start using this pipeline, follow the steps below:
     * [Other configurations](#33-other-configurations)
 4. [Reference genomes](#4-reference-genomes)
 
+
 ## 1) Install NextFlow
 Nextflow runs on most POSIX systems (Linux, Mac OSX etc). It can be installed by running the following commands:
 
