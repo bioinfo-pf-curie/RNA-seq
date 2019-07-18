@@ -1232,7 +1232,7 @@ workflow.onComplete {
         subject = "[rnaseq] Partially Successful (${skipped_poor_alignment.size()} skipped): $workflow.runName"
     }
     if(!workflow.success){
-      subject = "[nfcore/rnaseq] FAILED: $workflow.runName"
+      subject = "[rnaseq] FAILED: $workflow.runName"
     }
     def email_fields = [:]
     email_fields['version'] = workflow.manifest.version
@@ -1262,12 +1262,12 @@ workflow.onComplete {
         if (workflow.success && !params.skip_multiqc) {
             mqc_report = multiqc_report.getVal()
             if (mqc_report.getClass() == ArrayList){
-                log.warn "[nfcore/rnaseq] Found multiple reports from process 'multiqc', will use only one"
+                log.warn "[rnaseq] Found multiple reports from process 'multiqc', will use only one"
                 mqc_report = mqc_report[0]
                 }
         }
     } catch (all) {
-        log.warn "[nfcore/rnaseq] Could not attach MultiQC report to summary email"
+        log.warn "[rnaseq] Could not attach MultiQC report to summary email"
     }
 
     // Render the TXT template
@@ -1293,11 +1293,11 @@ workflow.onComplete {
           if( params.plaintext_email ){ throw GroovyException('Send plaintext e-mail, not HTML') }
           // Try to send HTML e-mail using sendmail
           [ 'sendmail', '-t' ].execute() << sendmail_html
-          log.info "[nfcore/rnaseq] Sent summary e-mail to $params.email (sendmail)"
+          log.info "[rnaseq] Sent summary e-mail to $params.email (sendmail)"
         } catch (all) {
           // Catch failures and try with plaintext
           [ 'mail', '-s', subject, params.email ].execute() << email_txt
-          log.info "[nfcore/rnaseq] Sent summary e-mail to $params.email (mail)"
+          log.info "[rnaseq] Sent summary e-mail to $params.email (mail)"
         }
     }
 
@@ -1312,22 +1312,21 @@ workflow.onComplete {
     output_tf.withWriter { w -> w << email_txt }
 
     if(skipped_poor_alignment.size() > 0){
-        log.info "[nfcore/rnaseq] WARNING - ${skipped_poor_alignment.size()} samples skipped due to poor alignment scores!"
+        log.info "[rnaseq] WARNING - ${skipped_poor_alignment.size()} samples skipped due to poor alignment scores!"
     }
 
-    log.info "[nfcore/rnaseq] Pipeline Complete"
+    log.info "[rnaseq] Pipeline Complete"
 
     if(!workflow.success){
-        if( workflow.profile == 'standard'){
-            if ( "hostname".execute().text.contains('.uppmax.uu.se') ) {
-                log.error "====================================================\n" +
-                        "  WARNING! You are running with the default 'standard'\n" +
-                        "  pipeline config profile, which runs on the head node\n" +
-                        "  and assumes all software is on the PATH.\n" +
-                        "  This is probably why everything broke.\n" +
-                        "  Please use `-profile uppmax` to run on UPPMAX clusters.\n" +
-                        "============================================================"
-            }
+        if( workflow.profile == 'test'){
+        
+            log.error "====================================================\n" +
+                    "  WARNING! You are running with the profile 'test' only\n" +
+                    "  pipeline config profile, which runs on the head node\n" +
+                    "  and assumes all software is on the PATH.\n" +
+                    "  This is probably why everything broke.\n" +
+                    "  Please use `-profile test,curie,cluster` or `-profile test,singularity,cluster` to run on your clusters.\n" +
+                    "============================================================"
         }
     }
 }
