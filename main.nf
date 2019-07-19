@@ -762,7 +762,7 @@ if(params.aligner == 'tophat2'){
     val parse_res from stranded_results_tophat
 
   output:
-    file "${prefix}.bam" into bam_count, bam_preseq, bam_markduplicates, bam_featurecounts, bam_genetype, bam_HTseqCounts, bam_read_dist
+    file "${prefix}.bam" into bam_count, bam_preseq, bam_markduplicates, bam_featurecounts, bam_genetype, bam_HTseqCounts, bam_read_dist, bam_forSubsamp, bam_skipSubsamp
     file "${prefix}.align_summary.txt" into alignment_logs
     file "${prefix}.bam.bai" into bam_index_tophat
 
