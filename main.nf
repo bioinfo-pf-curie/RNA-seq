@@ -1398,6 +1398,7 @@ workflow.onComplete {
                     "  pipeline config profile, which runs on the head node\n" +
                     "  and assumes all software is on the PATH.\n" +
                     "  This is probably why everything broke.\n" +
+                    "  Please use `-profile test,curie` or `-profile test,singularity` to run on local.\n" +
                     "  Please use `-profile test,curie,cluster` or `-profile test,singularity,cluster` to run on your clusters.\n" +
                     "============================================================"
         }
