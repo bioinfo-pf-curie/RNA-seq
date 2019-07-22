@@ -133,10 +133,10 @@ The description of each profile is available on the help message (see above).
 Here are a few examples of how to set the profile option.
 
 ```
-## Run the pipeline locally, using the global Curie conda environment
+## Run the pipeline locally, using the global Curie environment (build by conda)
 -profile curie
 
-## Run the pipeline on the cluster, using the Singularity environments
+## Run the pipeline on the cluster, using the Singularity containers
 -profile cluster,singularity
 
 ## Run the pipeline on the cluster, building a new conda environment
