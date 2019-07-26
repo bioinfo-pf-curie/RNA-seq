@@ -1,6 +1,6 @@
 #!/bin/bash
 ## build_containers.sh 
-## Functions of RNA-seq pipeline
+## Utiliti of RNA-seq pipeline
 ##
 ## Copyright (c) 2019-2020 Institut Curie
 ## Author(s): Nicolas Servant, Philippe La Rosa

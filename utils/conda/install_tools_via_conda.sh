@@ -31,4 +31,4 @@ fi
 ### ajout assume conda deja installe 
 ## Installation des tools via conda dans /data/modules/pipelines/rnaseq/$env 
 mkdir -p ${dir_conda_modules}
-conda env create -p ${dir_conda_modules}/${env_conda_name} -f ../../environment.yml 2>&1 | tee -a ${dir_conda_modules}/install_tools_via_conda.log 
+conda env create -p ${dir_conda_modules}/${env_conda_name} -f environment.yml 2>&1 | tee -a ${dir_conda_modules}/install_tools_via_conda.log 
