@@ -34,37 +34,37 @@ def helpMessage() {
 
 
     Mandatory arguments:
-      --reads                       Path to input data (must be surrounded with quotes)
-      --samplePlan                  Path to sample plan input file (cannot be used with --reads)
-      --genome                      Name of genome reference
-      -profile                      Configuration profile to use. test / curie / conda / docker / singularity / cluster (see below)
+      --reads 'READS'               Path to input data (must be surrounded with quotes)
+      --samplePlan 'SAMPLEPLAN'     Path to sample plan input file (cannot be used with --reads)
+      --genome 'BUILD'              Name of genome reference
+      -profile PROFILE              Configuration profile to use. test / curie / conda / docker / singularity / cluster (see below)
 
     Sequencing:
       --singleEnd                   Specifies that the input is single end reads
 
     Strandness:
-      --stranded                    Library strandness ['auto', 'yes', 'reverse', 'no']. Default: 'auto'
+      --stranded 'STRANDED'         Library strandness ['auto', 'yes', 'reverse', 'no']. Default: 'auto'
 
     Mapping:
-      --aligner                     Tool for read alignments ['star', 'hisat2', 'tophat2']. Default: 'star'
+      --aligner 'MAPPER'            Tool for read alignments ['star', 'hisat2', 'tophat2']. Default: 'star'
 
     Counts:
-      --counts                      Tool to use to estimate the raw counts per gene ['star', 'featureCounts', 'HTseqCounts']. Default: 'star'
+      --counts 'COUNTS'             Tool to use to estimate the raw counts per gene ['star', 'featureCounts', 'HTseqCounts']. Default: 'star'
 
     References:                     If not specified in the configuration file or you wish to overwrite any of the references.
-      --star_index                  Path to STAR index
-      --hisat2_index                Path to HiSAT2 index
-      --tophat2_index               Path to TopHat2 index
-      --gtf                         Path to GTF file
-      --bed12                       Path to gene bed12 file
+      --star_index 'PATH'           Path to STAR index
+      --hisat2_index 'PATH'         Path to HiSAT2 index
+      --tophat2_index 'PATH'        Path to TopHat2 index
+      --gtf 'GTF'                   Path to GTF file
+      --bed12 'BED'                 Path to gene bed12 file
       --saveAlignedIntermediates    Save the intermediate files from the Aligment step  - not done by default
 
     Other options:
-      --metadata                    Add metadata file for multiQC report
-      --outdir                      The output directory where the results will be saved
-      -w/--work-dir                 The temporary directory where intermediate data will be saved
-      --email                       Set this parameter to your e-mail address to get a summary e-mail with details of the run sent to you when the workflow exits
-      -name                         Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic.
+      --metadata 'FILE'             Add metadata file for multiQC report
+      --outdir 'PATH'               The output directory where the results will be saved
+      -w/--work-dir 'PATH'          The temporary directory where intermediate data will be saved
+      --email 'MAIL'                Set this parameter to your e-mail address to get a summary e-mail with details of the run sent to you when the workflow exits
+      -name 'NAME'                  Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic.
 
     QC options:
       --skip_qc                     Skip all QC steps apart from MultiQC
