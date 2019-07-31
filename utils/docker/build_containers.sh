@@ -14,11 +14,9 @@
 ## usage : bash build_containers.sh 2>&1 | tee -a build_containers.log 
 ##
 
-mkdir -p images
-for RECI in $(ls recipes/*.def)
+for IMGNAME in $(cat images_list.txt)
  do 
-   IMGNAME=$(basename ${RECI} .def)
    echo "## build image ${IMGNAME}" 
-   sudo singularity build images/${IMGNAME}.simg ${RECI}
+   echo "sudo docker build ./${IMGNAME} -t ${IMGNAME}"
  done 
 
