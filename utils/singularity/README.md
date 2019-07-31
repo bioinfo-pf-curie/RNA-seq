@@ -14,12 +14,9 @@ This document is here to help you do this internal installation.
 ```
     Example: bash build_containers.sh 2>&1 | tee -a build_containers.log
 ```
-3. Edit the singularity configuration: singularity.config
+3. Edit the containers configuration: containers.config
 
 ```bash
-    singularity {
-      enabled = true 
-    }
 
     params {
       container_version = '2.0'
