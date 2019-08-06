@@ -25,10 +25,16 @@ if (!require(GenomicFeatures)){
 ## x : a count matrix with gene name as rownames
 ## gtf.in : GTF file used for annotation with ENSEMBL as gene_id and SYMBOL as gene_name (i.e GENCODE GTF)
 
-ensembl2symbol <- function(x, gtf.in, lab.in="gene_id", lab.out=c("gene_name", "gene_symbol")){
+ensembl2symbol <- function(x, gtf.in, lab.in="gene_id", lab.out="gene_name", annot.only=FALSE, cleanEnsembl=TRUE){
   dgtf <- rtracklayer::import(gtf.in)
   myGenes <- dgtf[dgtf$type == "gene"]
-  
+
+  ## Check if x is a vector or a matrix
+  if (is.vector(x)){
+      x <- matrix(x, byrow=FALSE, dimnames=list(x,"Ids"))
+      annot.only <- TRUE
+  }
+
   ## Check input label (gene_id by default)
   if (is.element(lab.in, colnames(elementMetadata(myGenes)))){
     colsOfInterest <- lab.in
@@ -38,12 +44,10 @@ ensembl2symbol <- function(x, gtf.in, lab.in="gene_id", lab.out=c("gene_name", "
   }
   
   ## Try all output labels
-  for (lab in lab.out){
-    if (is.element(lab, colnames(elementMetadata(myGenes)))){
-      colsOfInterest <- c(colsOfInterest, lab)
-      break
-    }
+  if (is.element(lab.out, colnames(elementMetadata(myGenes)))){
+      colsOfInterest <- c(colsOfInterest, lab.out)
   }
+  
   if(length(colsOfInterest) != 2){
     warning("Unable to convert ID to SYMBOL gene names ! Output label not found !")
     return(x)
@@ -55,11 +59,38 @@ ensembl2symbol <- function(x, gtf.in, lab.in="gene_id", lab.out=c("gene_name", "
     warning("Unable to convert ENSEMBL to SYMBOL gene names ! ")
     return(x)
   }else{
-    rownames(x) <- paste(elementMetadata(myGenes)[,lab.in][m], elementMetadata(myGenes)[,colsOfInterest[2]][m], sep="|")
-    return(x)
+      if (annot.only){
+          rnames <- elementMetadata(myGenes)[,lab.in][m]
+          if (cleanEnsembl){
+              out <- cbind(cleanEnsembl(elementMetadata(myGenes)[,lab.in][m]),
+                           elementMetadata(myGenes)[,colsOfInterest[2]][m])
+          }else{
+              out <- cbind(elementMetadata(myGenes)[,lab.in][m],
+                           elementMetadata(myGenes)[,colsOfInterest[2]][m])
+          }
+          colnames(out) <- c(lab.in, colsOfInterest[2])
+          return(out)
+      }else{
+          if (cleanEnsembl){
+              rownames(x) <- paste(cleanEnsembl(elementMetadata(myGenes)[,lab.in][m]),
+                                   elementMetadata(myGenes)[,colsOfInterest[2]][m], sep="|")
+          }else{
+              rownames(x) <- paste(elementMetadata(myGenes)[,lab.in][m],
+                                   elementMetadata(myGenes)[,colsOfInterest[2]][m], sep="|")
+          }
+          return(x)
+      }
   }
 }
 
+cleanEnsembl <- function(x){
+    if (is.vector(x)){
+        x <- gsub("\\.[0-9]*$", "", x)
+    }else if (is.matrix(x) || is.data.frame(x)){
+        rownames(x) <- gsub("\\.[0-9]*$", "", rownames(x))
+    }
+    x
+}
 
 ## getTPM
 ## Calculate TPM values from a gene expression matrix and a gtf file
@@ -156,9 +187,13 @@ require(Biobase)
 colnames(counts.exprs) <- gsub(lcSuffix(exprs.in), "", exprs.in)
 
 ## export count table(s)
-write.csv(ensembl2symbol(counts.exprs, gtf), file="tablecounts_raw.csv")
+write.csv(cleanEnsembl(counts.exprs), file="tablecounts_raw.csv", quote=FALSE)
 
 ## TPM
 exonic.gene.sizes <- getExonicGeneSize(gtf)
 dtpm <- getTPM(counts.exprs, exonic.gene.size=exonic.gene.sizes)
-write.csv(ensembl2symbol(dtpm, gtf), file="tablecounts_tpm.csv")
+write.csv(cleanEnsembl(dtpm), file="tablecounts_tpm.csv", quote=FALSE)
+
+## Export Annotation
+annot <- ensembl2symbol(rownames(counts.exprs), gtf)
+write.csv(annot, file="tableannot.csv", quote=FALSE)
