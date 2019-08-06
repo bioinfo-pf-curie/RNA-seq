@@ -3,7 +3,9 @@ CHANGES IN VERSION 2.0.1dev
 
 NEW FEATURES
 
-   o add gene body coverage tool (RSeQC)
+   o Update R output with counts and annotation 
+
+   o Add gene body coverage tool (RSeQC)
 
    o Add HiSat2 for hg19, hg19_base, hg38, mm9, mm10
 
