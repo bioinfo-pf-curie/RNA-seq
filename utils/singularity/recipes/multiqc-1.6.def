@@ -14,4 +14,5 @@ From: conda/miniconda3-centos7
  ln -s /usr/local/bin/which /usr/bin/which
  conda install -y bc
  ln -s /usr/local/bin/bc /usr/bin/bc
+ conda install -y python=2.7.16
  conda install -y bioconda::multiqc=1.6
