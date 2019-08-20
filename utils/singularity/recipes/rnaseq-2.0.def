@@ -1,5 +1,5 @@
 Bootstrap: docker
-From: conda/miniconda3-centos7
+From: conda/miniconda2-centos7
 
 %environment
   LANG=en_US.UTF
