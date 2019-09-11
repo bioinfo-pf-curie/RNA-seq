@@ -80,7 +80,8 @@ do
 	else
 	    n_dup=$(grep -a2 "## METRICS" picard/${sample}*markDups_metrics.txt | tail -1 | awk '{print $6}')
 	fi
-        p_dup=$(echo "scale=2; (${n_dup}*100/${n_reads})" | bc -l)
+        #p_dup=$(echo "scale=2; (${n_dup}*100/${n_reads})" | bc -l)
+        p_dup=$(echo "${n_dup} ${n_reads}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
     else
 	n_dup='NA'
 	p_dup='NA'
@@ -90,14 +91,17 @@ do
     strandness=$(cat strandness/${sample}_strandness.txt)
 
     ## Calculate percentage
-    p_mapped=$(echo "scale=2; (${n_mapped}*100/${n_reads})" | bc -l)
+    #p_mapped=$(echo "scale=2; (${n_mapped}*100/${n_reads})" | bc -l)
+    p_mapped=$(echo "${n_mapped} ${n_reads}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
     if [ $n_unique != 'NA' ]; then  
-	p_unique=$(echo "scale=2; (${n_unique}*100/${n_reads})" | bc -l)
+	#p_unique=$(echo "scale=2; (${n_unique}*100/${n_reads})" | bc -l)
+	p_unique=$(echo "${n_unique} ${n_reads}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
     else
 	p_unique='NA'
     fi
     if [ $n_multi != 'NA' ]; then  
-	p_multi=$(echo "scale=2; (${n_multi}*100/${n_reads})" | bc -l); 
+	#p_multi=$(echo "scale=2; (${n_multi}*100/${n_reads})" | bc -l); 
+	p_multi=$(echo "${n_multi} ${n_reads}" | awk ' { printf "%.*f",2,$1*100/$2 } ') 
     else
 	p_multi='NA'
     fi

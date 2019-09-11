@@ -1,5 +1,5 @@
 Bootstrap: docker
-From: conda/miniconda3-centos7
+From: conda/miniconda2-centos7
 
 %environment
   LANG=en_US.UTF
@@ -12,6 +12,5 @@ From: conda/miniconda3-centos7
  && conda config --add channels bioconda
  conda install -y which 
  ln -s /usr/local/bin/which /usr/bin/which
- conda install -y bc
- ln -s /usr/local/bin/bc /usr/bin/bc
+ conda install -y bc=1.06
  conda install -y bioconda::multiqc=1.6

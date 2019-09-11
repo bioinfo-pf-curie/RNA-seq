@@ -6,6 +6,8 @@ channels:
   - conda-forge
   - defaults
 dependencies:
+  - which 
+  - bc
   - anaconda::openjdk=8.0.152 # Needed for FastQC - conda build hangs without this
   - conda-forge:libiconv=1.15 # for rtracklayer
   - bioconda::fastqc=0.11.8
