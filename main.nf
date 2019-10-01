@@ -294,6 +294,7 @@ log.info """=======================================================
 ======================================================="""
 def summary = [:]
 summary['Run Name']     = custom_runName ?: workflow.runName
+summary['Command Line'] = workflow.commandLine
 summary['Metadata']	= params.metadata
 if (params.samplePlan) {
    summary['SamplePlan']   = params.samplePlan
