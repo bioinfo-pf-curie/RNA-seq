@@ -911,7 +911,7 @@ process markDuplicates {
   }
   
   """
-  picard -Xmx${avail_mem}g MarkDuplicates \\
+  picard -Xmx${avail_mem}g -Djava.io.tmpdir=/local/scratch MarkDuplicates \\
       INPUT=$bam \\
       OUTPUT=${bam.baseName}.markDups.bam \\
       METRICS_FILE=${bam.baseName}.markDups_metrics.txt \\
