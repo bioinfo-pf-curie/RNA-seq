@@ -45,11 +45,11 @@ do
 	elif [ $aligner == "star" ]; then
 	    n_unique=$(grep "Uniquely mapped reads number" alignment/${sample}*Log.final.out | cut -d"|" -f 2 | sed -e 's/\t//g')
 	    n_multi=$(grep "Number of reads mapped to multiple loci" alignment/${sample}*Log.final.out | cut -d"|" -f 2 | sed -e 's/\t//g')
-	    n_mapped=$((n_unique + n_multi))
+	    n_mapped=$(($n_unique + $n_multi))
 	elif [ $aligner == "hisat2" ]; then
 	    n_unique=$(grep " 1 time" alignment/${sample}.hisat2_summary.txt | cut -d: -f 2 | sed -e 's/ //g' | awk -F"(" 'BEGIN{s=0}{s=s+$1}END{print s}')
 	    n_multi=$(grep ">1 time" alignment/${sample}.hisat2_summary.txt | cut -d: -f 2 | sed -e 's/ //g' | awk -F"(" 'BEGIN{s=0}{s=s+$1}END{print s}')
-	    n_mapped=$((n_unique + n_multi))
+	    n_mapped=$(($n_unique + $n_multi))
 	else
 	    echo -e "Aligner not yet supported"
 	    exit 1
@@ -62,11 +62,11 @@ do
 	elif [ $aligner == "star" ]; then
             n_unique=$(grep "Uniquely mapped reads number" alignment/${sample}*Log.final.out | cut -d"|" -f 2 | sed -e 's/\t//g')
             n_multi=$(grep "Number of reads mapped to multiple loci" alignment/${sample}*Log.final.out | cut -d"|" -f 2 | sed -e 's/\t//g')
-            n_mapped=$((n_unique + n_multi))
+            n_mapped=$(($n_unique + $n_multi))
 	elif [ $aligner == "hisat2" ]; then
 	    n_unique=$(grep " 1 time" alignment/${sample}.hisat2_summary.txt | cut -d: -f 2 | sed -e 's/ //g' | awk -F"(" 'BEGIN{s=0}{s=s+$1}END{print s}')
 	    n_multi=$(grep ">1 time" alignment/${sample}.hisat2_summary.txt | cut -d: -f 2 | sed -e 's/ //g' | awk -F"(" 'BEGIN{s=0}{s=s+$1}END{print s}')
-	    n_mapped=$((n_unique + n_multi))
+	    n_mapped=$(($n_unique + $n_multi))
 	else
             echo -e "Aligner not yet supported"
             exit 1
