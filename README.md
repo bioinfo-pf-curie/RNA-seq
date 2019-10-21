@@ -155,9 +155,7 @@ Sample ID | Sample Name | Path R1 .fastq file | [Path R2 .fastq file]
 ### Full Documentation
 
 1. [Installation](docs/installation.md)
-2. Pipeline configuration
-    * [Reference genomes](docs/configuration/reference_genomes.md)
-    * [Adding your own system](configuration/adding_your_own.md)
+2. [Reference genomes](docs/reference_genomes.md)
 3. [Running the pipeline](docs/usage.md)
 4. [Output and how to interpret the results](docs/output.md)
 5. [Troubleshooting](docs/troubleshooting.md)
