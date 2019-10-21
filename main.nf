@@ -911,7 +911,7 @@ process markDuplicates {
   }
   
   """
-  picard -Xmx${avail_mem}g MarkDuplicates \\
+  picard -Xmx${avail_mem}g -Djava.io.tmpdir=/local/scratch MarkDuplicates \\
       INPUT=$bam \\
       OUTPUT=${bam.baseName}.markDups.bam \\
       METRICS_FILE=${bam.baseName}.markDups_metrics.txt \\
@@ -1404,4 +1404,17 @@ workflow.onComplete {
                     "============================================================"
         }
     }
+  File woc = new File("${params.outdir}/workflow.oncomplete.txt")
+  Map endSummary = [:]
+  endSummary['Completed on'] = workflow.complete
+  endSummary['Duration']     = workflow.duration
+  endSummary['Success']      = workflow.success
+  endSummary['exit status']  = workflow.exitStatus
+  endSummary['Error report'] = workflow.errorReport ?: '-'
+
+  String endWfSummary = endSummary.collect { k,v -> "${k.padRight(30, '.')}: $v" }.join("\n")
+  println endWfSummary
+  String execInfo = "${fullSum}\nExecution summary\n${logSep}\n${endWfSummary}\n${logSep}\n"
+  woc.write(execInfo)
+
 }
