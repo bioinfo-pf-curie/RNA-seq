@@ -91,7 +91,6 @@ QC options:
 Available Profiles
 
   -profile test                Set up the test dataset
-  -profile curie               Use the global Curie conda environment
   -profile conda               Build a new conda environment before running the pipeline
   -profile singularity         Use the Singularity images for each process
   -profile cluster             Run the workflow on the cluster, instead of locally
