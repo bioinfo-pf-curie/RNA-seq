@@ -64,14 +64,19 @@ Be warned of two important points about this default configuration:
 A few parameters need to be defined before running the pipeline. As an exemple, see the `curie.conf` file and edit/create your own.
 Note that this configuration file has to be loaded in the nextflow.confg file.
 
-#### 3.2) Software deps: Singularity
+#### 3.2) Cluster usage
+
+By default, we set up a `cluster` profile to execute the code on a computational cluster.
+Please, edit the `cluster.config` file to set up your own cluster configuration
+
+#### 3.3) Software deps: Singularity
 
 Using [Singularity](http://singularity.lbl.gov/) is in general a great idea to manage environment and ensure reproducibility.
 The process is very similar: running the pipeline with the option `-profile singularity` tells Nextflow to enable singularity for this run. 
 Images containing all of the software requirements can be automatically fetched as explained in the folder [`utils/singularity`](../utils/singularity/README.md).
 
 
-#### 3.3) Software deps: conda
+#### 3.4) Software deps: conda
 If you're not able to use Docker _or_ Singularity, you can instead use conda to manage the software requirements.
 This is slower and less reproducible than the above, but is still better than having to install all requirements yourself!
 The pipeline ships with a conda environment file and nextflow has built-in support for this.
