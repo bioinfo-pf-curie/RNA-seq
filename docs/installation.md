@@ -62,12 +62,12 @@ Be warned of two important points about this default configuration:
 #### 3.1) Define your own configuration
 
 A few parameters need to be defined before running the pipeline. As an exemple, see the `curie.conf` file and edit/create your own.
-Note that this configuration file has to be loaded in the nextflow.confg file.
+Note that this configuration file has to be loaded in the nextflow configuration file and that you may need to edit the `nextflow.config` file.
 
 #### 3.2) Cluster usage
 
-By default, we set up a `cluster` profile to execute the code on a computational cluster.
-Please, edit the `cluster.config` file to set up your own cluster configuration
+By default, we set up a `cluster` profile to execute the pipeline on a computational cluster.
+Please, edit the `cluster.config` file to set up your own cluster configuration.
 
 #### 3.3) Software deps: Singularity
 
@@ -84,8 +84,7 @@ To use it first ensure that you have conda installed (we recommend [miniconda](h
 Note that in this case, the environment will be created in the `cache/work` folder.
 
 Otherwise, you can look at the [`utils/conda`](../utils/conda/README.md) folder to create and install an internal conda environment.
-In this case, you will be able to run the pipeline with `-profile internal`.
-createdwill bethe environmentNote that in this case,
+In this case, you will be able to run the pipeline with `-profile condaPath`. See the `curie.config` for details.
 
 ## 4) Reference genomes
 

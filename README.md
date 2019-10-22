@@ -105,18 +105,18 @@ The pipeline can be run on any infrastructure from a list of input files or from
 See the conf/test.conf to set your test dataset.
 
 ```
-nextflow run main.nf -profile test,curie
+nextflow run main.nf -profile test
 
 ```
 
 #### Run the pipeline from a sample plan
 
 ```
-nextflow run main.nf --samplePlan MY_SAMPLE_PLAN --genome 'hg19' --outdir MY_OUTPUT_DIR -profile curie
+nextflow run main.nf --samplePlan MY_SAMPLE_PLAN --genome 'hg19' --outdir MY_OUTPUT_DIR
 
 ```
 
-#### Run the pipeline on the Institut Curie cluster
+#### Run the pipeline on a computational cluster
 
 ```
 echo "nextflow run main.nf --reads '*.R{1,2}.fastq.gz' --genome 'hg19' --outdir MY_OUTPUT_DIR -profile singularity,cluster" | qsub -N rnaseq-2.0
@@ -133,8 +133,8 @@ The description of each profile is available on the help message (see above).
 Here are a few examples of how to set the profile option.
 
 ```
-## Run the pipeline locally, using the global Curie environment (build by conda)
--profile curie
+## Run the pipeline locally, using the global environment (build by conda)
+-profile condaPath
 
 ## Run the pipeline on the cluster, using the Singularity containers
 -profile cluster,singularity
@@ -159,12 +159,11 @@ Sample ID | Sample Name | Path R1 .fastq file | [Path R2 .fastq file]
 4. [Output and how to interpret the results](docs/output.md)
 5. [Troubleshooting](docs/troubleshooting.md)
 
-
 #### Credits
 
 This pipeline has been written by the bioinformatics platform of the Institut Curie (P. La Rosa, N. Servant)
 
 #### Contacts
 
-For any question, bug or suggestion, please use the issues system or contact the bioinformatics core facility
+For any question, bug or suggestion, please use the issues system or contact the bioinformatics core facility.
 
