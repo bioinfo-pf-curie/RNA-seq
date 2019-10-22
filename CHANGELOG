@@ -1,3 +1,28 @@
+**********************************
+CHANGES IN VERSION 0.2.4
+
+BUG FIXES
+
+   o Increase memory for markdown report (4Gb)
+
+***********************************
+CHANGES IN VERSION 0.2.3
+
+BUG FIXES
+
+   o Remove --outSAMtype BAM SortedByCoordinate and use samtools for sorting
+
+***********************************
+CHANGES IN VERSION 0.2.2
+
+BUG FIXES
+
+   o Bug fix when n=1 in annotation
+
+   o Bug in HTSeqCount usage (#45)
+
+   o Fix undertermined cases in rseqc
+
 ***********************************
 CHANGES IN VERSION 0.2.1
 

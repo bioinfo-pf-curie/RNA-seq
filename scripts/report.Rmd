@@ -340,7 +340,7 @@ d2p <- d2p[order(rowSums(d2p), decreasing=TRUE),,drop=FALSE]
 
 ## reduce
 if (nrow(d2p) > (n_items + 1)){
-   d2p <- rbind(d2p[1:n_items,], others=colSums(d2p[(n_items+1):nrow(d2p), , drop=FALSE]))
+   d2p <- rbind(d2p[1:n_items,,drop=FALSE], others=colSums(d2p[(n_items+1):nrow(d2p),,drop=FALSE]))
 }
 
 ## Make beautiful names

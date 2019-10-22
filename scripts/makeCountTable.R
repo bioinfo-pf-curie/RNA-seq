@@ -48,12 +48,13 @@ if (count_tool == "STAR"){
     counts.exprs <- data.frame(counts.exprs)
     colnames(counts.exprs)<- gsub("_norRNA", "", gsub("_counts.csv","",sapply(exprs.in, basename)))
     
-}else if (count_tool == "HTSEQCOUNT"){
+}else if (count_tool == "HTSEQ"){
     ## Load HTSeq data
-    exprs.in <- list.files(path=input_path, pattern="_counts.csv$", full.names=TRUE, recursive=TRUE)
-    counts.exprs <- lapply(exprs.in, read.csv, sep="\t", header=FALSE, row.names=1, check.names=FALSE)
-    counts.exprs <- as.data.frame(counts.exprs)
-    colnames(counts.exprs) <- gsub("_norRNA", "", gsub("_counts.csv","",sapply(exprs.in, basename)))
+  exprs.in <- list.files(path=input_path, pattern="_counts.csv$", full.names=TRUE, recursive=TRUE)
+  counts.exprs <- lapply(exprs.in, read.csv, sep="\t", header=FALSE, row.names=1, check.names=FALSE)
+  counts.exprs <- as.data.frame(counts.exprs)
+  colnames(counts.exprs) <- gsub("_norRNA", "", gsub("_counts.csv","",sapply(exprs.in, basename)))
+  counts.exprs <- counts.exprs[1:(nrow(counts.exprs)-5), , drop=FALSE]  
 }
 
 ## export count table(s)

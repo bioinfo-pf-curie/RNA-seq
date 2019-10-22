@@ -35,8 +35,8 @@ SUB_QUEUE = batch
 ## GENOME
 #########################################################################
 
-ORG = Drosophila_melanogaster
-BUILD = dmel_r6.21_FB2018_02
+ORG = Mycobacterium_tuberculosis
+BUILD = Erdman
 
 #########################################################################
 ## WORKFLOW
@@ -55,8 +55,7 @@ COUNT_TOOL = STAR
 ## Data
 #########################################################################
 
-# must be "", "no", "yes", or "reverse"
-# if "", will be inferred using RSeQC
+# must be "no", "yes", or "reverse"
 STRANDED = 
 
 #########################################################################
@@ -64,22 +63,23 @@ STRANDED =
 #########################################################################
 
 ## Mapping on rRNA - Do not set to skip
-BOWTIE_RRNA_INDEX = /data/annotations/pipelines/Drosophila_melanogaster/rRNA/dmel-all-rRNA-r6.21
-BOWTIE_OPTS = -v 2 -a -m 1 --best --strata --nomaqround -y
+BOWTIE_RRNA_INDEX = 
+BOWTIE_OPTS = 
 
 ## Mapping on genome
-STAR_INDEX = /data/annotations/pipelines/Drosophila_melanogaster/dmel_r6.21_FB2018_02/indexes/STAR
-STAR_OPTS = --outFilterType BySJout --outFilterMultimapNmax 20 --outFilterMismatchNmax 999 --outFilterMismatchNoverLmax 0.04 --outSAMprimaryFlag OneBestScore --outMultimapperOrder Random --outSAMattributes All
+STAR_INDEX = /data/annotations/pipelines/Mycobacterium_tuberculosis/Erdman/indexes/STAR/
+STAR_OPTS = --outFilterType BySJout
 
-TOPHAT2_INDEX = /data/annotations/pipelines/Drosophila_melanogaster/dmel_r6.21_FB2018_02/indexes/bowtie2/dmel-all-chromosome-r6.21
+TOPHAT2_INDEX = /data/annotations/pipelines/Mycobacterium_tuberculosis/Erdman/indexes/bowtie2/Mycobacterium_tuberculosis_str_erdman_atcc_35801.ASM35020v1.dna.toplevel
 TOPHAT2_OPTS =  --b2-sensitive -g 1 -N 2 --no-coverage-search
 
 ## Count gene expression
-ANNOT_DIR = /data/annotations/pipelines/Drosophila_melanogaster/dmel_r6.21_FB2018_02/gtf/parseGTFAnnotation/
-TRANSCRIPTS_GTF = /data/annotations/pipelines/Drosophila_melanogaster/dmel_r6.21_FB2018_02/gtf/dmel-all-r6.21.gtf
+ANNOT_DIR = /data/annotations/pipelines/Mycobacterium_tuberculosis/Erdman/gtf/parseGTFAnnotation/
+TRANSCRIPTS_GTF = /data/annotations/pipelines/Mycobacterium_tuberculosis/Erdman/gtf/Mycobacterium_tuberculosis_str_erdman_atcc_35801.ASM35020v1.41.gtf
 HTSEQ_OPTS = -f bam -t exon -r pos 
 FEATURECOUNTS_OPTS = -t exon -C -p
 
 ## RSeqQC
-BOWTIE2_INDEX = /data/annotations/pipelines/Drosophila_melanogaster/dmel_r6.21_FB2018_02/indexes/bowtie2/dmel-all-chromosome-r6.21
-GENE_BED = /data/annotations/pipelines/Drosophila_melanogaster/dmel_r6.21_FB2018_02/gtf/parseGTFAnnotation/dmel-all-r6.21_gene.bed
+BOWTIE2_INDEX = /data/annotations/pipelines/Mycobacterium_tuberculosis/Erdman/indexes/bowtie2/Mycobacterium_tuberculosis_str_erdman_atcc_35801.ASM35020v1.dna.toplevel
+GENE_BED = /data/annotations/pipelines/Mycobacterium_tuberculosis/Erdman/gtf/parseGTFAnnotation/Mycobacterium_tuberculosis_str_erdman_atcc_35801.ASM35020v1.41_gene.bed
+
