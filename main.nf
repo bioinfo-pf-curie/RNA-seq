@@ -912,6 +912,7 @@ process markDuplicates {
   
   """
   picard -Xmx${avail_mem}g -Djava.io.tmpdir=/local/scratch MarkDuplicates \\
+      MAX_RECORDS_IN_RAM=50000 \\
       INPUT=$bam \\
       OUTPUT=${bam.baseName}.markDups.bam \\
       METRICS_FILE=${bam.baseName}.markDups_metrics.txt \\
