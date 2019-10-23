@@ -18,7 +18,7 @@ This script is based on the nf-core guidelines. See https://nf-co.re/ for more i
 ========================================================================================
  RNA-seq Analysis Pipeline.
  #### Homepage / Documentation
- https://gitlab.curie.fr/rnaseq
+ https://gitlab.curie.fr/data-analysis/rnaseq
 ----------------------------------------------------------------------------------------
 */
 
@@ -84,7 +84,6 @@ def helpMessage() {
       -profile curie               Use the global Curie conda environment
       -profile conda               Build a new conda environment before running the pipeline
       -profile singularity         Use the Singularity images for each process
-
       -profile cluster             Run the workflow on the cluster, instead of locally
 
     """.stripIndent()
@@ -180,15 +179,26 @@ if( params.gtf ){
         .fromPath(params.gtf)
         .ifEmpty { exit 1, "GTF annotation file not found: ${params.gtf}" }
         .into { gtf_star; gtf_dupradar; gtf_featureCounts; gtf_genetype; gtf_HTseqCounts; gtf_tophat; gtf_table; gtf_makeHisatSplicesites }
-} else {
-    exit 1, "No GTF annotation specified!"
+}else {
+    log.warn "No GTF annotation specified - dupRadar, table counts - will be skipped !" 
+    Channel
+        .empty()
+        .into { gtf_star; gtf_dupradar; gtf_featureCounts; gtf_genetype; gtf_HTseqCounts; gtf_tophat; gtf_table; gtf_makeHisatSplicesites }
 }
 
 if( params.bed12 ){
-    bed12 = Channel
+    Channel
         .fromPath(params.bed12)
         .ifEmpty { exit 1, "BED12 annotation file not found: ${params.bed12}" }
         .into { bed_rseqc; bed_read_dist; bed_genebody_coverage} 
+}else{
+    log.warn "No BED gene annotation specified - strandness detection, gene body coverage, read distribution - will be skipped !"
+    Channel
+       .empty()
+       .into { bed_rseqc; bed_read_dist; bed_genebody_coverage}
+    if ( params.stranded == "auto" ){
+       exit 1, "Cannot infer strandness without genes BED information. Please, specify the '--stranded' information."
+    }
 }
 
 if( params.rrna ){
@@ -196,6 +206,9 @@ if( params.rrna ){
         .fromPath(params.rrna)
         .ifEmpty { exit 1, "rRNA annotation file not found: ${params.rrna}" }
         .set { rrna_annot }
+}else{
+    log.warn "No rRNA fasta file available - rRNA mapping - will be skipped !"
+    rrna_annot = Channel.empty()
 }
 
 if ( params.metadata ){
@@ -305,7 +318,7 @@ summary['Data Type']    = params.singleEnd ? 'Single-End' : 'Paired-End'
 summary['Genome']       = params.genome
 summary['Strandedness'] = params.stranded
 if(params.aligner == 'star'){
-  summary['Aligner'] = "STAR"
+  summary['Aligner'] = "star"
   if(params.star_index) summary['STAR Index'] = params.star_index
 } else if(params.aligner == 'tophat2') {
   summary['Aligner'] = "Tophat2"
@@ -313,7 +326,6 @@ if(params.aligner == 'star'){
 } else if(params.aligner == 'hisat2') {
   summary['Aligner'] = "HISAT2"
   if(params.hisat2_index) summary['HISAT2 Index'] = params.hisat2_index
-  //if(params.splicesites) summary['Splice Sites'] = params.splicesites
 }
 summary['Counts'] = params.counts
 if(params.gtf)                 summary['GTF Annotation']  = params.gtf
@@ -323,7 +335,6 @@ summary['Max Memory']     = params.max_memory
 summary['Max CPUs']       = params.max_cpus
 summary['Max Time']       = params.max_time
 summary['Container Engine'] = workflow.containerEngine
-if(workflow.containerEngine) summary['Container'] = workflow.container
 summary['Current home']   = "$HOME"
 summary['Current user']   = "$USER"
 summary['Current path']   = "$PWD"
@@ -377,7 +388,7 @@ process rRNA_mapping {
       }
 
   when:
-    !params.skip_rrna
+    !params.skip_rrna && params.rrna
 
   input:
     set val(prefix), file(reads) from raw_reads_rna_mapping
@@ -417,9 +428,9 @@ process rRNA_mapping {
 /*
  * Strandness
  */
-strandness_results = Channel.create()
+strandness_results = Channel.empty()
 
-if (params.stranded == 'auto'){
+if (params.stranded == 'auto' && params.bed12){
 
   process prep_rseqc {
     tag "${prefix}"
@@ -537,7 +548,7 @@ def check_log(logs) {
 }
 
 // Update input channel
-star_raw_reads = Channel.create()
+star_raw_reads = Channel.empty()
 if( params.rrna && !params.skip_rrna){
   star_raw_reads = rrna_mapping_res
 }
@@ -563,7 +574,7 @@ if(params.aligner == 'star'){
     input:
     set val(prefix), file(reads) from star_raw_reads
     file index from star_index.collect()
-    file gtf from gtf_star.collect()
+    file gtf from gtf_star.collect().ifEmpty([])
 
     output:
     set val(prefix), file ("*Log.final.out"), file ('*.bam') into star_sam
@@ -573,10 +584,11 @@ if(params.aligner == 'star'){
     file "*ReadsPerGene.out.tab" optional true into star_counts_to_merge, star_counts_to_r
 
     script:
-    def star_opt_add = params.counts == 'star' ? params.star_opts_counts : ''
+    def star_count_opt = params.counts == 'star' && params.gtf ? params.star_opts_counts : ''
+    def star_gtf_opt = params.gtf ? "--sjdbGTFfile $gtf" : ''
     """
     STAR --genomeDir $index \\
-         --sjdbGTFfile $gtf \\
+         ${star_gtf_opt} \\
          --readFilesIn $reads  \\
          --runThreadN ${task.cpus} \\
          --runMode alignReads \\
@@ -587,8 +599,7 @@ if(params.aligner == 'star'){
          --outFileNamePrefix $prefix  \\
          --outSAMattrRGline ID:$prefix SM:$prefix LB:Illumina PL:Illumina  \\
          ${params.star_options} \\
-	 ${star_opt_add} 
-            
+	 ${star_count_opt}
     """
   }
 
@@ -625,7 +636,7 @@ if(params.aligner == 'star'){
 
 // HiSat2
 
-hisat2_raw_reads = Channel.create()
+hisat2_raw_reads = Channel.empty()
 if( params.rrna && !params.skip_rrna ){
     hisat2_raw_reads = rrna_mapping_res
 }
@@ -739,7 +750,7 @@ if(params.aligner == 'hisat2'){
 }
 
 // Update channel for TopHat2
-tophat2_raw_reads = Channel.create()
+tophat2_raw_reads = Channel.empty()
 if( params.rrna && !params.skip_rrna ){
     tophat2_raw_reads = rrna_mapping_res
 }
@@ -1030,8 +1041,8 @@ process HTseqCounts {
 }
 
 
-counts_to_merge = Channel.create()
-counts_to_r = Channel.create()
+counts_to_merge = Channel.empty()
+counts_to_r = Channel.empty()
 if( params.counts == 'featureCounts' ){
     counts_to_merge = featureCounts_counts_to_merge
     counts_to_r = featureCounts_counts_to_r
@@ -1064,7 +1075,7 @@ process merge_counts {
   """
 }
 
-counts_logs = Channel.create()
+counts_logs = Channel.empty()
 if( params.counts == 'featureCounts' ){
     counts_logs = featureCounts_logs
 } else if (params.counts == 'HTseqCounts'){
