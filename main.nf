@@ -1056,6 +1056,7 @@ process merge_counts {
   output:
   file 'tablecounts_raw.csv' into raw_counts, counts_saturation
   file 'tablecounts_tpm.csv' into tpm_counts, tpm_genetype
+  file 'tableannot.csv' into genes_annot
 
   script:
   """
