@@ -909,9 +909,11 @@ process markDuplicates {
   } else {
     avail_mem = task.memory.toGiga()
   }
+
+  markdup_java_options = task.memory.toGiga() > 8 ? params.markdup_java_options : "\"-Xms" +  (task.memory.toGiga() / 2).trunc() + "g -Xmx" + (task.memory.toGiga() - 1) + "g\""
   
   """
-  picard -Xmx${avail_mem}g -Djava.io.tmpdir=/local/scratch MarkDuplicates \\
+  picard ${markdup_java_options} -Djava.io.tmpdir=/local/scratch MarkDuplicates \\
       MAX_RECORDS_IN_RAM=50000 \\
       INPUT=$bam \\
       OUTPUT=${bam.baseName}.markDups.bam \\
