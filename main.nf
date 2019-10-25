@@ -24,9 +24,14 @@ This script is based on the nf-core guidelines. See https://nf-co.re/ for more i
 
 
 def helpMessage() {
+    if ("${workflow.manifest.version}" =~ /dev/ ){
+       dev_mess = file("$baseDir/assets/dev_message.txt")
+       log.info dev_mess.text
+    }
+
     log.info """
     rnaseq v${workflow.manifest.version}
-    =======================================================
+    ======================================================================
 
     Usage:
     nextflow run rnaseq --reads '*_R{1,2}.fastq.gz' --genome hg19 -profile conda
@@ -301,6 +306,11 @@ if (params.samplePlan){
 
 
 // Header log info
+if ("${workflow.manifest.version}" =~ /dev/ ){
+   dev_mess = file("$baseDir/assets/dev_message.txt")
+   log.info dev_mess.text
+}
+
 log.info """=======================================================
 
  rnaseq : RNA-Seq workflow v${workflow.manifest.version}
