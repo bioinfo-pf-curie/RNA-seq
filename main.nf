@@ -133,7 +133,6 @@ if( !(workflow.runName ==~ /[a-z]+_[a-z]+/) ){
 
 // Stage config files
 ch_multiqc_config = Channel.fromPath(params.multiqc_config)
-//ch_multiqc_logo = Channel.fromPath("$baseDir/assets/institut_curie.jpg")
 ch_output_docs = Channel.fromPath("$baseDir/docs/output.md")
 ch_pca_header = Channel.fromPath("$baseDir/assets/pca_header.txt")
 ch_heatmap_header = Channel.fromPath("$baseDir/assets/heatmap_header.txt")
@@ -1258,7 +1257,6 @@ process multiqc {
     file splan from ch_splan.collect()
     file metadata from ch_metadata.ifEmpty([])
     file multiqc_config from ch_multiqc_config    
-    //file multiqc_custom_logo from ch_multiqc_logo
     file (fastqc:'fastqc/*') from fastqc_results.collect().ifEmpty([])
     file ('rrna/*') from rrna_logs.collect().ifEmpty([])
     file ('alignment/*') from alignment_logs.collect()
@@ -1283,25 +1281,18 @@ process multiqc {
     script:
     rtitle = custom_runName ? "--title \"$custom_runName\"" : ''
     rfilename = custom_runName ? "--filename " + custom_runName.replaceAll('\\W','_').replaceAll('_+','_') + "_multiqc_report" : ''
-    makemeta = params.metadata ? true : false
+    metadata_opts = params.metadata ? "--metadata ${metadata}" : ""
     isPE = params.singleEnd ? 0 : 1
     
     modules_list = "-m custom_content -m preseq -m rseqc -m bowtie1 -m hisat2 -m star -m tophat -m cutadapt -m fastqc"
     modules_list = params.counts == 'featureCounts' ? "${modules_list} -m featureCounts" : "${modules_list}"  
     modules_list = params.counts == 'HTseqCounts' ? "${modules_list} -m htseq" : "${modules_list}"  
  
-    if ( makemeta ){
-      """
-      metadata2multiqc.py $metadata > multiqc-config-metadata.yaml
-      stats2multiqc.sh ${splan} ${params.aligner} ${isPE}
-      multiqc . -f $rtitle $rfilename -c $multiqc_config -c multiqc-config-metadata.yaml $modules_list
-      """    
-    }else{
-      """	
-      stats2multiqc.sh ${splan} ${params.aligner} ${isPE}
-      multiqc . -f $rtitle $rfilename -c $multiqc_config $modules_list
-      """
-    }
+    """
+    mqc_header.py --name "RNA-seq" --version ${workflow.manifest.version} ${metadata_opts} > multiqc-config-header.yaml
+    stats2multiqc.sh ${splan} ${params.aligner} ${isPE}
+    multiqc . -f $rtitle $rfilename -c $multiqc_config -c multiqc-config-header.yaml $modules_list
+    """    
 }
 
 
