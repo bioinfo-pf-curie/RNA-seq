@@ -71,7 +71,7 @@ def helpMessage() {
       --email 'MAIL'                Set this parameter to your e-mail address to get a summary e-mail with details of the run sent to you when the workflow exits
       -name 'NAME'                  Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic.
 
-    QC options:
+    Skip options:
       --skip_qc                     Skip all QC steps apart from MultiQC
       --skip_rrna                   Skip rRNA mapping
       --skip_fastqc                 Skip FastQC
@@ -86,8 +86,8 @@ def helpMessage() {
     Available Profiles
 
       -profile test                Set up the test dataset
-      -profile curie               Use the global Curie conda environment
       -profile conda               Build a new conda environment before running the pipeline
+      -profile condaPath           Use a pre-build conda environment already installed on our cluster
       -profile singularity         Use the Singularity images for each process
       -profile cluster             Run the workflow on the cluster, instead of locally
 

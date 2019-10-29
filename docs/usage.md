@@ -66,16 +66,21 @@ You can change the output director using the `--outdir/-w` options.
 ## Main arguments
 
 ### `-profile`
-Use this parameter to choose a configuration profile. Profiles can give configuration presets for different compute environments. Note that multiple profiles can be loaded, for example: `-profile docker` - the order of arguments is important!
+Use this parameter to choose a configuration profile. Profiles can give configuration presets for different compute environments. Note that multiple profiles can be loaded, for example: `-profile singularity` - the order of arguments is important!
 
 If `-profile` is not specified at all the pipeline will be run locally and expects all software to be installed and available on the `PATH`.
 
 * `conda`
     * A generic configuration profile to be used with [conda](https://conda.io/docs/)
     * Pulls most software from [Bioconda](https://bioconda.github.io/)
+* `condaPath`
+    * A generic configuration profile to be used with [conda](https://conda.io/docs/)
+    * Use the conda images available on the cluster
 * `singularity`
     * A generic configuration profile to be used with [Singularity](http://singularity.lbl.gov/)
-    * Pulls software from singularity-hub
+    * Use the singularity images available on the cluster
+* `cluster`
+    * Run the workflow on the computational cluster
 * `test`
     * A profile with a complete configuration for automated testing
     * Includes links to test data so needs no other parameters
