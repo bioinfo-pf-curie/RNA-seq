@@ -25,7 +25,12 @@ estimate_saturation <- function(counts, max_reads=Inf, ndepths=6, nreps=1, minco
   counts <- as.matrix(counts)
   readsums <- colSums(counts)
   max_reads <- min(max(readsums), max_reads)
-  depths <- round(seq(from=0, to=max_reads, length.out=ndepths+1))
+  if (max_reads > 10e6){
+    depths <- c(seq(from=0, to=10e6, length.out=6),
+                seq(from=10e6, to=max_reads, length.out=ndepths+1)[-1])
+  }else{
+    depths <- round(seq(from=0, to=max_reads, length.out=ndepths+1))
+  }
   
   saturation <- lapply(1:ncol(counts), function(k){
     message("Processing sample ", colnames(counts)[k], "...")

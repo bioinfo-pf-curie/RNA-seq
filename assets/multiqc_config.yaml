@@ -16,11 +16,96 @@ custom_data:
         plot_type: 'table'
         pconfig:
             namespace: 'stats'
-            title: 'Aligned reads'
             id: 'stats'
-            scale: 'RdYlBu'
-            format: '{:,.2f}'
+            title: 'General Statistics'
             save_file: true
+        headers:
+            Sample_id:
+              title: 'Sample ID'
+              scale: False
+              placement: 1000
+            Sample_name:
+              title: 'Sample Name'
+              scale: False
+              placement: 2000
+            Number_of_reads:
+              title: 'Total Reads'
+              scale: 'YlGnBu'
+              format: '{:,.0f}'
+              placement: 4000
+            Number_of_rRNA:
+              title: 'rRNA'
+              scale: 'RdYlGn-rev'
+              format: '{:,.0f}'
+              hidden: true
+              placement: 5000
+            Percent_of_rRNA:
+              title: 'rRNA (%)'
+              min: 0
+              max: 100
+              scale: 'RdYlGn-rev'
+              suffix: '%'
+              format: '{:,.1f}'
+              placement: 6000
+            Strandness:
+              scale: false
+              placement: 3000
+            Number_of_aligned_reads:
+              title: 'Aligned Reads'
+              scale: 'RdYlGn'
+              format: '{:,0f}'
+              hidden: true
+              placement: 7000
+            Percent_of_aligned_reads:
+              title: 'Aligned Reads (%)'
+              min: 0
+              max: 100
+              scale: 'RdYlGn'
+              suffix: '%'
+              format: '{:,.1f}'
+              placement: 8000
+            Number_of_uniquely_aligned_reads:
+              title: 'Unique Reads'
+              scale: 'RdYlGn'
+              format: '{:,.0f}'
+              hidden: true
+              placement: 9000
+            Percent_uniquely_aligned_reads:
+              title: 'Unique Reads (%)'
+              min: 0
+              max: 100
+              scale: 'RdYlGn'
+              suffix: '%'
+              format: '{:,.1f}'
+              placement: 10000
+            Number_of_multiple_aligned_reads:
+              title: 'Multiple Reads'
+              scale: 'RdYlGn-rev'
+              format: '{:,0f}'
+              hidden: true
+              placement: 11000
+            Percent_multiple_aligned:
+              title: 'Multiple Reads (%)'
+              min: 0
+              max: 100
+              scale: 'RdYlGn-rev'
+              suffix: '%'
+              format: '{:,.1f}'
+              placement: 12000
+            Number_of_duplicates:
+              title: 'Duplicates'
+              scale: 'RdYlGn-rev'
+              format: '{:,0f}'
+              hidden: true
+              placement: 13000
+            Percent_duplicates:
+              title: 'Duplicates (%)'
+              min: 0
+              max: 100
+              scale: 'RdYlGn-rev'
+              suffix: '%'
+              format: '{:,.1f}'
+              placement: 14000
 
     gene_type:
        file_format: 'csv'
@@ -93,12 +178,6 @@ report_section_order:
 table_columns_visible:
     FastQC:
         percent_duplicates: False
-    stats:
-        Number_of_aligned_reads: False
-        Number_of_duplicates: False
-        Number_of_uniquely_aligned_reads: False
-        Number_of_multiple_aligned_reads: False
-        Number_of_rRNA: False
 
 preseq:
    notrim: true

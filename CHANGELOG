@@ -1,5 +1,14 @@
 ************************************
-CHANGES IN VERSION 3.0.1dev
+CHANGES IN VERSION 3.0.2
+
+NEW FEATURES
+
+   o Update columns/scale/name in general stats (#77)
+
+   o Add more steps in gene-base saturation for reads number <10M (#82)
+
+************************************
+CHANGES IN VERSION 3.0.1
 
 NEW FEATURES
 
