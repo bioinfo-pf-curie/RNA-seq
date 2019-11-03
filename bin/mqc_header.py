@@ -23,7 +23,14 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-n", "--name", help="Pipeline name")
 parser.add_argument("-v", "--version", help="Pipeline version", default='')
 parser.add_argument("-m", "--metadata", help="Metatdata file", default=None)
+parser.add_argument("-s", "--splan", help="Sample plan", default=None)
+parser.add_argument("-x", "--maxreads", help="Maximum number of reads", default=0)
+
 args = parser.parse_args()
+
+##
+## Header
+##
 
 multiqc_list = ["title: '{}'".format(args.name)]
 multiqc_list += ["subtitle: Institut Curie NGS/Bioinformatics core facilities"]
@@ -37,6 +44,48 @@ multiqc_list += ["custom_logo: '{}'".format(os.sep.join([
 multiqc_list += ["custom_logo_title: Institut Curie"]
 multiqc_list += ["custom_logo_url: https://science.curie.fr/plateformes/sequencage-adn-haut-debit-ngs/"]
 
+
+##
+## Sample Names
+##
+if args.splan is not None:
+    multiqc_list += ["sample_names_rename_buttons:"]
+    multiqc_list += ["    - 'Sample ID'"]
+    multiqc_list += ["    - 'Sample Name'"]
+    multiqc_list += ["sample_names_rename:"]
+
+    sampledict = dict()
+    with open(args.splan, 'r') as fp:
+        for line in fp:
+            row = line.split(',')
+            sampledict[row[0]] = row[1].strip()
+
+    multiqc_list += [
+        '    - ["{}","{}"]'.format(key, value)
+        for key, value in sampledict.items()]
+
+##
+## Preseq
+##
+
+if args.maxreads > 0:
+    mx="{0:.2f}".format(int(args.maxreads)/1000000)
+    multiqc_list += ["custom_plot_config:"]
+    multiqc_list += ["   preseq_plot:"]
+    multiqc_list += ["      xPlotLines:"]
+    multiqc_list += ["         - color: '#a9a9a9'"]
+    multiqc_list += ["           value: " + str(mx)]
+    multiqc_list += ["           dashStyle: 'LongDash'"]
+    multiqc_list += ["           width: 1"]
+    multiqc_list += ["           label:"]
+    multiqc_list += ["              style: {color: '#a9a9a9'}"]
+    multiqc_list += ["              text: 'Max Reads Number'"]
+    multiqc_list += ["              verticalAlign: 'top'"]
+    multiqc_list += ["              y: 0"]
+
+##
+## Metadata
+##
 multiqc_list += ["report_header_info:"]
 if args.metadata is not None:
     # create rims dict
@@ -66,11 +115,10 @@ if args.metadata is not None:
     multiqc_list += [
         '    - {}: "{}"'.format(value, metadict[key])
         for key, value in rims_dict.items() if key in metadict]
-    custom_content = '\n'.join(multiqc_list)
 
-    ## Output
-    custom_content = '\n'.join(multiqc_list)
-    print(custom_content)
+## Output
+custom_content = '\n'.join(multiqc_list)
+print(custom_content)
 
 
 

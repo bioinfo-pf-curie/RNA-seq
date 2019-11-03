@@ -3,6 +3,10 @@ CHANGES IN VERSION 3.0.2
 
 NEW FEATURES
 
+   o MultiQC : add a new buton to switch from sample ID to sample name
+
+   o MultiQC : add condition formatting rules in the stats table
+
    o Update columns/scale/name in general stats (#77)
 
    o Add more steps in gene-base saturation for reads number <10M (#82)

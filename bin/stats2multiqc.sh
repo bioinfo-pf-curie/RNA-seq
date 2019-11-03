@@ -6,14 +6,14 @@ is_pe=$3
 
 
 ## Catch sample names
-all_samples=$(awk -F, '{print $2}' $splan)
+all_samples=$(awk -F, '{print $1}' $splan)
 
 echo -e "Sample_id,Sample_name,Number_of_reads,Number_of_rRNA,Percent_of_rRNA,Strandness,Number_of_aligned_reads,Percent_of_aligned_reads,Number_of_uniquely_aligned_reads,Percent_uniquely_aligned_reads,Number_of_multiple_aligned_reads,Percent_multiple_aligned,Number_of_duplicates,Percent_duplicates" > mq.stats
 
 for sample in $all_samples
 do
     ##id
-    id=$(awk -F, -v sname=$sample '$2==sname{print $1}' $splan)
+    sname=$(awk -F, -v sname=$sample '$1==sname{print $2}' $splan)
 
     ##n_reads
     if [ -d "rrna" ]; then
@@ -107,6 +107,6 @@ do
     fi
 
 
-    echo -e ${id},${sample},${n_reads},${n_rrna},${p_rrna},${strandness},${n_mapped},${p_mapped},${n_unique},${p_unique},${n_multi},${p_multi},${n_dup},${p_dup} >> mq.stats
+    echo -e ${sample},${sname},${n_reads},${n_rrna},${p_rrna},${strandness},${n_mapped},${p_mapped},${n_unique},${p_unique},${n_multi},${p_multi},${n_dup},${p_dup} >> mq.stats
 
 done

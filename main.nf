@@ -231,13 +231,13 @@ if(params.samplePlan){
       Channel
          .from(file("${params.samplePlan}"))
          .splitCsv(header: false)
-         .map{ row -> [ row[1], [file(row[2])]] }
+         .map{ row -> [ row[0], [file(row[2])]] }
          .into { raw_reads_fastqc; raw_reads_star; raw_reads_hisat2; raw_reads_tophat2; raw_reads_rna_mapping; raw_reads_prep_rseqc; raw_reads_strandness; save_strandness}
    }else{
       Channel
          .from(file("${params.samplePlan}"))
          .splitCsv(header: false)
-         .map{ row -> [ row[1], [file(row[2]), file(row[3])]] }
+         .map{ row -> [ row[0], [file(row[2]), file(row[3])]] }
          .into { raw_reads_fastqc; raw_reads_star; raw_reads_hisat2; raw_reads_tophat2; raw_reads_rna_mapping; raw_reads_prep_rseqc; raw_reads_strandness; save_strandness}
    }
    params.reads=false
@@ -1282,6 +1282,7 @@ process multiqc {
     rtitle = custom_runName ? "--title \"$custom_runName\"" : ''
     rfilename = custom_runName ? "--filename " + custom_runName.replaceAll('\\W','_').replaceAll('_+','_') + "_multiqc_report" : ''
     metadata_opts = params.metadata ? "--metadata ${metadata}" : ""
+    splan_opts = params.samplePlan ? "--splan ${params.samplePlan}" : ""
     isPE = params.singleEnd ? 0 : 1
     
     modules_list = "-m custom_content -m preseq -m rseqc -m bowtie1 -m hisat2 -m star -m tophat -m cutadapt -m fastqc"
@@ -1289,8 +1290,9 @@ process multiqc {
     modules_list = params.counts == 'HTseqCounts' ? "${modules_list} -m htseq" : "${modules_list}"  
  
     """
-    mqc_header.py --name "RNA-seq" --version ${workflow.manifest.version} ${metadata_opts} > multiqc-config-header.yaml
     stats2multiqc.sh ${splan} ${params.aligner} ${isPE}
+    max_read_nb="\$(awk -F, 'BEGIN{a=0}(\$1>a){a=\$3}END{print a}' mq.stats)"
+    mqc_header.py --name "RNA-seq" --version ${workflow.manifest.version} ${metadata_opts} ${splan_opts} --maxreads \${max_read_nb} > multiqc-config-header.yaml
     multiqc . -f $rtitle $rfilename -c $multiqc_config -c multiqc-config-header.yaml $modules_list
     """    
 }
