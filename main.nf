@@ -48,7 +48,7 @@ def helpMessage() {
       --singleEnd                   Specifies that the input is single end reads
 
     Strandness:
-      --stranded 'STRANDED'         Library strandness ['auto', 'yes', 'reverse', 'no']. Default: 'auto'
+      --stranded 'STRANDED'         Library strandness ['auto', 'forward', 'reverse', 'no']. Default: 'auto'
 
     Mapping:
       --aligner 'MAPPER'            Tool for read alignments ['star', 'hisat2', 'tophat2']. Default: 'star'
@@ -151,8 +151,8 @@ if (params.counts != 'star' && params.counts != 'featureCounts' && params.counts
 if (params.counts == 'star' && params.aligner != 'star'){
     exit 1, "Cannot run STAR counts without STAR aligner. Please check the '--aligner' and '--counts' parameters."
 }
-if (params.stranded != 'auto' && params.stranded != 'reverse' && params.stranded != 'yes' && params.stranded != 'no'){
-    exit 1, "Invalid stranded option: ${params.stranded}. Valid options: 'auto', 'reverse', 'yes', 'no'"
+if (params.stranded != 'auto' && params.stranded != 'reverse' && params.stranded != 'forward' && params.stranded != 'no'){
+    exit 1, "Invalid stranded option: ${params.stranded}. Valid options: 'auto', 'reverse', 'forward', 'no'"
 }
 
 if ((params.reads && params.samplePlan) || (params.readPaths && params.samplePlan)){
@@ -699,7 +699,7 @@ if(params.aligner == 'hisat2'){
   
     seqCenter = params.seqCenter ? "--rg-id ${prefix} --rg CN:${params.seqCenter.replaceAll('\\s','_')}" : ''
     def rnastrandness = ''
-    if (parse_res=='yes'){
+    if (parse_res=='forward'){
         rnastrandness = params.singleEnd ? '--rna-strandness F' : '--rna-strandness FR'
     } else if (parse_res=='reverse'){
         rnastrandness = params.singleEnd ? '--rna-strandness R' : '--rna-strandness RF'
@@ -790,7 +790,7 @@ if(params.aligner == 'tophat2'){
   script:
     def avail_mem = task.memory ? "-m ${task.memory.toBytes() / task.cpus}" : ''
     def stranded_opt = '--library-type fr-unstranded'
-    if (parse_res == 'yes'){
+    if (parse_res == 'forward'){
         stranded_opt = '--library-type fr-secondstrand'
     }else if ((parse_res == 'reverse')){
         stranded_opt = '--library-type fr-firststrand'
@@ -972,7 +972,7 @@ process dupradar {
 
   script: // This script is bundled with the pipeline, in nfcore/rnaseq/bin/
   def dupradar_direction = 0
-  if (parse_res == 'yes'){
+  if (parse_res == 'forward'){
       dupradar_direction = 1
   } else if ((parse_res == 'reverse')){
       dupradar_direction = 2
@@ -1010,7 +1010,7 @@ process featureCounts {
 
   script:
   def featureCounts_direction = 0
-  if (parse_res == 'yes'){
+  if (parse_res == 'forward'){
       featureCounts_direction = 1
   } else if ((parse_res == 'reverse')){
       featureCounts_direction = 2
@@ -1041,7 +1041,7 @@ process HTseqCounts {
 
   script:
   def stranded_opt = '-s no' 
-  if (parse_res == 'yes'){
+  if (parse_res == 'forward'){
       stranded_opt= '-s yes'
   } else if ((parse_res == 'reverse')){
       stranded_opt= '-s reverse'

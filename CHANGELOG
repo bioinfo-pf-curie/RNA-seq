@@ -3,6 +3,8 @@ CHANGES IN VERSION 3.0.2
 
 NEW FEATURES
 
+   o Strandness 'yes' is replaced by 'forward'
+
    o Update MultiQC version to 1.7
 
    o MultiQC : update RSeQC read distribution color (MultiQC v1.8) (#80)

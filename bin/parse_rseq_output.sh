@@ -30,7 +30,7 @@ parse_rseqc_output()
 	nb_fs=$(echo "$nb_fail > 0.5" | bc)
 	if [ $nb_fs -eq 1 ]; then ret="undetermined"; fi
 
-	nb_fr=$(grep "1++" $rseqout | awk -F": " '{print $2}') ## fr-secondstrand = yes
+	nb_fr=$(grep "1++" $rseqout | awk -F": " '{print $2}') ## fr-secondstrand = yes = forward
 	nb_rf=$(grep "2++" $rseqout | awk -F": " '{print $2}') ## fr-firststrand = reverse
 
 	if [[ ! -z $nb_fr && ! -z $nb_rf ]]; then
@@ -40,7 +40,7 @@ parse_rseqc_output()
 	    if [ $nb_rev -eq 1 ];then
 		ret="reverse"
 	    elif [ $nb_yes -eq 1 ];then
-		ret="yes"
+		ret="forward"
 	    else
 		ret="no"
 	    fi
@@ -51,7 +51,7 @@ parse_rseqc_output()
         nb_fs=$(echo "$nb_fail > 0.5" | bc)
         if [ $nb_fs -eq 1 ]; then ret="undetermined"; fi
 
-        nb_ss=$(grep "++" $rseqout | awk -F": " '{print $2}') ## fr-secondstrand = yes
+        nb_ss=$(grep "++" $rseqout | awk -F": " '{print $2}') ## fr-secondstrand = yes = forward
         nb_ds=$(grep "+-" $rseqout | awk -F": " '{print $2}') ## fr-firststrand = reverse
 
         if [[ ! -z $nb_ss && ! -z $nb_ds ]]; then
@@ -61,7 +61,7 @@ parse_rseqc_output()
             if [ $nb_rev -eq 1 ]; then
 		ret="reverse"
             elif [ $nb_yes -eq 1 ];then
-		ret="yes"
+		ret="forward"
             else
 		ret="no"
             fi
