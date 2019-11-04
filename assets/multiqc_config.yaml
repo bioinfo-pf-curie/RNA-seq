@@ -209,15 +209,36 @@ module_order:
 custom_plot_config:
    bowtie1_alignment:
      reads_aligned:
-       color: '#d84e2f'
+       color: '#e41a1c'
      multimapped:
-       color: '#ffbc58'
+       color: '#ffffb3'
      not_aligned:
-       color: '#2c6eb6'
+       color: '#1f78b4'
 
-#   rseqc_read_distribution_plot:
-#     cds_exons_tag_count:
-#        color: 'black'
+   rseqc_read_distribution_plot:
+     cds_exons_tag_count:
+        color: '#8dd3c7'
+     5_utr_exons_tag_count:
+        color: '#ffffb3'
+     3_utr_exons_tag_count:
+        color: '#bebada'
+     introns_tag_count:
+        color: '#fb8072'
+     tss_up_1kb_tag_count:
+        color: '#80b1d3'
+     tss_up_5kb_tag_count:
+        color: '#fdb462'
+     tss_up_10kb_tag_count:
+        color: '#b3dde69'
+     tes_down_1kb_tag_count:
+        color: '#fccde5'
+     tes_down_5kb_tag_count:
+        color: '#d9d9d9'
+     tes_down_10kb_tag_count:
+        color: '#bc80bd'
+     other_intergenic_tag_count:
+        color: '#ccebc5'
+
 
 #############################
 ## Display

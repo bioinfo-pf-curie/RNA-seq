@@ -1,9 +1,13 @@
 ************************************
 CHANGES IN VERSION 3.0.2
 
-
-   o MultiQC : update rRNA barplot colors (MultiQC v1.8dev) (#78)
 NEW FEATURES
+
+   o Update MultiQC version to 1.7
+
+   o MultiQC : update RSeQC read distribution color (MultiQC v1.8) (#80)
+
+   o MultiQC : update rRNA barplot colors (MultiQC v1.8) (#78)
 
    o MultiQC : add a new buton to switch from sample ID to sample name
 
