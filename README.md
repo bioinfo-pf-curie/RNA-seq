@@ -53,7 +53,7 @@ Options:
   --singleEnd                   Specifies that the input is single end reads
 
 Strandedness:
-  --stranded                    Library strandness ['auto', 'yes', 'reverse', 'no']. Default: 'auto'
+  --stranded                    Library strandness ['auto', 'forward', 'reverse', 'no']. Default: 'auto'
 
 Mapping:
   --aligner                     Tool for read alignments ['star', 'hisat2', 'tophat2']. Default: 'star'

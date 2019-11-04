@@ -125,7 +125,7 @@ It is not possible to run a mixture of single-end and paired-end files in one ru
 ### `--stranded`
 
 Several parts of the RNA-seq data analysis rely on the strandness information.
-If you already have the information, you should specifiy the strandness using either `yes` (ie. stranded), `no`, (ie. unstranded), `reverse` (ie. reverse stranded), as follows:
+If you already have the information, you should specifiy the strandness using either `forward` (ie. stranded), `no`, (ie. unstranded), `reverse` (ie. reverse stranded), as follows:
 
 ```bash
 --stranded 'reverse'
