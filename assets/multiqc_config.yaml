@@ -206,14 +206,14 @@ module_order:
      info: 'estimates the complexity of a library, showing how many additional unique reads are sequenced for increasing total read count. A shallow curve indicates complexity saturation. The dashed line shows a perfectly complex library where total reads = unique reads. The presented graph shows extrapolated curves up to 200M sequencing reads.'
 
 
-#custom_plot_config:
-#   bowtie1_alignment:
-#     reads_aligned:
-#       - color: '#d84e2f'
-#     multimapped:
-#       - color: '#f2e63f'
-#     not_aligned:
-#       - color: '#8bbc21'
+custom_plot_config:
+   bowtie1_alignment:
+     reads_aligned:
+       color: '#d84e2f'
+     multimapped:
+       color: '#ffbc58'
+     not_aligned:
+       color: '#2c6eb6'
 
 #   rseqc_read_distribution_plot:
 #     cds_exons_tag_count:
