@@ -24,7 +24,7 @@ parser.add_argument("-n", "--name", help="Pipeline name")
 parser.add_argument("-v", "--version", help="Pipeline version", default='')
 parser.add_argument("-m", "--metadata", help="Metatdata file", default=None)
 parser.add_argument("-s", "--splan", help="Sample plan", default=None)
-parser.add_argument("-x", "--maxreads", help="Maximum number of reads", default=0)
+parser.add_argument("-x", "--nbreads", help="Number of reads to display on the graph", default=0)
 
 args = parser.parse_args()
 
@@ -68,8 +68,8 @@ if args.splan is not None:
 ## Preseq
 ##
 
-if args.maxreads > 0:
-    mx="{0:.2f}".format(int(args.maxreads)/1000000)
+if args.nbreads > 0:
+    mx="{0:.2f}".format(int(args.nbreads)/1000000)
     multiqc_list += ["custom_plot_config:"]
     multiqc_list += ["   preseq_plot:"]
     multiqc_list += ["      xPlotLines:"]
@@ -79,7 +79,7 @@ if args.maxreads > 0:
     multiqc_list += ["           width: 1"]
     multiqc_list += ["           label:"]
     multiqc_list += ["              style: {color: '#a9a9a9'}"]
-    multiqc_list += ["              text: 'Max Reads Number'"]
+    multiqc_list += ["              text: 'Median Reads Number'"]
     multiqc_list += ["              verticalAlign: 'top'"]
     multiqc_list += ["              y: 0"]
 

@@ -1291,8 +1291,9 @@ process multiqc {
  
     """
     stats2multiqc.sh ${splan} ${params.aligner} ${isPE}
-    max_read_nb="\$(awk -F, 'BEGIN{a=0}(\$1>a){a=\$3}END{print a}' mq.stats)"
-    mqc_header.py --name "RNA-seq" --version ${workflow.manifest.version} ${metadata_opts} ${splan_opts} --maxreads \${max_read_nb} > multiqc-config-header.yaml
+    ##max_read_nb="\$(awk -F, 'BEGIN{a=0}(\$1>a){a=\$3}END{print a}' mq.stats)"
+    median_read_nb="\$(sort -t, -k3,3n mq.stats | awk -F, '{a[i++]=\$3;} END{x=int((i+1)/2); if (x<(i+1)/2) print(a[x-1]+a[x])/2; else print a[x-1];}')"
+    mqc_header.py --name "RNA-seq" --version ${workflow.manifest.version} ${metadata_opts} ${splan_opts} --nbreads \${median_read_nb} > multiqc-config-header.yaml
     multiqc . -f $rtitle $rfilename -c $multiqc_config -c multiqc-config-header.yaml $modules_list
     """    
 }
@@ -1417,8 +1418,8 @@ workflow.onComplete {
                     "  pipeline config profile, which runs on the head node\n" +
                     "  and assumes all software is on the PATH.\n" +
                     "  This is probably why everything broke.\n" +
-                    "  Please use `-profile test,curie` or `-profile test,singularity` to run on local.\n" +
-                    "  Please use `-profile test,curie,cluster` or `-profile test,singularity,cluster` to run on your clusters.\n" +
+                    "  Please use `-profile test,conda` or `-profile test,singularity` to run on local.\n" +
+                    "  Please use `-profile test,conda,cluster` or `-profile test,singularity,cluster` to run on your cluster.\n" +
                     "============================================================"
         }
     }
