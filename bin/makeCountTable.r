@@ -153,7 +153,7 @@ if (count_tool == "STAR"){
     stranded <- stranded.list[i]
     if (stranded == "reverse"){
       counts.v <- counts.exprs[, 3]
-    }else if (stranded == "yes"){
+    }else if (stranded == "forward"){
       counts.v <- counts.exprs[, 2]
     }else if (stranded == "no"){
       counts.v <- counts.exprs[, 1]
