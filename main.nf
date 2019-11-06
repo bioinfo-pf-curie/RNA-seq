@@ -970,7 +970,7 @@ process dupradar {
   output:
   file "*.{pdf,txt}" into dupradar_results
 
-  script: // This script is bundled with the pipeline, in nfcore/rnaseq/bin/
+  script: 
   def dupradar_direction = 0
   if (parse_res == 'forward'){
       dupradar_direction = 1

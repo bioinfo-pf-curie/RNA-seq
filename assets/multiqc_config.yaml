@@ -14,8 +14,8 @@ read_count_desc: 'millions'
 custom_data:
     my_stats:
         file_format: 'csv'
-        section_name: 'Basic Metrics'
-        description: ' on aligned data'
+        section_name: 'General Metrics'
+        description: ' of sequenced data'
         plot_type: 'table'
         pconfig:
             namespace: 'stats'
@@ -129,7 +129,7 @@ custom_data:
             id: 'genesaturation'
             title: 'Gene-based Saturation'
             ylab: 'Number of detected genes'
-            xlab: 'Number of reads'
+            xlab: 'Number of reads (M)'
 
 sp:
    my_stats:
@@ -143,11 +143,11 @@ sp:
 table_cond_formatting_rules:
     Percent_of_rRNA:
         pass:
-            - lt: 10
+            - lt: 5
         warn:
-            - gt: 10
+            - gt: 5
         fail:
-            - gt: 20
+            - gt: 10
     Percent_of_aligned_reads:
         pass:
             - gt: 80

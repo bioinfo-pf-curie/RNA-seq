@@ -97,6 +97,7 @@ if args.metadata is not None:
         ('sequencer', "Sequencing setup"),
         ('biological_application', "Application type"),
         ('nature_of_material', 'Material'),
+        ('protocol', 'Protocol'),
         ('bed', 'BED of targets'),
         ('technical_contact', "Main contact"),
         ('team_leader|unit', "Team leader"),
