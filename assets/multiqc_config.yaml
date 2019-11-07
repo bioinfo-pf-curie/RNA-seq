@@ -26,7 +26,7 @@ custom_data:
         headers:
             Sample_name:
               title: 'Sample Name'
-              scale: False
+              scale: false
               placement: 2000
             Number_of_reads:
               title: 'Total Reads'
