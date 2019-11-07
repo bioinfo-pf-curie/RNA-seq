@@ -31,7 +31,7 @@ done
 shift $((OPTIND-1))
 
 # Preparation commande 
-cmd_git="mkdir -p ${DIROUT} && cd ${DIROUT} && echo '### git init started ###' && git init -q &&  echo '### git remote started ###' && git remote add origin ${URLPROJET} &&  echo '### git fetch started ###' && git fetch &&  echo '### git checkout started ###' && git checkout -q -f ${TAG} &&  echo '### git clean started ###' && git clean -q -d -x -f && rm -Rf .git && echo '### local users_bioinfo configuration ###' && cp ${DIROUT}/conf/curie.config ${DIROUT}/conf/local.config && echo ${TAG} > version"
+cmd_git="mkdir -p ${DIROUT} && cd ${DIROUT} && echo '### git init started ###' && git init -q &&  echo '### git remote started ###' && git remote add origin ${URLPROJET} &&  echo '### git fetch started ###' && git fetch &&  echo '### git checkout started ###' && git checkout -q -f ${TAG} &&  echo '### git clean started ###' && git clean -q -d -x -f && rm -Rf .git && echo '### local users_bioinfo configuration ###' && mv ${DIROUT}/conf/users_bioinfo.config ${DIROUT}/conf/local.config && echo ${TAG} > version"
 
 # Lancement commande de deploiement 
 eval ${cmd_git}
