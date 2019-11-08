@@ -27,6 +27,7 @@ custom_data:
             Sample_name:
               title: 'Sample Name'
               scale: false
+	      format: '{}'
               placement: 2000
             Number_of_reads:
               title: 'Total Reads'
