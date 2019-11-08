@@ -1339,7 +1339,7 @@ workflow.onComplete {
         }
     }
    
-    File woc = new File("${params.outdir}/${params.run}/rnaseq-${params.cmd}.workflow.oncomplete.txt")
+    File woc = new File("${params.outdir}/workflow.oncomplete.txt")
     Map endSummary = [:]
     endSummary['Completed on'] = workflow.complete
     endSummary['Duration']     = workflow.duration
