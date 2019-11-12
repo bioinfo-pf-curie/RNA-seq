@@ -144,39 +144,25 @@ sp:
 table_cond_formatting_rules:
     Percent_of_rRNA:
         pass:
-            - lt: 5
+            - lt: 10
         warn:
-            - gt: 5
-        fail:
             - gt: 10
+        fail:
+            - gt: 20
     Percent_of_aligned_reads:
         pass:
             - gt: 80
         warn:
             - lt: 80
         fail:
-            - lt: 70
-    Percent_uniquely_aligned_reads:
-        pass:
-            - gt: 80
-        warn:
-            - lt: 80
-        fail:
-            - lt: 70
-    Percent_multiple_aligned:
-        pass:
-            - lt: 20
-        warn:
-            - gt: 20
-        fail:
-            - gt: 30
+            - lt: 50
     Percent_duplicates:
         pass:
-            - lt: 15
+            - lt: 35
         warn:
-            - gt: 15
+            - gt: 35
         fail:
-            - gt: 30
+            - gt: 50
 
 
 ################################
