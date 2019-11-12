@@ -574,8 +574,8 @@ if(params.aligner == 'star'){
     tag "$prefix"
     publishDir "${params.outdir}/mapping", mode: 'copy',
         saveAs: {filename ->
-            if (filename.indexOf(".bam") == -1) "logs/$filename"
-            else if (filename.indexOf("ReadsPerGene.out.tab") > 0) "counts/$filename"
+            if (filename.indexOf("ReadsPerGene.out.tab") > 0) "counts/$filename"
+	    else if (filename.indexOf(".bam") == -1) "logs/$filename"
 	    else if (params.saveAlignedIntermediates) filename
             else null
         }
