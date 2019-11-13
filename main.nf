@@ -200,9 +200,6 @@ if( params.bed12 ){
     Channel
        .empty()
        .into { bed_rseqc; bed_read_dist; bed_genebody_coverage}
-    if ( params.stranded == "auto" ){
-       exit 1, "Cannot infer strandness without genes BED information. Please, specify the '--stranded' information."
-    }
 }
 
 if( params.rrna ){
