@@ -15,7 +15,7 @@ In some distributions (such as CentOS) it is available with the command `cmake3`
 
 ### Display the options available for installation
 
-The different options are displayed using the following command in the **Cache values** section
+The different options are displayed using the following command in the **Cache values** section:
 
 * `cmake -LH ../RNA-seq/`
 
@@ -28,14 +28,14 @@ Default options have to be replaced otherwise, the pipeline will not work.
 
 * `cmake ../RNA-seq -DCMAKE_INSTALL_PREFIX=${HOME}/install -DAP_SINGULARITY_IMAGE_PATH=/path/to/images -DAP_ANNOTATION_PATH=/data/annotations/pipelines`
 
-Other options can be provided
+Other options can be provided.
 
 ### Installation
 
 * `make; make install`
 
 The pipeline will be available in ${HOME}/install. 
-The config files with the defined options will be available in `${HOME}/install/conf`
+The config files with the defined options will be available in `${HOME}/install/conf`.
 
 ## For developpers
 
