@@ -5,7 +5,7 @@
  */
 
 process {
-  executor = 'pbs'
+  executor = '@AP_NF_EXECUTOR@'
   if (params.queue){
      queue = params.queue
   }
