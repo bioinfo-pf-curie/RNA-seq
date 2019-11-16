@@ -19,7 +19,7 @@ option(AP_USE_CONTAINERS "Allow the usage of singularity images (profile Contain
 option(AP_USE_TOOLSPATH "Allow the usage of tools installed in existing directories (profile toolsPath) " OFF)
 
 
-install(DIRECTORY . DESTINATION ${CMAKE_INSTALL_PREFIX} PATTERN "conf/templates" EXCLUDE PATTERN ".git*" EXCLUDE PATTERN "CMakeLists.txt" EXCLUDE)
+install(DIRECTORY . DESTINATION ${CMAKE_INSTALL_PREFIX} USE_SOURCE_PERMISSIONS PATTERN "conf/templates" EXCLUDE PATTERN ".git*" EXCLUDE PATTERN "CMakeLists.txt" EXCLUDE)
 
 add_subdirectory (conf/templates)
 
