@@ -9,7 +9,7 @@
 
 params {
   //Set path to annoation folder
-  igenomes_base = "@AP_ANNOTATION_PATH@"
+  igenomes_base = "@ap_annotation_path@"
 
   genomes {
 

@@ -13,7 +13,7 @@ singularity {
 }
 
 params {
-   toolsPath = "@AP_TOOLS_PATH@"
+   toolsPath = "@ap_tools_path@"
 }
 
 process {

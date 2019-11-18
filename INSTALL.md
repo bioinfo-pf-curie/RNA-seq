@@ -26,7 +26,7 @@ The options for the **A**nalysis **P**ipeline start with the prefix **AP**
 
 Default options have to be replaced otherwise, the pipeline will not work.
 
-* `cmake ../RNA-seq -DCMAKE_INSTALL_PREFIX=${HOME}/install -DAP_SINGULARITY_IMAGE_PATH=/path/to/images -DAP_ANNOTATION_PATH=/data/annotations/pipelines`
+* `cmake ../RNA-seq -DCMAKE_INSTALL_PREFIX=${HOME}/install -Dap_singularity_image_path=/path/to/images -Dap_annotation_path=/data/annotations/pipelines`
 
 Other options can be provided.
 
