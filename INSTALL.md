@@ -17,7 +17,7 @@ In some distributions (such as CentOS) it is available with the command `cmake3`
 
 The different options are displayed using the following command in the **Cache values** section:
 
-* `cmake -LH ../RNA-seq/`
+* `cmake -N -LH ../RNA-seq/`
 
 The options for the **A**nalysis **P**ipeline start with the prefix **AP**
 
