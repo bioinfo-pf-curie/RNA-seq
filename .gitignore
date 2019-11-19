@@ -1,1 +1,7 @@
 /build/*
+/work/*
+/results/*
+/conf/containers.config
+/conf/igenomes.config
+/conf/cluster.config
+/conf/tools-path.config
