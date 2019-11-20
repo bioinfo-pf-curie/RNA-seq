@@ -13,7 +13,7 @@
 The pipeline is built using [Nextflow](https://www.nextflow.io), a workflow tool to run tasks across multiple compute infrastructures in a very portable manner. 
 It comes with conda / singularity containers making installation easier and results highly reproducible.
 
-The first version of this pipeline was cloned from the [nf-core/rnaseq](https://github.com/nf-core/rnaseq) pipeline. 
+The first version of this pipeline was modified from the [nf-core/rnaseq](https://github.com/nf-core/rnaseq) pipeline. 
 See the [nf-core](https://nf-co.re/) project for more details.
 
 ### Pipline summary
