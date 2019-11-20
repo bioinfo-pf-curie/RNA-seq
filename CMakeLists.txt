@@ -2,7 +2,7 @@
 # refer to the root source directory of the project as ${HELLO_SOURCE_DIR} and
 # to the root binary directory of the project as ${HELLO_BINARY_DIR}.
 cmake_minimum_required (VERSION 3.10.2)
-project (RNA-seq LANGUAGES NONE)
+project (analysis_pipeline LANGUAGES NONE)
 
 
 set(CMAKE_BUILD_TYPE Release)
