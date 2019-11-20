@@ -38,6 +38,9 @@ See [nextflow.io](https://www.nextflow.io/) for further instructions on how to i
 
 First, clone the repository using `git clone http://repository_url`
 
+Note that the current repo contains a test dataset managed with `git lfs`.
+Be sure that `git lfs` is instaled and run `git lfs pull` to pull the test datasets.
+
 In order to run the pipeline out-of-the box, you will have to move the `*.config.example` files into `*.config` files, edit them and set the expected path compliant with your setup.
 
 We also provide a `cmake` interface to build the configuration files and install the pipeline according to your needs as described below.
