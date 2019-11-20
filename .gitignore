@@ -2,6 +2,6 @@
 /work/*
 /results/*
 /conf/containers.config
-/conf/igenomes.config
+/conf/genomes.config
 /conf/cluster.config
 /conf/tools-path.config

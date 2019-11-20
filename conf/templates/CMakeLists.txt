@@ -32,8 +32,8 @@ if(IS_DIRECTORY ${ap_annotation_path})
 else()
     message(WARNING "${BoldRed} WARNING - ap_annotation_path ${ap_annotation_path} does not exist ${ColourReset}")
 endif()
-configure_file(igenomes.config.in ${CMAKE_CURRENT_BINARY_DIR}/igenomes.config @ONLY)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/igenomes.config DESTINATION ${CMAKE_INSTALL_PREFIX}/conf)
+configure_file(genomes.config.in ${CMAKE_CURRENT_BINARY_DIR}/genomes.config @ONLY)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/genomes.config DESTINATION ${CMAKE_INSTALL_PREFIX}/conf)
 
 
 configure_file(cluster.config.in ${CMAKE_CURRENT_BINARY_DIR}/cluster.config @ONLY)
