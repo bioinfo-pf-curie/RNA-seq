@@ -1215,7 +1215,7 @@ process get_software_versions {
   read_duplication.py --version &> v_read_duplication.txt
   featureCounts -v &> v_featurecounts.txt
   htseq-count -h | grep version  &> v_htseq.txt
-  picard MarkDuplicates --version &> v_markduplicates.txt  || true
+  picard MarkDuplicates --version &> v_markduplicates.txt
   samtools --version &> v_samtools.txt
   multiqc --version &> v_multiqc.txt
   scrape_software_versions.py &> software_versions_mqc.yaml
