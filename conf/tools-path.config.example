@@ -13,7 +13,7 @@ singularity {
 }
 
 params {
-   toolsPath = "/bioinfo/local/curie/ngs-data-analysis/centos/tools/conda/envs/rnaseq-2.0/bin"
+   toolsPath = "/bioinfo/local/curie/ngs-data-analysis/centos/tools/conda/envs/rnaseq-2.0"
 }
 
 process {
