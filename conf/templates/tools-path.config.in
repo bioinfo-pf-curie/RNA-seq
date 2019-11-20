@@ -17,5 +17,5 @@ params {
 }
 
 process {
-  beforeScript = "export PATH=${params.toolsPath}/bin:$PATH"
+  beforeScript = "export PATH=${params.toolsPath}:$PATH"
 }
