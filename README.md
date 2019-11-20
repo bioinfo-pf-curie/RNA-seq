@@ -6,7 +6,7 @@
 [![MultiQC](https://img.shields.io/badge/MultiQC-1.6-blue.svg)](https://multiqc.info/)
 [![Install with](https://anaconda.org/anaconda/conda-build/badges/installer/conda.svg)](https://conda.anaconda.org/anaconda)
 [![Singularity Container available](https://img.shields.io/badge/singularity-available-7E4C74.svg)](https://singularity.lbl.gov/)
-[![Docker Container available](https://img.shields.io/badge/docker-available-003399.svg)](https://www.docker.com/)
+<!--[![Docker Container available](https://img.shields.io/badge/docker-available-003399.svg)](https://www.docker.com/)-->
 
 ### Introduction
 
@@ -27,7 +27,7 @@ See the [nf-core](https://nf-co.re/) project for more details.
     - Duplicates ([`picard`](https://broadinstitute.github.io/picard/) / [`dupRadar`](https://bioconductor.org/packages/release/bioc/html/dupRadar.html))
     - Reads annotation ([`rseqc`](http://rseqc.sourceforge.net/) / [`R`](https://www.r-project.org/))
     - Gene body coverage ([`rseqc`](http://rseqc.sourceforge.net/))
-6. Generate counts table (STAR / [`featureCounts`](http://bioinf.wehi.edu.au/featureCounts/) / [`HTSeqCounts`](https://htseq.readthedocs.io/en/release_0.11.1/count.html))
+6. Generate counts table ([`STAR`](https://github.com/alexdobin/STAR) / [`featureCounts`](http://bioinf.wehi.edu.au/featureCounts/) / [`HTSeqCounts`](https://htseq.readthedocs.io/en/release_0.11.1/count.html))
 7. Exploratory analysis ([`R`](https://www.r-project.org/))
 8. Present all QC results in a final report ([`MultiQC`](http://multiqc.info/))
 
@@ -47,7 +47,7 @@ Mandatory arguments:
   --reads                       Path to input data (must be surrounded with quotes)
   --samplePlan                  Path to sample plan input file (cannot be used with --reads)
   --genome                      Name of genome reference
-  -profile                      Configuration profile to use. test / curie / conda / docker / singularity / cluster
+  -profile                      Configuration profile to use. test / conda / toolsPath / singularity / cluster
 
 Options:
   --singleEnd                   Specifies that the input is single end reads
@@ -92,6 +92,7 @@ Available Profiles
 
   -profile test                Set up the test dataset
   -profile conda               Build a new conda environment before running the pipeline
+  -profile toolsPath           Use the paths defined in configuration for each tool
   -profile singularity         Use the Singularity images for each process
   -profile cluster             Run the workflow on the cluster, instead of locally
 		  
@@ -105,14 +106,14 @@ The pipeline can be run on any infrastructure from a list of input files or from
 See the conf/test.conf to set your test dataset.
 
 ```
-nextflow run main.nf -profile test
+nextflow run main.nf -profile test,conda
 
 ```
 
 #### Run the pipeline from a sample plan
 
 ```
-nextflow run main.nf --samplePlan MY_SAMPLE_PLAN --genome 'hg19' --outdir MY_OUTPUT_DIR
+nextflow run main.nf --samplePlan MY_SAMPLE_PLAN --genome 'hg19' --outdir MY_OUTPUT_DIR -profile conda
 
 ```
 
@@ -133,8 +134,8 @@ The description of each profile is available on the help message (see above).
 Here are a few examples of how to set the profile option.
 
 ```
-## Run the pipeline locally, using the global environment (build by conda)
--profile condaPath
+## Run the pipeline locally, using the paths defined in the configuration for each tool (see conf.tool-path.config)
+-profile toolsPath
 
 ## Run the pipeline on the cluster, using the Singularity containers
 -profile cluster,singularity

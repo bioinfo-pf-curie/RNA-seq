@@ -42,7 +42,7 @@ def helpMessage() {
       --reads 'READS'               Path to input data (must be surrounded with quotes)
       --samplePlan 'SAMPLEPLAN'     Path to sample plan input file (cannot be used with --reads)
       --genome 'BUILD'              Name of genome reference
-      -profile PROFILE              Configuration profile to use. test / curie / conda / docker / singularity / cluster (see below)
+      -profile PROFILE              Configuration profile to use. test / conda / toolsPath / singularity / cluster (see below)
 
     Sequencing:
       --singleEnd                   Specifies that the input is single end reads
@@ -87,7 +87,7 @@ def helpMessage() {
 
       -profile test                Set up the test dataset
       -profile conda               Build a new conda environment before running the pipeline
-      -profile condaPath           Use a pre-build conda environment already installed on our cluster
+      -profile toolsPath           Use the paths defined in configuration for each tool
       -profile singularity         Use the Singularity images for each process
       -profile cluster             Run the workflow on the cluster, instead of locally
 
