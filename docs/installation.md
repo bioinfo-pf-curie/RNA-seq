@@ -8,8 +8,10 @@ To start using this pipeline, follow the steps below:
 1. [Install Nextflow](#1-install-nextflow)
 2. [Install the pipeline](#2-install-the-pipeline)
 3. [Pipeline configuration](#3-pipeline-configuration)
-    * [Software deps: Docker and Singularity](#31-software-deps-singularity)
-    * [Software deps: Bioconda](#32-software-deps-conda)
+    * [Cluster usage](#31cluster-usage)
+    * [Software deps: Singularity](#31-software-deps-singularity)
+    * [Software deps: Conda](#32-software-deps-conda)
+    * [Software deps: Tools Path](#32-software-deps-tools-path)
 4. [Reference genomes](#4-reference-genomes)
 
 ## 1) Install NextFlow
@@ -38,7 +40,7 @@ First, clone the repository using `git clone http://repository_url`
 
 In order to run the pipeline out-of-the box, you will have to move the `*.config.example` files into `*.config` files, edit them and set the expected path compliant with your setup.
 
-We also provide a cmake interface to build the configuration files and install the pipeline according to your needs as described below.
+We also provide a `cmake` interface to build the configuration files and install the pipeline according to your needs as described below.
 
 ### Advanced installation
 
@@ -64,28 +66,29 @@ The options for the **A**nalysis **P**ipeline start with the prefix **AP**
 
 #### Set the option for the installation
 
-Default options have to be replaced otherwise, the pipeline will not work.
+Default options have to be replaced. Otherwise, the pipeline will not work.
 
 * `cmake ../RNA-seq -DCMAKE_INSTALL_PREFIX=${HOME}/install -Dap_singularity_image_path=/path/to/images -Dap_annotation_path=/data/annotations/pipelines`
 
 Other options can be provided.
 
-* Altenatively, you can use  `cmake  -C ../RNA-seq/install/cmake-init.cmake ../RNA-seq/` provided that you first edited the `../RNA-seq/install/cmake-init.cmake` to set the options complant with your setup.
+* Altenatively, you can use  `cmake  -C ../RNA-seq/install/cmake-init.cmake ../RNA-seq/` provided that you first edited the
+`../RNA-seq/install/cmake-init.cmake` to set the options complant with your setup.
 
 #### Installation
 
 * `make; make install`
 
-The pipeline will be available in ${HOME}/install. 
-The config files with the defined options will be available in `${HOME}/install/conf`.
+The pipeline will be available in `${HOME}/install` (i.e. in the path you defined using `-DCMAKE_INSTALL_PREFIX`). 
+The config files with the defined options will be available in the `conf` folder of your installed version.
 
 ### For developpers
 
-To avoid multiple installations for testing while developping, the developpers can copy the content of `${HOME}/install/conf` to `${HOME}/RNA-seq/conf` and run the pipeline directly from `${HOME}/RNA-seq/conf`.
-
-
+To avoid multiple installations for testing while developping, the developpers can copy the content of `${HOME}/install/conf`
+to `${HOME}/RNA-seq/conf` and run the pipeline as usually.
 
 ## 3) Pipeline configuration
+
 By default, the pipeline loads a basic server configuration [`conf/base.config`](../conf/base.config)
 This uses a number of sensible defaults for process requirements and is suitable for running
 on a simple (if powerful!) local server.
@@ -100,32 +103,30 @@ Be warned of two important points about this default configuration:
 2. Nextflow will expect all software to be installed and available on the `PATH`
     * It's expected to use an additional config profile for docker, singularity or conda support. See below.
 
-#### 3.1) Define your own configuration
+#### 3.1) Cluster usage
 
-A few parameters need to be defined before running the pipeline. As an exemple, see the `curie.conf` file and edit/create your own.
-Note that this configuration file has to be loaded in the nextflow configuration file and that you may need to edit the `nextflow.config` file.
-
-#### 3.2) Cluster usage
-
-By default, we set up a `cluster` profile to execute the pipeline on a computational cluster.
+In order to use the pipeline on a computational cluster, you will have to specify a few parameters.
 Please, edit the `cluster.config` file to set up your own cluster configuration.
 
-#### 3.3) Software deps: Singularity
+#### 3.2) Software deps: Singularity
 
 Using [Singularity](http://singularity.lbl.gov/) is in general a great idea to manage environment and ensure reproducibility.
 The process is very similar: running the pipeline with the option `-profile singularity` tells Nextflow to enable singularity for this run. 
 Images containing all of the software requirements can be automatically fetched as explained in the folder [`utils/singularity`](../utils/singularity/README.md).
+In addition the `containerPath` variable from the `containers.config` file has to be modified to set the path to the singularity images.
 
+#### 3.3) Software deps: Conda
 
-#### 3.4) Software deps: conda
 If you're not able to use Docker _or_ Singularity, you can instead use conda to manage the software requirements.
 This is slower and less reproducible than the above, but is still better than having to install all requirements yourself!
 The pipeline ships with a conda environment file and nextflow has built-in support for this.
 To use it first ensure that you have conda installed (we recommend [miniconda](https://conda.io/miniconda.html)), then follow the same pattern as above and use the flag `-profile conda`
 Note that in this case, the environment will be created in the `cache/work` folder.
 
-Otherwise, you can look at the [`utils/conda`](../utils/conda/README.md) folder to create and install an internal conda environment.
-In this case, you will be able to run the pipeline with `-profile condaPath`. See the `curie.config` for details.
+### 3.4) Software deps: Tools Path
+
+Finally, if for any reason you do not want to use conda or singularity, the pipeline provides a last config file `tools-path.config`
+which allows to simply set the `PATH` environment from which all dependancies must be available.
 
 ## 4) Reference genomes
 

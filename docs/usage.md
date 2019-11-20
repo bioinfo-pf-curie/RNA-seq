@@ -166,12 +166,12 @@ You can specify one of these tools using:
 
 ## Reference genomes
 
-The pipeline config files come bundled with paths to the illumina iGenomes reference index files. 
+The pipeline config files come bundled with paths to the genomes reference files. 
 
 ### `--genome`
 There are different species supported in the genomes references file. To run the pipeline, you must specify which to use with the `--genome` flag.
 
-You can find the keys to specify the genomes in the [genomes config file](../conf/igenomes.config). Common genomes that are supported are:
+You can find the keys to specify the genomes in the [genomes config file](../conf/genomes.config). Common genomes that are supported are:
 
 * Human
   * `--genome hg38`
