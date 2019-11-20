@@ -12,8 +12,10 @@ singularity {
   enabled = false 
 }
 
+params {
+   toolsPath = "@ap_tools_path@"
+}
+
 process {
   beforeScript = "export PATH=${params.toolsPath}/bin:$PATH"
 }
-
-

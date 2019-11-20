@@ -1,4 +1,11 @@
-************************************
+*************************************
+CHANGES IN VERSION 3.0.3
+
+NEW FEATURES
+
+   o Add cmake interface to configure / install the pipeline
+
+***********************************
 CHANGES IN VERSION 3.0.2
 
 NEW FEATURES

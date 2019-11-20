@@ -9,7 +9,7 @@
 
 params {
   //Set path to annoation folder
-  //igenomes_base = ""
+  igenomes_base = "/data/annotations/pipelines"
 
   genomes {
 
