@@ -1,109 +1,170 @@
----
-title: "RNA-seq pipeline"
-author: "Nicolas Servant"
-date: "4th May 2018"
-output: html_document
----
+# RNA-seq 
 
-# RNA-seq pipeline
-# v0.2.0
+**Institut Curie - Nextflow rna-seq analysis pipeline**
 
-## Quick start guide
+[![Nextflow](https://img.shields.io/badge/nextflow-%E2%89%A50.32.0-brightgreen.svg)](https://www.nextflow.io/)
+[![MultiQC](https://img.shields.io/badge/MultiQC-1.7-blue.svg)](https://multiqc.info/)
+[![Install with](https://anaconda.org/anaconda/conda-build/badges/installer/conda.svg)](https://conda.anaconda.org/anaconda)
+[![Singularity Container available](https://img.shields.io/badge/singularity-available-7E4C74.svg)](https://singularity.lbl.gov/)
+<!--[![Docker Container available](https://img.shields.io/badge/docker-available-003399.svg)](https://www.docker.com/)-->
 
-This pipeline is a bioinformatics worflow to process RNA sequencing reads regardless the protocol used (mRNA or total RNA).  
-The current version is gene-based oriented and do not include any transcript-based analysis.  
-It is designed to take the raw sequence files (fastq) from a set of experiments (a sequencing run) or a single sample, and to process the data up to the final read counts per gene.  
-A report with RNA-seq quality metrics is also generated.
+### Introduction
 
-## Contacts and bug reports
+The pipeline is built using [Nextflow](https://www.nextflow.io), a workflow tool to run tasks across multiple compute infrastructures in a very portable manner. 
+It comes with conda / singularity containers making installation easier and results highly reproducible.
 
-This pipeline is free for internal usage to all Institut Curie.  
-In case of bugs or idea, you can open a GIT issue at https://gitlab.curie.fr/data-analysis/RNA-seq/issues or contact nicolas.servant@curie.fr
+The first version of this pipeline was modified from the [nf-core/rnaseq](https://github.com/nf-core/rnaseq) pipeline. 
+See the [nf-core](https://nf-co.re/) project for more details.
 
-### Main features
+### Pipline summary
 
-The RNA-seq pipeline is based on the following workflow :
+1. Run quality control of raw sequencing reads ([`fastqc`](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/))
+2. Align reads on ribosomal RNAs sequences when available ([`bowtie1`](http://bowtie-bio.sourceforge.net/index.shtml))
+3. Align reads on reference genome ([`STAR`](https://github.com/alexdobin/STAR) / [`tophat2`](http://ccb.jhu.edu/software/tophat/index.shtml) / [`hisat2`](http://ccb.jhu.edu/software/hisat2/index.shtml))
+4. Infer reads orientation ([`rseqc`](http://rseqc.sourceforge.net/))
+5. Dedicated quality controls
+    - Saturation curves ([`preseq`](http://smithlabresearch.org/software/preseq/) / [`R`](https://www.r-project.org/))
+    - Duplicates ([`picard`](https://broadinstitute.github.io/picard/) / [`dupRadar`](https://bioconductor.org/packages/release/bioc/html/dupRadar.html))
+    - Reads annotation ([`rseqc`](http://rseqc.sourceforge.net/) / [`R`](https://www.r-project.org/))
+    - Gene body coverage ([`rseqc`](http://rseqc.sourceforge.net/))
+6. Generate counts table ([`STAR`](https://github.com/alexdobin/STAR) / [`featureCounts`](http://bioinf.wehi.edu.au/featureCounts/) / [`HTSeqCounts`](https://htseq.readthedocs.io/en/release_0.11.1/count.html))
+7. Exploratory analysis ([`R`](https://www.r-project.org/))
+8. Present all QC results in a final report ([`MultiQC`](http://multiqc.info/))
 
-![RNA-seq worflow](../doc/RNApip-wkf.png)
+### Quick help
 
-### Dependancies
+```bash
+nextflow run main.nf --help
+N E X T F L O W  ~  version 19.04.0
+Launching `main.nf` [stupefied_darwin] - revision: aa905ab621
+rnaseq v2.0.0dev
+=======================================================
 
-The current version is designed to run on the Centos cluster.  
-By default, the following tools and paths are used:
+Usage:
+nextflow run rnaseq --reads '*_R{1,2}.fastq.gz' --genome 'hg19' 
 
-TOOLS | PATHS 
---- | --- 
-FASTQC_PATH | /bioinfo/local/build/Centos/FastQC/FastQC_v0.11.5
-JAVA_PATH | /bioinfo/local/build/Centos/java/jre1.8.0_101/bin
-BOWTIE_PATH | /bioinfo/local/build/Centos/bowtie/bowtie-1.2/bin
-TOPHAT2_PATH | /bioinfo/local/build/Centos/tophat/tophat_2.1.1/bin
-BOWTIE2_PATH | /bioinfo/local/build/Centos/bowtie2/bowtie2-2.2.9
-STAR_PATH | /bioinfo/local/build/Centos/STAR/STAR-2.5.3a/bin/Linux_x86_64
-SAMTOOLS_PATH | /bioinfo/local/build/Centos/samtools/samtools-1.3/bin
-HTSEQ_PATH | /bioinfo/local/build/Centos/python/python-2.7.13/bin
-FEATURECOUNTS_PATH | /bioinfo/local/build/Centos/subread/subread-1.5.1-Linux-x86_64/bin
-BEDTOOLS_PATH | /bioinfo/local/build/Centos/bedtools/bedtools-2.25.0/bin
-R_PATH | /bioinfo/local/build/Centos/R/R-3.4.0/bin
-PYTHON_PATH | /bioinfo/local/build/Centos/python/python-2.7.11/bin
-RSEQC_PATH | /bioinfo/local/build/Centos/RSeQC/RSeQC-2.6.4/scripts
-PICARD_PATH | /bioinfo/local/build/Centos/picard/2.6.0/picard.jar
-PRESEQ_PATH | /bioinfo/local/build/Centos/preseq/preseq_v2.0/
-GATK_JAR | /bioinfo/local/build/Centos/envs_conda/gatk4_4.0.2.1/share/gatk4-4.0.2.1-0/gatk-package-4.0.2.1-local.jar
+Mandatory arguments:
+  --reads                       Path to input data (must be surrounded with quotes)
+  --samplePlan                  Path to sample plan input file (cannot be used with --reads)
+  --genome                      Name of genome reference
+  -profile                      Configuration profile to use. test / conda / toolsPath / singularity / cluster
 
-### Setting the configuration files
+Options:
+  --singleEnd                   Specifies that the input is single end reads
 
-All options used during the processing can be defined in a CONFIG file.  
-In this case, simply copy the CONFIG file from the installation folder to your local folder, and edit it.
+Strandedness:
+  --stranded                    Library strandness ['auto', 'forward', 'reverse', 'no']. Default: 'auto'
 
-PARAMETERS | DESCRIPTION 
---- | ---
-NB_PROC | Number of CPUs
-SUB_MEM | Memory requirement
-SUB_WALLTIME | Walltime
-SUB_QUEUE | PBS queue
-ORG | Organism
-BUILD | Version of reference genome
-RUN_FASTQC | Run Fastq for quality controls; 0=no, 1=yes (default: no)
-MAPPING_TOOL | Mapping tool. Must be STAR or TOPHAT2 (default: STAR)
-COUNT_TOOL | Tools to quantify expression per gene. Must be STAR, HTSEQ or FEATURECOUNTS (default: STAR)
-STRANDED | The strandness of the protocol. Must be yes, no or reverse following HTSeq-Count standard. If not specified, the pipeline will detect it automatically. (default: ) 
-BOWTIE_RRNA_INDEX | Indexes for rRNA mapping. If not specified, this step is skipped
-BOWTIE_OPTS | Option for bowtie mapping on rRNA reference (default: -v 2 -a -m 1 --best --strata --nomaqround -y)
-STAR_INDEX | Path to STAR indexes
-STAR_OPTS | Options for STAR mapping (default: --runThreadN 8 --outSAMtype BAM SortedByCoordinate --runMode alignReads --outFilterType BySJout --outFilterMultimapNmax 20 --alignSJoverhangMin 8 --alignSJDBoverhangMin 1 --outFilterMismatchNmax 999 --outFilterMismatchNoverLmax 0.04 --alignIntronMin 20 --alignIntronMax 1000000 --alignMatesGapMax 1000000 --outSAMprimaryFlag OneBestScore --outMultimapperOrder Random --outSAMattributes All)
-TOPHAT2_INDEX | Path to Tophat2 indexes
-TOPHAT2_OPTS | Options for TopHat2 mapping (default: --b2-sensitive -p 6 -g 1 -N 2 --no-coverage-search)
-TRANSCRIPTS_GTF | GTF file for annotation
-HTSEQ_OPTS | Options for HTSeq read counts (default: -f bam -t exon -r pos) 
-FEATURECOUNTS_OPTS | Options for FeatureCounts read counts (default: -t exon -C -T 8 -p)
-BWT2_INDEX | Path to bowtie2 indexes for RSeQC usage
-GENE_BED | Path to BED file for RSeQC usage
+Mapping:
+  --aligner                     Tool for read alignments ['star', 'hisat2', 'tophat2']. Default: 'star'
 
+Counts:
+  --counts                      Tool to use to estimate the raw counts per gene ['star', 'featureCounts', 'HTseqCounts']. Default: 'star'
 
-### Run the pipeline on a single sample :
+References:                     If not specified in the configuration file or you wish to overwrite any of the references.
+  --star_index                  Path to STAR index
+  --hisat2_index                Path to HiSAT2 index
+  --tophat2_index	        Path to TopHat2 index
+  --gtf                         Path to GTF file
+  --bed12                       Path to gene bed12 file
+  --saveAlignedIntermediates    Save the BAM files from the Aligment step  - not done by default
 
-The RNA-seq pipeline is currently available at **/bioinfo/local/curie/ngs-data-analysis/centos/RNAseq_pip/** (hereafter refer as PIP_PATH)
- 
+Other options:
+  --metadata                    Add metadata file for multiQC report
+  --outdir                      The output directory where the results will be saved
+  -w/--work-dir                 The temporary directory where intermediate data will be saved
+  --email                       Set this parameter to your e-mail address to get a summary e-mail with details of the run sent to you when the workflow exits
+  -name                         Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic.
+
+QC options:
+  --skip_qc                     Skip all QC steps apart from MultiQC
+  --skip_rrna                   Skip rRNA mapping
+  --skip_fastqc                 Skip FastQC
+  --skip_genebody_coverage      Skip calculating genebody coverage 
+  --skip_saturation             Skip Saturation qc
+  --skip_dupradar               Skip dupRadar (and Picard MarkDups)
+  --skip_readdist               Skip read distribution steps
+  --skip_expan                  Skip exploratory analysis
+  --skip_multiqc                Skip MultiQC
+
+=======================================================
+Available Profiles
+
+  -profile test                Set up the test dataset
+  -profile conda               Build a new conda environment before running the pipeline
+  -profile toolsPath           Use the paths defined in configuration for each tool
+  -profile singularity         Use the Singularity images for each process
+  -profile cluster             Run the workflow on the cluster, instead of locally
+		  
 ```
-PIP_PATH/bin/RNApip -f SAMPLE_1.fastq.gz [-r SAMPLE_2.fastq.gz] -o PIPELINE_OUTPUT_DIR -c CONFIG [-s RUN_ID] 
-```
 
-### Run the pipeline on a list of sample, using a cluster :
+### Quick run
 
-In cases of multiple samples, the user has to write a SAMPLE_PLAN file with the following information
-SAMPLE_ID | SAMPLE_NAME | PATH_TO_R1.fastq | PATH_TO_R2.fastq   
- 
-Using the *RNApip_cluster* script, all samples will be processed in parallel:  
+The pipeline can be run on any infrastructure from a list of input files or from a sample plan as follow
+
+#### Run the pipeline on a test dataset
+See the conf/test.conf to set your test dataset.
 
 ```
-PIP_PATH/bin/RNApip_cluster -i SAMPLE_PLAN -o PIPELINE_OUTPUT_DIR -c CONFIG 
-```
-
-### Run the report manually
-
-In cluster mode, the HTML report is generated automatically.  
-If for any reason, the user wants to manually generate the report, the following command can be used :
+nextflow run main.nf -profile test,conda
 
 ```
-PIP_PATH/bin/makeRNAreport -i PIPELINE_OUTPUT_DIR -c CONFIG
+
+#### Run the pipeline from a sample plan
+
 ```
+nextflow run main.nf --samplePlan MY_SAMPLE_PLAN --genome 'hg19' --outdir MY_OUTPUT_DIR -profile conda
+
+```
+
+#### Run the pipeline on a computational cluster
+
+```
+echo "nextflow run main.nf --reads '*.R{1,2}.fastq.gz' --genome 'hg19' --outdir MY_OUTPUT_DIR -profile singularity,cluster" | qsub -N rnaseq-2.0
+
+```
+
+### Defining the '-profile'
+
+By default (whithout any profile), Nextflow will excute the pipeline locally, expecting that all tools are available from your `PATH` variable.
+
+In addition, we set up a few profiles that should allow you i/ to use containers instead of local installation, ii/ to run the pipeline on a cluster instead of on a local architecture.
+The description of each profile is available on the help message (see above).
+
+Here are a few examples of how to set the profile option.
+
+```
+## Run the pipeline locally, using the paths defined in the configuration for each tool (see conf.tool-path.config)
+-profile toolsPath
+
+## Run the pipeline on the cluster, using the Singularity containers
+-profile cluster,singularity
+
+## Run the pipeline on the cluster, building a new conda environment
+-profile cluster,conda
+
+```
+
+### Sample Plan
+
+A sample plan is a csv file (comma separated) that list all samples with their biological IDs.
+
+
+Sample ID | Sample Name | Path R1 .fastq file | [Path R2 .fastq file]
+
+### Full Documentation
+
+1. [Installation](docs/installation.md)
+2. [Reference genomes](docs/reference_genomes.md)
+3. [Running the pipeline](docs/usage.md)
+4. [Output and how to interpret the results](docs/output.md)
+5. [Troubleshooting](docs/troubleshooting.md)
+
+#### Credits
+
+This pipeline has been written by the bioinformatics platform of the Institut Curie (P. La Rosa, N. Servant)
+
+#### Contacts
+
+For any question, bug or suggestion, please use the issues system or contact the bioinformatics core facility.
+
