@@ -64,7 +64,7 @@ The different options are displayed using the following command in the **Cache v
 
 * `cmake -LH ../RNA-seq/`
 
-The options for the **A**nalysis **P**ipeline start with the prefix **AP**
+The options for the **a**nalysis **p**ipeline start with the prefix **ap**
 
 
 #### Set the option for the installation
