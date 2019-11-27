@@ -571,11 +571,16 @@ if(params.aligner == 'star'){
     tag "$prefix"
     publishDir "${params.outdir}/mapping", mode: 'copy',
         saveAs: {filename ->
-            if (filename.indexOf("ReadsPerGene.out.tab") > 0) "counts/$filename"
-	    else if (filename.indexOf(".bam") == -1) "logs/$filename"
+	    if (filename.indexOf(".bam") == -1) "logs/$filename"
 	    else if (params.saveAlignedIntermediates) filename
             else null
         }
+    publishDir "${params.outdir}/counts", mode: 'copy',
+        saveAs: {filename ->
+            if (filename.indexOf("ReadsPerGene.out.tab") > 0) "$filename"
+            else null
+        }
+
 
     input:
     set val(prefix), file(reads) from star_raw_reads
@@ -1277,7 +1282,7 @@ process multiqc {
 
     script:
     rtitle = custom_runName ? "--title \"$custom_runName\"" : ''
-    rfilename = custom_runName ? "--filename " + custom_runName.replaceAll('\\W','_').replaceAll('_+','_') + "_multiqc_report" : ''
+    rfilename = custom_runName ? "--filename " + custom_runName + "_multiqc_report" : ''
     metadata_opts = params.metadata ? "--metadata ${metadata}" : ""
     splan_opts = params.samplePlan ? "--splan ${params.samplePlan}" : ""
     isPE = params.singleEnd ? 0 : 1

@@ -3,6 +3,10 @@ CHANGES IN VERSION 3.1.1
 
 BUG FIXES
 
+   o Fix bug in STAR counts publishdir (#108)
+
+   o Remove regexpr on run name (#109)
+
    o Fix minor bugs in report (#104)
 
 *************************************
