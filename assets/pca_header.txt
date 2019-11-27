@@ -1,7 +1,7 @@
 #id: 'sample-pca'
 #section_name: 'Principal Component Analysis'
-#description: "is generated from variance stabilized counts table.
-#       Principal Component Analysis from the DESeq2 package on the 1000 most variable genes."
+#description: "is generated from variance stabilized (VST) normalized counts table on the 1000 most variable genes.
+#       See the plotPCA function from the DESeq2 package for details."
 #plot_type: 'scatter'
 #anchor: 'rnaseq-sample_pca'
 #pconfig:
