@@ -1277,12 +1277,12 @@ process multiqc {
 
     output:
     file splan
-    file "*multiqc_report.html" into multiqc_report
+    file "*report.html" into multiqc_report
     file "*_data"
 
     script:
     rtitle = custom_runName ? "--title \"$custom_runName\"" : ''
-    rfilename = custom_runName ? "--filename " + custom_runName + "_multiqc_report" : ''
+    rfilename = custom_runName ? "--filename " + custom_runName + "_rnaseq_report" : "--filename rnaseq_report"
     metadata_opts = params.metadata ? "--metadata ${metadata}" : ""
     splan_opts = params.samplePlan ? "--splan ${params.samplePlan}" : ""
     isPE = params.singleEnd ? 0 : 1
