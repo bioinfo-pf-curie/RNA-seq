@@ -54,7 +54,7 @@ custom_data:
             Number_of_aligned_reads:
               title: 'Aligned Reads'
               scale: 'RdYlGn'
-              format: '{:,0f}'
+              format: '{:,.0f}'
               hidden: true
               placement: 7000
             Percent_of_aligned_reads:
@@ -82,7 +82,7 @@ custom_data:
             Number_of_multiple_aligned_reads:
               title: 'Multiple Reads'
               scale: 'RdYlGn-rev'
-              format: '{:,0f}'
+              format: '{:,.0f}'
               hidden: true
               placement: 11000
             Percent_multiple_aligned:
@@ -96,7 +96,7 @@ custom_data:
             Number_of_duplicates:
               title: 'Duplicates'
               scale: 'RdYlGn-rev'
-              format: '{:,0f}'
+              format: '{:,.0f}'
               hidden: true
               placement: 13000
             Percent_duplicates:
