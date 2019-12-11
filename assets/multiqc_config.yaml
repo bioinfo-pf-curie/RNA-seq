@@ -15,7 +15,7 @@ custom_data:
     my_stats:
         file_format: 'csv'
         section_name: 'General Metrics'
-        description: ' of sequenced data. Note that in the context of paired-end data, \'reads\' refers to \'pairs\' from the same fragment.'
+        description: ' of sequenced data. Note that in the context of paired-end data, the number pairs are reported (as reads).'
         plot_type: 'table'
         pconfig:
             namespace: 'stats'
