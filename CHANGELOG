@@ -2,6 +2,10 @@
 CHANGES IN VERSION 3.1.2
 
 BUG FIXES
+  
+   o Update STAR option for s288c, sacCer2 and sacCer 3 (#58)
+
+   o Fix bug in genome.conf (#57)
 
    o Fix number format in main table
 
