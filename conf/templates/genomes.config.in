@@ -150,7 +150,7 @@ params {
 
     'CBS_4309_ASM23734v1' {
       star    = "${params.genomes_base}/Naumovozyma_castellii/CBS_4309_ASM23734v1/indexes/STAR/"
-      bowtie2 = "${params.genomes_base}/Naumovozyma_castellii/CBS_4309_ASM23734v1/indexes/Bowtie2/Naumovozyma_castellii_cbs_4309_gca_000237345.ASM23734v1.dna.toplevel"
+      bowtie2 = "${params.genomes_base}/Naumovozyma_castellii/CBS_4309_ASM23734v1/indexes/bowtie2/Naumovozyma_castellii_cbs_4309_gca_000237345.ASM23734v1.dna.toplevel"
       hisat2  = "${params.genomes_base}/Naumovozyma_castellii/CBS_4309_ASM23734v1/indexes/hisat2/Naumovozyma_castellii_cbs_4309_gca_000237345.ASM23734v1.dna.toplevel"
       rrna    = ""
       bed12   = "${params.genomes_base}/Naumovozyma_castellii/CBS_4309_ASM23734v1/gtf/parseGTFAnnotation/Naumovozyma_castellii_cbs_4309_gca_000237345.ASM23734v1.45.bed12"
