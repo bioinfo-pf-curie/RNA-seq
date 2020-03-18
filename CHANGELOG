@@ -1,7 +1,31 @@
 *************************************
+CHANGES IN VERSION 3.1.3
+
+NEW FEATURES
+
+   o update Bmori annotation (BmoriV3, BmoriV3_base, BmoriV4_base)
+
+   o Add Human hg38 base reference genome
+
+   o Add Plasmodium falciparum 3D7 reference genome
+
+*************************************
+CHANGES IN VERSION 3.1.2
+
+BUG FIXES
+
+   o Update STAR option for s288c, sacCer2 and sacCer 3 (#58)
+
+   o Fix bug in genome.conf (#57)
+
+   o Fix number format in main table
+
+*************************************
 CHANGES IN VERSION 3.1.1
 
 BUG FIXES
+
+   o Change output name of the multiQC report
 
    o Fix bug in STAR counts publishdir (#108)
 
