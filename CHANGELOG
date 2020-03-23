@@ -3,7 +3,9 @@ CHANGES IN VERSION 3.1.4
 
 BUG FIXES
 
-   o Update in gene_type.r. Fix bug #113
+   o fix bug in Mouse mm10 annotation
+
+   o Update in gene type information. Fix bug #113
 
 *************************************
 CHANGES IN VERSION 3.1.3

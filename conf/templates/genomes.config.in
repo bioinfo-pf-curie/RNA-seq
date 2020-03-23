@@ -53,7 +53,7 @@ params {
       star    = "${params.genomes_base}/Mouse/mm10/indexes/STAR/"
       bowtie2 = "${params.genomes_base}/Mouse/mm10/indexes/bowtie2/mm10"
       hisat2  = "${params.genomes_base}/Mouse/mm10/indexes/hisat2/mm10"
-      rrna    = "${params.genomes_base}/Mouse/rRNA/v2/rRNA_mouse_complete"
+      rrna    = "${params.genomes_base}/Mouse/rRNA/rRNA_mouse_complete"
       bed12   = "${params.genomes_base}/Mouse/mm10/gtf/parseGTFAnnotation/gencode.vM13.annotation.bed12"
       gtf     = "${params.genomes_base}/Mouse/mm10/gtf/gencode.vM13.annotation.gtf"
     }
