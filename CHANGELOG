@@ -1,4 +1,11 @@
 *************************************
+CHANGES IN VERSION 3.1.4
+
+BUG FIXES
+
+   o Update in gene_type.r. Fix bug #113
+
+*************************************
 CHANGES IN VERSION 3.1.3
 
 NEW FEATURES
