@@ -3,6 +3,8 @@ CHANGES IN VERSION 3.1.4
 
 BUG FIXES
 
+   o Fix bug in report when bed12 is not available and stranded='auto' (#112)
+
    o Fix bug in report #116
 
    o Fix bug in Mouse mm10 annotation
