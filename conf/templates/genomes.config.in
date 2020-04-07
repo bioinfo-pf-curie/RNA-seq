@@ -9,7 +9,7 @@
 
 params {
   //Set path to annoation folder
-  genomes_base = "@ap_annotation_path@"
+  genomes_base = "/data/annotations/pipelines"
 
   genomes {
 
@@ -38,6 +38,15 @@ params {
       rrna    = "${params.genomes_base}/Human/rRNA/rRNA_human_complete"
       bed12   = "${params.genomes_base}/Human/hg38/gtf/parseGTFAnnotation/gencode.v29.annotation.bed12"
       gtf     = "${params.genomes_base}/Human/hg38/gtf/gencode.v29.annotation.gtf"
+    }
+
+    'hg38_base' {
+      star    = "${params.genomes_base}/Human/hg38_base/indexes/STAR/"
+      bowtie2 = "${params.genomes_base}/Human/hg38_base/indexes/bowtie2/hg38_base"
+      hisat2  = "${params.genomes_base}/Human/hg38_base/indexes/hisat2/hg38_base"
+      rrna    = "${params.genomes_base}/Human/rRNA/rRNA_human_complete"
+      bed12   = "${params.genomes_base}/Human/hg38_base/gtf/parseGTFAnnotation/gencode.v29.annotation.bed12"
+      gtf     = "${params.genomes_base}/Human/hg38_base/gtf/gencode.v29.annotation.gtf"
     }
 
     'mm10' {
@@ -139,10 +148,28 @@ params {
       gtf     = "${params.genomes_base}/Escherichia_coli/LF82/gtf/Escherichia_coli_lf82.ASM28449v1.42.gtf"
     }
 
-    'bomo_v3' {
+    'bmoriV3' {
       star    = "${params.genomes_base}/Bombyx_mori/bomo_v3/indexes/STAR/"
-      bowtie2 = "${params.genomes_base}/Bombyx_mori/bomo_v3/indexes/bowtie2/Bomo_genome_assembly"
-      hisat2  = "${params.genomes_base}/Bombyx_mori/bomo_v3/indexes/hisat2/Bomo_genome_assembly"
+      bowtie2 = "${params.genomes_base}/Bombyx_mori/bomo_v3/indexes/bowtie2/Bmori_v3"
+      hisat2  = "${params.genomes_base}/Bombyx_mori/bomo_v3/indexes/hisat2/Bmori_v3"
+      rrna    = ""
+      bed12   = ""
+      gtf     = ""
+    }
+
+    'bmoriV3_base' {
+      star    = "${params.genomes_base}/Bombyx_mori/bomo_v3_base/indexes/STAR/"
+      bowtie2 = "${params.genomes_base}/Bombyx_mori/bomo_v3_base/indexes/bowtie2/Bmori_v3_base"
+      hisat2  = "${params.genomes_base}/Bombyx_mori/bomo_v3_base/indexes/hisat2/Bmori_v3_base"
+      rrna    = ""
+      bed12   = ""
+      gtf     = ""
+    }
+
+    'bmoriV4_base' {
+      star    = "${params.genomes_base}/Bombyx_mori/bomo_v4_base/indexes/STAR/"
+      bowtie2 = "${params.genomes_base}/Bombyx_mori/bomo_v4_base/indexes/bowtie2/Bmori_v4_base"
+      hisat2  = "${params.genomes_base}/Bombyx_mori/bomo_v4_base/indexes/hisat2/Bmori_v4_base"
       rrna    = ""
       bed12   = ""
       gtf     = ""
@@ -157,6 +184,14 @@ params {
       gtf     = "${params.genomes_base}/Naumovozyma_castellii/CBS_4309_ASM23734v1/gtf/Naumovozyma_castellii_cbs_4309_gca_000237345.ASM23734v1.45.gtf"
     }
 
+    'Pfalciparum3D7' {
+      star    = "${params.genomes_base}/Plasmodium_falciparum/Pfalciparum3D7/indexes/STAR/"
+      bowtie2 = "${params.genomes_base}/Plasmodium_falciparum/Pfalciparum3D7/indexes/bowtie2/PlasmoDB-46_Pfalciparum3D7_Genome"
+      hisat2  = "${params.genomes_base}/Plasmodium_falciparum/Pfalciparum3D7/indexes/hisat2/PlasmoDB-46_Pfalciparum3D7_Genome"
+      rrna    = ""
+      bed12   = "${params.genomes_base}/Plasmodium_falciparum/Pfalciparum3D7/gtf/parseGTFAnnotation/PlasmoDB-46_Pfalciparum3D7.bed12"
+      gtf     = "${params.genomes_base}/Plasmodium_falciparum/Pfalciparum3D7/gtf/PlasmoDB-46_Pfalciparum3D7.gtf"
+    }
 
   }
 }

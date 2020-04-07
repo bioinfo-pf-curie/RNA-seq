@@ -74,17 +74,17 @@ do
     fi
 
     ##n_dup
+    n_dup="NA"
+    p_dup="NA"
     if [ -d "picard" ]; then
-	if [ $is_pe == "1" ]; then
-  	    n_dup=$(grep -a2 "## METRICS" picard/${sample}Aligned*markDups_metrics.txt | tail -1 | awk '{print $7}')
-	else
-	    n_dup=$(grep -a2 "## METRICS" picard/${sample}Aligned*markDups_metrics.txt | tail -1 | awk '{print $6}')
+	if ls picard/${sample}Aligned*markDups_metrics.txt  1>/dev/null 2>&1; then 
+	    if [ $is_pe == "1" ]; then
+  		n_dup=$(grep -a2 "## METRICS" picard/${sample}Aligned*markDups_metrics.txt | tail -1 | awk '{print $7}')
+	    else
+		n_dup=$(grep -a2 "## METRICS" picard/${sample}Aligned*markDups_metrics.txt | tail -1 | awk '{print $6}')
+	    fi
+            p_dup=$(echo "${n_dup} ${n_reads}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
 	fi
-        #p_dup=$(echo "scale=2; (${n_dup}*100/${n_reads})" | bc -l)
-        p_dup=$(echo "${n_dup} ${n_reads}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
-    else
-	n_dup='NA'
-	p_dup='NA'
     fi
 
     ## Strandness

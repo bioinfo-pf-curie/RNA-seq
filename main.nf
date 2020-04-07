@@ -434,83 +434,37 @@ process rRNA_mapping {
 /*
  * Strandness
  */
-strandness_results = Channel.empty()
 
-if (params.stranded == 'auto' && params.bed12){
+// User defined
 
-  process prep_rseqc {
-    tag "${prefix}"
-    input:
-    set val(prefix), file(reads) from raw_reads_prep_rseqc
-
-    output:
-    set val("${prefix}"), file("${prefix}_subsample.bam") into bam_rseqc
-
-    script:
-    if (params.singleEnd) {
-    """
-    bowtie2 --fast --end-to-end --reorder \\
-     -p ${task.cpus} \\
-     -u ${params.n_check} \\
-     -x ${params.bowtie2_index} \\
-     -U ${reads} > ${prefix}_subsample.bam 
-     """
-    } else {
-    """
-    bowtie2 --fast --end-to-end --reorder \\
-     -p ${task.cpus} \\
-     -u ${params.n_check} \\
-     -x ${params.bowtie2_index} \\
-     -1 ${reads[0]} \\
-     -2 ${reads[1]} > ${prefix}_subsample.bam
-    """
-    }
-  }
-
-  process rseqc {
-    tag "${prefix - '_subsample'}"
-    publishDir "${params.outdir}/strandness" , mode: 'copy',
-        saveAs: {filename ->
-         	  if (filename.indexOf(".txt") > 0) "$filename"
-                  else null
-        }
-
-    input:
-    set val(prefix), file(bam_rseqc) from bam_rseqc
-    file bed12 from bed_rseqc.collect()
-
-    output:
-    file "*.{txt,pdf,r,xls}" into rseqc_results
-    stdout into (stranded_results_featureCounts, stranded_results_genetype, stranded_results_HTseqCounts, stranded_results_dupradar, stranded_results_tophat, stranded_results_hisat, stranded_results_table)
-
-    when:
-    params.stranded == 'auto'
-
-    script:
-    """
-    infer_experiment.py -i $bam_rseqc -r $bed12 > ${prefix}.txt
-    parse_rseq_output.sh ${prefix}.txt > ${prefix}_strandness.txt
-    cat ${prefix}_strandness.txt
-    """  
-  }
-
-strandness_results = rseqc_results
-}else{
-
+if (params.stranded == 'reverse' || params.stranded == 'forward' || params.stranded == 'no'){
   raw_reads_strandness
-    .map { file -> 
-        def key = params.stranded 
+    .map { file ->
+        def key = params.stranded
         return tuple(key)
     }
-    .into { stranded_results_featureCounts; stranded_results_genetype; stranded_results_HTseqCounts; stranded_results_dupradar; stranded_results_tophat; stranded_results_hisat; stranded_results_table }
+    .into { stranded_results_featureCounts; stranded_results_genetype; stranded_results_HTseqCounts;
+            stranded_results_dupradar; stranded_results_tophat; stranded_results_hisat; stranded_results_table }
+}else if (params.stranded == 'auto' && !params.bed12){
+  log.warn "Strandness ('auto') cannot be run without GTF annotation - will be skipped !"
+//  stranded_results_featureCounts = Channel.empty()
+//  stranded_results_genetype = Channel.empty()
+//  stranded_results_HTseqCounts = Channel.empty()
+//  stranded_results_dupradar = Channel.empty()
+//  stranded_results_tophat = Channel.empty()
+//  stranded_results_hisat = Channel.empty()
+//  stranded_results_table = Channel.empty()
+}
 
-  // save strandness results
-  process save_strandness {
+process save_strandness {
   publishDir "${params.outdir}/strandness" , mode: 'copy',
       saveAs: {filename ->
           if (filename.indexOf(".txt") > 0) "$filename"
           else null
       }
+  
+  when:
+  params.stranded == 'reverse' || params.stranded == 'no' || params.stranded == 'yes' || (params.stranded == 'auto' && !params.bed12)
 
   input:
   set val(prefix), file(reads) from save_strandness
@@ -519,11 +473,84 @@ strandness_results = rseqc_results
   file "*.txt" into saved_strandness
 
   script:
+  if (params.stranded == 'auto' && !params.bed12){
+  """
+  echo "NA" > ${prefix}_strandness.txt
+  """
+  }else{
   """
   echo ${params.stranded} > ${prefix}_strandness.txt
   """
   }
-strandness_results = saved_strandness
+}
+
+// auto
+
+process prep_rseqc {
+  tag "${prefix}"
+  input:
+  set val(prefix), file(reads) from raw_reads_prep_rseqc
+
+  when:
+  params.stranded == 'auto' && params.bed12
+
+  output:
+  set val("${prefix}"), file("${prefix}_subsample.bam") into bam_rseqc
+
+  script:
+  if (params.singleEnd) {
+  """
+  bowtie2 --fast --end-to-end --reorder \\
+   -p ${task.cpus} \\
+   -u ${params.n_check} \\
+   -x ${params.bowtie2_index} \\
+   -U ${reads} > ${prefix}_subsample.bam 
+   """
+  } else {
+  """
+  bowtie2 --fast --end-to-end --reorder \\
+   -p ${task.cpus} \\
+   -u ${params.n_check} \\
+   -x ${params.bowtie2_index} \\
+   -1 ${reads[0]} \\
+   -2 ${reads[1]} > ${prefix}_subsample.bam
+  """
+  }
+}
+
+process rseqc {
+  tag "${prefix - '_subsample'}"
+  publishDir "${params.outdir}/strandness" , mode: 'copy',
+      saveAs: {filename ->
+               if (filename.indexOf(".txt") > 0) "$filename"
+               else null
+      }
+
+  input:
+  set val(prefix), file(bam_rseqc) from bam_rseqc
+  file bed12 from bed_rseqc.collect()
+
+  output:
+  file "*.{txt,pdf,r,xls}" into rseqc_results
+  stdout into (stranded_results_featureCounts, stranded_results_genetype, stranded_results_HTseqCounts, 
+               stranded_results_dupradar, stranded_results_tophat, stranded_results_hisat, stranded_results_table)
+
+  when:
+  params.stranded == 'auto' && params.bed12
+  
+  script:
+  """
+  infer_experiment.py -i $bam_rseqc -r $bed12 > ${prefix}.txt
+  parse_rseq_output.sh ${prefix}.txt > ${prefix}_strandness.txt
+  cat ${prefix}_strandness.txt
+  """  
+}
+
+strandness_results = Channel.empty()
+if (params.stranded == 'auto' && params.bed12){
+  strandness_results = rseqc_results
+}else{
+  strandness_results = saved_strandness
 }
 
 
