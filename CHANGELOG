@@ -1,3 +1,9 @@
+CHANGES IN VERSION 3.1.5
+
+BUG FIXES
+
+   o Fix bug in skip_expan (#71)
+
 *************************************
 CHANGES IN VERSION 3.1.4
 

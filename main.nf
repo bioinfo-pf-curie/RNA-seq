@@ -1201,7 +1201,7 @@ process exploratory_analysis {
   publishDir "${params.outdir}/exploratory_analysis", mode: 'copy'
 
   when:
-  !params.skip_expan
+  !params.skip_expan && num_sample > 2
 
   input:
   file table_raw from raw_counts.collect()
@@ -1212,9 +1212,6 @@ process exploratory_analysis {
 
   output:
   file "*.{txt,pdf,csv}" into exploratory_analysis_results
-
-  when:
-  num_sample > 2
 
   script:
   """
