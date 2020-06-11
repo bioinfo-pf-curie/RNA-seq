@@ -1,3 +1,9 @@
+CHANGES IN VERSION 3.1.6
+
+BUG FIXES
+
+   o Increase preseq memory limites (#73)
+
 CHANGES IN VERSION 3.1.5
 
 BUG FIXES
