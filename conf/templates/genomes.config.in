@@ -193,5 +193,13 @@ params {
       gtf     = "${params.genomes_base}/Plasmodium_falciparum/Pfalciparum3D7/gtf/PlasmoDB-46_Pfalciparum3D7.gtf"
     }
 
+    'Acyr2.0' {
+     star     = "${params.genomes_base}/Acyrthosiphon_pisum/Acyr2.0.47/indexes/STAR/"
+     bowtie2  = "${params.genomes_base}/Acyrthosiphon_pisum/Acyr2.0.47/indexes/bowtie2/Acyrthosiphon_pisum.Acyr_2.0.dna.toplevel"
+     hisat2   = "${params.genomes_base}/Acyrthosiphon_pisum/Acyr2.0.47/indexes/hisat2/Acyrthosiphon_pisum.Acyr_2.0.dna.toplevel"
+     rrna     = ""
+     bed12    = "${params.genomes_base}/Acyrthosiphon_pisum/Acyr2.0.47/gtf/parseGTFAnnotation/Acyrthosiphon_pisum.Acyr_2.0.47.bed12"
+     gtf      = "${params.genomes_base}/Acyrthosiphon_pisum/Acyr2.0.47/gtf/parseGTFAnnotation/Acyrthosiphon_pisum.Acyr_2.0.47.gtf"
+    }
   }
 }
