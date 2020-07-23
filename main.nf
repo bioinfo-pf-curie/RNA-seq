@@ -1201,7 +1201,7 @@ process exploratory_analysis {
   publishDir "${params.outdir}/exploratory_analysis", mode: 'copy'
 
   when:
-  !params.skip_expan && num_sample > 2
+  !params.skip_expan && num_sample > 1
 
   input:
   file table_raw from raw_counts.collect()

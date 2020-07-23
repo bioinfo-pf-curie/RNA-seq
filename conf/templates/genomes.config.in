@@ -199,7 +199,7 @@ params {
      hisat2   = "${params.genomes_base}/Acyrthosiphon_pisum/Acyr2.0.47/indexes/hisat2/Acyrthosiphon_pisum.Acyr_2.0.dna.toplevel"
      rrna     = ""
      bed12    = "${params.genomes_base}/Acyrthosiphon_pisum/Acyr2.0.47/gtf/parseGTFAnnotation/Acyrthosiphon_pisum.Acyr_2.0.47.bed12"
-     gtf      = "${params.genomes_base}/Acyrthosiphon_pisum/Acyr2.0.47/gtf/parseGTFAnnotation/Acyrthosiphon_pisum.Acyr_2.0.47.gtf"
+     gtf      = "${params.genomes_base}/Acyrthosiphon_pisum/Acyr2.0.47/gtf/Acyrthosiphon_pisum.Acyr_2.0.47.gtf"
     }
   }
 }
