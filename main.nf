@@ -637,6 +637,7 @@ if(params.aligner == 'star'){
          --outFileNamePrefix $prefix  \\
          --outSAMattrRGline ID:$prefix SM:$prefix LB:Illumina PL:Illumina  \\
          ${params.star_options} \\
+	 --limitOutSJcollapsed 5000000 \\
 	 ${star_count_opt}
     """
   }
