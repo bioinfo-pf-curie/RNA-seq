@@ -135,6 +135,7 @@ if( !(workflow.runName ==~ /[a-z]+_[a-z]+/) ){
 // Stage config files
 chMultiqcConfig = Channel.fromPath(params.multiqcConfig)
 chOutputDocs = Channel.fromPath("$baseDir/docs/output.md")
+chOutputDocsImages = file("$baseDir/docs/images/", checkIfExists: true)
 chPcaHeader = Channel.fromPath("$baseDir/assets/pcaHeader.txt")
 chHeatmapHeader = Channel.fromPath("$baseDir/assets/heatmapHeader.txt")
 
@@ -340,7 +341,7 @@ summary['Counts'] = params.counts
 if(params.gtf)  summary['GTF Annotation']  = params.gtf
 if(params.bed12) summary['BED Annotation']  = params.bed12
 summary['Save Intermeds'] = params.saveAlignedIntermediates ? 'Yes' : 'No'
-summary['Max Memory']     = params.max_Memory
+summary['Max Memory']     = params.maxMemory
 summary['Max CPUs']       = params.maxCpus
 summary['Max Time']       = params.maxTime
 summary['Container Engine'] = workflow.containerEngine
@@ -363,10 +364,10 @@ process fastqc {
     saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
 
   when:
-  !params.skipqc && !params.skipfastqc
+  !params.skipQC && !params.skipFastqc
 
   input:
-  set val(prefix), file(reads) from ChRawReadsFastqc
+  set val(prefix), file(reads) from chRawReadsFastqc
 
   output:
   file "*_fastqc.{zip,html}" into chFastqcResults
@@ -522,7 +523,7 @@ process rseqc {
 
   input:
   set val(prefix), file(bamRseqc) from chBamRseqc
-  file bed12 from bedRseqc.collect()
+  file bed12 from chBedRseqc.collect()
 
   output:
   file "*.{txt,pdf,r,xls}" into chRseqcResults
@@ -843,7 +844,7 @@ chBamForSubsamp
   .filter { it.size() > params.subsampFilesizeThreshold }
   .map { [it, params.subsampFilesizeThreshold / it.size() ] }
   .set{ chBamForSubsampFiltered }
-bamSkipSubsamp
+chBamSkipSubsamp
    .filter { it.size() <= params.subsampFilesizeThreshold }
    .set{ chBamSkipSubsampFiltered }
 
@@ -1155,7 +1156,7 @@ process readDistribution {
 
   input:
   file bamReadDist from chBamReadDist
-  file bed12 from bedReadDist.collect()
+  file bed12 from chBedReadDist.collect()
 
   output:
   file "*.txt" into chReadDistResults
