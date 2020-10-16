@@ -526,8 +526,8 @@ process rseqc {
 
   output:
   file "*.{txt,pdf,r,xls}" into chRseqcResults
-  stdout into { chStrandedResultsFeatureCounts, chStrandedResultsGenetype, chStrandedResultsHTseqCounts,
-                chStrandedResultsDupradar, chStrandedResultsTophat, chStrandedResultsHisat, chStrandedResultsTable }
+  stdout into ( chStrandedResultsFeatureCounts, chStrandedResultsGenetype, chStrandedResultsHTseqCounts,
+                chStrandedResultsDupradar, chStrandedResultsTophat, chStrandedResultsHisat, chStrandedResultsTable )
 
   when:
   params.stranded == 'auto' && params.bed12
