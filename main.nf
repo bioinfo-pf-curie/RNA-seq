@@ -360,6 +360,8 @@ log.info "========================================="
  */
 process fastqc {
   tag "${prefix}"
+  label 'medCpu'
+  label 'lowMem'
   publishDir "${params.outdir}/fastqc", mode: 'copy',
     saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
 
@@ -387,6 +389,8 @@ process fastqc {
  */
 process rRNAMapping {
   tag "${prefix}"
+  label 'medCpu'
+  label 'lowMem'
   publishDir "${params.outdir}/rRNA_mapping", mode: 'copy',
     saveAs: {filename ->
       if (filename.indexOf("fastq.gz") > 0 &&  params.saveAlignedIntermediates) filename
@@ -395,7 +399,7 @@ process rRNAMapping {
     }
 
   when:
-  !params.skipRrna && paramsRrna
+  !params.skipRrna && params.rrna
 
   input:
   set val(prefix), file(reads) from chRawReadsRnaMapping
@@ -451,6 +455,8 @@ if (params.stranded == 'reverse' || params.stranded == 'forward' || params.stran
 }
 
 process saveStrandness {
+  label 'lowCpu'
+  label 'lowMem'
   publishDir "${params.outdir}/strandness" , mode: 'copy',
     saveAs: {filename ->
       if (filename.indexOf(".txt") > 0) "$filename"
@@ -482,6 +488,8 @@ process saveStrandness {
 
 process prepRseqc {
   tag "${prefix}"
+  label 'medCpu'
+  label 'medMem'
 
   input:
   set val(prefix), file(reads) from chRawReadsPrepRseqc
@@ -515,6 +523,8 @@ process prepRseqc {
 
 process rseqc {
   tag "${prefix - '_subsample'}"
+  label 'medCpu'
+  label 'lowMem'
   publishDir "${params.outdir}/strandness" , mode: 'copy',
     saveAs: {filename ->
       if (filename.indexOf(".txt") > 0) "$filename"
@@ -589,6 +599,8 @@ if(params.aligner == 'star'){
   hisatStdout = Channel.from(false)
   process star {
     tag "$prefix"
+    label 'highCpu'
+    label 'highMem'
     publishDir "${params.outdir}/mapping", mode: 'copy',
       saveAs: {filename ->
         if (filename.indexOf(".bam") == -1) "logs/$filename"
@@ -636,6 +648,8 @@ if(params.aligner == 'star'){
 
   process starSort {
     tag "$prefix"
+    label 'medCpu'
+    label 'medMem'
     publishDir "${params.outdir}/mapping", mode: 'copy'
  
     input:
@@ -678,7 +692,8 @@ if(params.aligner == 'hisat2'){
   chStarLog = Channel.from(false)
   
   process makeHisatSplicesites {
-     tag "$gtf"
+     label 'lowCpu'
+     label 'lowMem'
      publishDir "${params.outdir}/mapping", mode: 'copy',
        saveAs: { filename ->
          if (params.saveAlignedIntermediates) filename
@@ -699,6 +714,8 @@ if(params.aligner == 'hisat2'){
 
   process hisat2Align {
     tag "$prefix"
+    label 'highCpu'
+    label 'highMem'
     publishDir "${params.outdir}/mapping", mode: 'copy',
       saveAs: {filename ->
         if (filename.indexOf(".hisat2_summary.txt") > 0) "logs/$filename"
@@ -756,26 +773,28 @@ if(params.aligner == 'hisat2'){
   }
 
   process hisat2Sort {
-      tag "${hisat2Bam.baseName}"
-      publishDir "${params.outdir}/mapping", mode: 'copy'
+    tag "${hisat2Bam.baseName}"
+    label 'medCpu'
+    label 'medMem'  
+    publishDir "${params.outdir}/mapping", mode: 'copy'
 
-      input:
-      file hisatBam from chHisat2Bam
+    input:
+    file hisatBam from chHisat2Bam
 
-      output:
-      file "${hisatBam.baseName}.sorted.bam" into chBamCount, chBamPreseq, chBamMarkduplicates, bchBmFeaturecounts, chBamGenetype, chBamHTseqCounts, chBamReadDist, chBamForSubsamp, chBamSkipSubsamp
-      file "${hisatBam.baseName}.sorted.bam.bai" into chBamIndexHisat
+    output:
+    file "${hisatBam.baseName}.sorted.bam" into chBamCount, chBamPreseq, chBamMarkduplicates, bchBmFeaturecounts, chBamGenetype, chBamHTseqCounts, chBamReadDist, chBamForSubsamp, chBamSkipSubsamp
+    file "${hisatBam.baseName}.sorted.bam.bai" into chBamIndexHisat
  
-      script:
-      def availMem = task.memory ? "-m ${task.memory.toBytes() / task.cpus}" : ''
-      """
-      samtools sort \\
-          $hisat2_bam \\
-          -@ ${task.cpus} $availMem \\
-          -m ${params.sortMaxMemory} \\
-          -o ${hisat2Bam.baseName}.sorted.bam
-      samtools index ${hisatBam.baseName}.sorted.bam
-      """
+    script:
+    def availMem = task.memory ? "-m ${task.memory.toBytes() / task.cpus}" : ''
+    """
+    samtools sort \\
+             $hisat2_bam \\
+             -@ ${task.cpus} $availMem \\
+             -m ${params.sortMaxMemory} \\
+             -o ${hisat2Bam.baseName}.sorted.bam
+    samtools index ${hisatBam.baseName}.sorted.bam
+    """
   }
 }
 
@@ -791,6 +810,8 @@ else {
 if(params.aligner == 'tophat2'){
   process tophat2 {
    tag "${prefix}"
+   label 'highCpu'
+   label 'highMed'
    publishDir "${params.outdir}/mapping", mode: 'copy',
      saveAs: {filename ->
        if (filename.indexOf(".align_summary.txt") > 0) "logs/$filename"
@@ -823,11 +844,11 @@ if(params.aligner == 'tophat2'){
    tophat2 -p ${task.cpus} \\
            ${sample} \\
            ${params.tophat2Opts} \\
-          --GTF $gtf \\
-          ${strandedOpt} \\
-          -o ${out} \\
-          ${params.bowtie2Index} \\
-          ${reads} 
+           --GTF $gtf \\
+           ${strandedOpt} \\
+           -o ${out} \\
+           ${params.bowtie2Index} \\
+           ${reads} 
 
    mv ${out}/accepted_hits.bam ${prefix}.bam
    mv ${out}/align_summary.txt ${prefix}.align_summary.txt
@@ -850,7 +871,8 @@ chBamSkipSubsamp
 
 process bamSubsample {
   tag "${bam.baseName - '.sorted'}"
-
+  label 'lowCpu'
+  label 'lowMem'
   input:
   set file(bam), val(fraction) from chBamForSubsampFiltered
 
@@ -859,7 +881,7 @@ process bamSubsample {
 
   script:
   """
-  samtools view -s $fraction -b $bam | samtools sort -o ${bam.baseName}_subsamp.bam
+  samtools view -@ ${task.cpus} -s $fraction -b $bam | samtools sort -o ${bam.baseName}_subsamp.bam
   """
 }
 
@@ -869,6 +891,8 @@ process bamSubsample {
 
 process genebodyCoverage {
   tag "${bam.baseName - '.sorted'}"
+  label 'lowCpu'
+  label 'medMem'
   publishDir "${params.outdir}/genecov" , mode: 'copy',
      saveAs: {filename ->
        if (filename.indexOf("geneBodyCoverage.curves.pdf") > 0)       "geneBodyCoverage/$filename"
@@ -905,6 +929,8 @@ process genebodyCoverage {
 
 process preseq {
   tag "${bamPreseq}"
+  label 'lowCpu'
+  label 'lowMem'
   publishDir "${params.outdir}/preseq", mode: 'copy'
 
   when:
@@ -929,6 +955,8 @@ process preseq {
 
 process markDuplicates {
   tag "${bam}"
+  label 'lowCpu'
+  label 'medMem'
   publishDir "${params.outdir}/markDuplicates", mode: 'copy',
     saveAs: {filename -> 
       if (filename.indexOf("_metrics.txt") > 0) "metrics/$filename" 
@@ -971,6 +999,8 @@ process markDuplicates {
 
 process dupradar {
   tag "${bamMd}"
+  label 'lowCpu'
+  label 'lowMem'
   publishDir "${params.outdir}/dupradar", mode: 'copy',
     saveAs: {filename ->
       if (filename.indexOf("_duprateExpDens.pdf") > 0) "scatter_plots/$filename"
@@ -1012,6 +1042,8 @@ process dupradar {
 
 process featureCounts {
   tag "${bamFeaturecounts.baseName - 'Aligned.sortedByCoord.out'}"
+  label 'medCpu'
+  label 'medMem'
   publishDir "${params.outdir}/counts", mode: 'copy',
     saveAs: {filename ->
       if (filename.indexOf("_counts.csv.summary") > 0) "gene_count_summaries/$filename"
@@ -1045,6 +1077,8 @@ process featureCounts {
 
 process HTseqCounts {
   tag "${bamHTseqCounts}"
+  label 'medCpu'
+  label 'medMem'
   publishDir "${params.outdir}/counts", mode: 'copy',
     saveAs: {filename ->
       if (filename.indexOf("_gene.HTseqCounts.txt.summary") > 0) "gene_count_summaries/$filename"
@@ -1091,6 +1125,8 @@ if( params.counts == 'featureCounts' ){
 
 process mergeCounts {
   publishDir "${params.outdir}/counts", mode: 'copy'
+  label 'lowCpu'
+  label 'lowMem'
 
   input:
   file inputCounts from chCountsToMerge.collect()
@@ -1125,6 +1161,8 @@ if( params.counts == 'featureCounts' ){
  */
 
 process geneSaturation {
+  label 'lowCpu'
+  label 'medMem'
   publishDir "${params.outdir}/gene_saturation" , mode: 'copy'
 
   when:
@@ -1149,6 +1187,8 @@ process geneSaturation {
 
 process readDistribution {
   tag "${bamReadDist}"
+  label 'lowCpu'
+  label 'medMem'
   publishDir "${params.outdir}/read_distribution" , mode: 'copy'
 
   when:
@@ -1169,6 +1209,8 @@ process readDistribution {
 
 
 process getCountsPerGeneType {
+  label 'lowCpu'
+  label 'lowMem'
   publishDir "${params.outdir}/read_distribution", mode: 'copy'
 
   when:
@@ -1193,6 +1235,8 @@ process getCountsPerGeneType {
  */
 
 process exploratoryAnalysis {
+  label 'lowCpu'
+  label 'lowMem'
   publishDir "${params.outdir}/exploratory_analysis", mode: 'copy'
 
   when:
@@ -1222,7 +1266,11 @@ process exploratoryAnalysis {
  * MultiQC
  */
 
+/*
 process getSoftwareVersions {
+  label 'lowCpu'
+  label 'lowMem'
+
   output:
   file 'software_versions_mqc.yaml' into softwareVersionsYaml
 
@@ -1245,6 +1293,8 @@ process getSoftwareVersions {
   scrape_software_versions.py &> software_versions_mqc.yaml
   """
 }
+*/
+softwareVersionsYaml = Channel.empty()
 
 process workflowSummaryMqc {
   when:
@@ -1269,59 +1319,63 @@ ${summary.collect { k,v -> "            <dt>$k</dt><dd><samp>${v ?: '<span style
 }
 
 process multiqc {
-    publishDir "${params.outdir}/MultiQC", mode: 'copy'
+  label 'lowCpu'
+  label 'lowMem'
+  publishDir "${params.outdir}/MultiQC", mode: 'copy'
 
-    when:
-    !params.skipMultiQC
+  when:
+  !params.skipMultiQC
 
-    input:
-    file splan from chSplan.collect()
-    file metadata from chMetadata.ifEmpty([])
-    file multiqcConfig from chMultiqcConfig    
-    file (fastqc:'fastqc/*') from chFastqcResults.collect().ifEmpty([])
-    file ('rrna/*') from chRrnaLogs.collect().ifEmpty([])
-    file ('alignment/*') from chAlignmentLogs.collect()
-    file ('strandness/*') from chStrandnessResults.collect().ifEmpty([])
-    file ('rseqc/*') from chReadDistResults.collect().ifEmpty([])
-    file ('rseqc/*') from chGenebodyCoverageResults.collect().ifEmpty([])
-    file ('preseq/*') from chPreseqResults.collect().ifEmpty([])
-    file ('genesat/*') from chGenesatResults.collect().ifEmpty([])
-    file ('dupradar/*') from chDupradarResults.collect().ifEmpty([])
-    file ('picard/*') from chPicardResults.collect().ifEmpty([])	
-    file ('counts/*') from chCountsLogs.collect()
-    file ('genetype/*') from chCountsPerGenetype.collect().ifEmpty([])
-    file ('exploratory_analysis_results/*') from chExploratoryAnalysisResults.collect().ifEmpty([]) 
-    file ('software_versions/*') from softwareVersionsYaml.collect()
-    file ('workflow_summary/*') from workflowSummaryYaml.collect()
+  input:
+  file splan from chSplan.collect()
+  file metadata from chMetadata.ifEmpty([])
+  file multiqcConfig from chMultiqcConfig.ifEmpty([])
+  file (fastqc:'fastqc/*') from chFastqcResults.collect().ifEmpty([])
+  file ('rrna/*') from chRrnaLogs.collect().ifEmpty([])
+  file ('alignment/*') from chAlignmentLogs.collect().ifEmpty([])
+  file ('strandness/*') from chStrandnessResults.collect().ifEmpty([])
+  file ('rseqc/*') from chReadDistResults.collect().ifEmpty([])
+  file ('rseqc/*') from chGenebodyCoverageResults.collect().ifEmpty([])
+  file ('preseq/*') from chPreseqResults.collect().ifEmpty([])
+  file ('genesat/*') from chGenesatResults.collect().ifEmpty([])
+  file ('dupradar/*') from chDupradarResults.collect().ifEmpty([])
+  file ('picard/*') from chPicardResults.collect().ifEmpty([])	
+  file ('counts/*') from chCountsLogs.collect().ifEmpty([])
+  file ('genetype/*') from chCountsPerGenetype.collect().ifEmpty([])
+  file ('exploratory_analysis_results/*') from chExploratoryAnalysisResults.collect().ifEmpty([]) 
+  file ('software_versions/*') from softwareVersionsYaml.collect().ifEmpty([])
+  file ('workflow_summary/*') from workflowSummaryYaml.collect().ifEmpty([])
 
-    output:
-    file splan
-    file "*report.html" into multiqcReport
-    file "*_data"
+  output:
+  file splan
+  file "*report.html" into multiqcReport
+  file "*_data"
 
-    script:
-    rtitle = customRunName ? "--title \"$customRunName\"" : ''
-    rfilename = customRunName ? "--filename " + customRunName + "_rnaseq_report" : "--filename rnaseq_report"
-    metadataOpts = params.metadata ? "--metadata ${metadata}" : ""
-    splanOpts = params.samplePlan ? "--splan ${params.samplePlan}" : ""
-    isPE = params.singleEnd ? 0 : 1
+  script:
+  rtitle = customRunName ? "--title \"$customRunName\"" : ''
+  rfilename = customRunName ? "--filename " + customRunName + "_rnaseq_report" : "--filename rnaseq_report"
+  metadataOpts = params.metadata ? "--metadata ${metadata}" : ""
+  splanOpts = params.samplePlan ? "--splan ${params.samplePlan}" : ""
+  isPE = params.singleEnd ? 0 : 1
     
-    modulesList = "-m custom_content -m preseq -m rseqc -m bowtie1 -m hisat2 -m star -m tophat -m cutadapt -m fastqc"
-    modulesList = params.counts == 'featureCounts' ? "${modulesList} -m featureCounts" : "${modulesList}"  
-    modulesList = params.counts == 'HTseqCounts' ? "${modulesList} -m htseq" : "${modulesList}"  
+  modulesList = "-m custom_content -m preseq -m rseqc -m bowtie1 -m hisat2 -m star -m tophat -m cutadapt -m fastqc"
+  modulesList = params.counts == 'featureCounts' ? "${modulesList} -m featureCounts" : "${modulesList}"  
+  modulesList = params.counts == 'HTseqCounts' ? "${modulesList} -m htseq" : "${modulesList}"  
  
-    """
-    stats2multiqc.sh ${splan} ${params.aligner} ${isPE}
-    medianReadNb="\$(sort -t, -k3,3n mq.stats | awk -F, '{a[i++]=\$3;} END{x=int((i+1)/2); if (x<(i+1)/2) printf "%.0f", (a[x-1]+a[x])/2; else printf "%.0f",a[x-1];}')"
-    mqc_header.py --name "RNA-seq" --version ${workflow.manifest.version} ${metadataOpts} ${splanOpts} --nbreads \${medianReadNb} > multiqc-config-header.yaml
-    multiqc . -f $rtitle $rfilename -c $multiqcConfig -c multiqc-config-header.yaml $modulesList
-    """    
+  """
+  stats2multiqc.sh ${splan} ${params.aligner} ${isPE}
+  medianReadNb="\$(sort -t, -k3,3n mq.stats | awk -F, '{a[i++]=\$3;} END{x=int((i+1)/2); if (x<(i+1)/2) printf "%.0f", (a[x-1]+a[x])/2; else printf "%.0f",a[x-1];}')"
+  mqc_header.py --name "RNA-seq" --version ${workflow.manifest.version} ${metadataOpts} ${splanOpts} --nbreads \${medianReadNb} > multiqc-config-header.yaml
+  multiqc . -f $rtitle $rfilename -c $multiqcConfig -c multiqc-config-header.yaml $modulesList
+  """    
 }
 
 
 /*
  * Sub-routine
  */
+
+/*
 process outputDocumentation {
   label 'python'
   label 'lowCpu'
@@ -1340,6 +1394,7 @@ process outputDocumentation {
   markdown_to_html.py $outputDocs -o results_description.html
   """
 }                                                                                                                                                                                                           
+*/
 
 workflow.onComplete {
 
@@ -1369,12 +1424,12 @@ workflow.onComplete {
 
     // Render the TXT template
     def engine = new groovy.text.GStringTemplateEngine()
-    def tf = new File("$baseDir/assets/oncompleteTemplate.txt")
+    def tf = new File("$baseDir/assets/onCompleteTemplate.txt")
     def txt_template = engine.createTemplate(tf).make(report_fields)
     def report_txt = txt_template.toString()
     
     // Render the HTML template
-    def hf = new File("$baseDir/assets/oncompleteTemplate.html")
+    def hf = new File("$baseDir/assets/onCompleteTemplate.html")
     def html_template = engine.createTemplate(hf).make(report_fields)
     def report_html = html_template.toString()
 
