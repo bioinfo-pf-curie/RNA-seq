@@ -1,0 +1,5 @@
+name: HTSeqCounts
+channels:
+  - bioconda
+dependencies:
+  - bioconda::htseq=0.12.4

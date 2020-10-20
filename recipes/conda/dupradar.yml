@@ -1,0 +1,11 @@
+name: dupradar
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  # R-packages
+  - r-base=4.0.3
+  - bioconda::bioconductor-dupradar=1.18.0
+
+

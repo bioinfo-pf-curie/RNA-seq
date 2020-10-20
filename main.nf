@@ -50,7 +50,7 @@ def helpMessage() {
     --stranded [bool]                    Library strandness ['auto', 'forward', 'reverse', 'no']. Default: 'auto'
 
   Mapping:
-    --aligner [str]                      Tool for read alignments ['star', 'hisat2', 'tophat2']. Default: 'star'
+    --aligner [str]                      Tool for read alignments ['star', 'hisat2']. Default: 'star'
 
   Counts:
     --counts [str]                       Tool to use to estimate the raw counts per gene ['star', 'featureCounts', 'HTseqCounts']. Default: 'star'
@@ -59,14 +59,13 @@ def helpMessage() {
     --genomeAnnotationPath [file]        Path  to genome annotation folder
     --starIndex [dir]                    Path to STAR index
     --hisat2Index [file]                 Path to HiSAT2 index
-    --tophat2Index [file]                Path to TopHat2 index
-    --gtf [file]                         Path to GTF file
+     --gtf [file]                         Path to GTF file
     --bed12 [file]                       Path to gene bed12 file
     --saveAlignedIntermediates [bool]    Save the intermediate files from the Aligment step  - not done by default
 
   Other options:
     --metadata [file]                    Add metadata file for multiQC report
-    --outdir [dir]                       The output directory where the results will be saved
+    --outDir [dir]                       The output directory where the results will be saved
     -w/--work-dir [dir]                  The temporary directory where intermediate data will be saved
     -name [str]                          Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic.
 
@@ -98,7 +97,6 @@ def helpMessage() {
 /*
  * SET UP CONFIGURATION VARIABLES
  */
-
 
 // Show help emssage
 if (params.help){
@@ -144,8 +142,8 @@ chHeatmapHeader = Channel.fromPath("$baseDir/assets/heatmapHeader.txt")
  */
 
 // Validate inputs
-if (params.aligner != 'star' && params.aligner != 'hisat2' && params.aligner != 'tophat2'){
-  exit 1, "Invalid aligner option: ${params.aligner}. Valid options: 'star', 'hisat2', 'tophat2'"
+if (params.aligner != 'star' && params.aligner != 'hisat2'){
+  exit 1, "Invalid aligner option: ${params.aligner}. Valid options: 'star', 'hisat2'"
 }
 if (params.counts != 'star' && params.counts != 'featureCounts' && params.counts != 'HTseqCounts'){
   exit 1, "Invalid counts option: ${params.counts}. Valid options: 'star', 'featureCounts', 'HTseqCounts'"
@@ -173,11 +171,6 @@ else if ( params.hisat2Index && params.aligner == 'hisat2' ){
     .ifEmpty { exit 1, "HISAT2 index not found: ${params.hisat2Index}" }
     .set{chHisat2Index}
 }
-else if ( params.bowtie2Index && params.aligner == 'tophat2' ){
-  Channel.fromPath("${params.bowtie2Index}*")
-    .ifEmpty { exit 1, "TOPHAT2 index not found: ${params.bowtie2Index}" }
-    .set {chTophat2Index}
-}
 else {
     exit 1, "No reference genome specified!"
 }
@@ -186,12 +179,12 @@ if( params.gtf ){
   Channel
     .fromPath(params.gtf)
     .ifEmpty { exit 1, "GTF annotation file not found: ${params.gtf}" }
-    .into { chGtfStar; chGtfDupradar; chGtfFeatureCounts; chGtfGenetype; chGtfHTseqCounts; chGtfTophat; chGtfTable; chGtfMakeHisatSplicesites }
+    .into { chGtfStar; chGtfDupradar; chGtfFeatureCounts; chGtfGenetype; chGtfHTseqCounts; chGtfTable; chGtfMakeHisatSplicesites }
 }else {
   log.warn "No GTF annotation specified - dupRadar, table counts - will be skipped !" 
   Channel
     .empty()
-    .into { chGtfStar; chGtfDupradar; chGtfFeatureCounts; chGtfGenetype; chGtfHTseqCounts; chGtfTophat; chGtfTable; chGtfMakeHisatSplicesites } 
+    .into { chGtfStar; chGtfDupradar; chGtfFeatureCounts; chGtfGenetype; chGtfHTseqCounts; chGtfTable; chGtfMakeHisatSplicesites } 
 }
 
 if( params.bed12 ){
@@ -233,13 +226,13 @@ if(params.samplePlan){
       .from(file("${params.samplePlan}"))
       .splitCsv(header: false)
       .map{ row -> [ row[0], [file(row[2])]] }
-      .into { chRawReadsFastqc; chRawReadsStar; chRawReadsHisat2; chRawReadsTophat2; chRawReadsRnaMapping; chRawReadsPrepRseqc; chRawReadsStrandness; chSaveStrandness }
+      .into { chRawReadsFastqc; chRawReadsStar; chRawReadsHisat2; chRawReadsRnaMapping; chRawReadsPrepRseqc; chRawReadsStrandness; chSaveStrandness }
   }else{
      Channel
        .from(file("${params.samplePlan}"))
        .splitCsv(header: false)
        .map{ row -> [ row[0], [file(row[2]), file(row[3])]] }
-       .into { chRawReadsFastqc; chRawReadsStar; chRawReadsHisat2; chRawReadsTophat2; chRawReadsRnaMapping; chRawReadsPrepRseqc; chRawReadsStrandness; chSaveStrandness }
+       .into { chRawReadsFastqc; chRawReadsStar; chRawReadsHisat2; chRawReadsRnaMapping; chRawReadsPrepRseqc; chRawReadsStrandness; chSaveStrandness }
    }
    params.reads=false
 }
@@ -249,19 +242,19 @@ else if(params.readPaths){
       .from(params.readPaths)
       .map { row -> [ row[0], [file(row[1][0])]] }
       .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-      .into { chRawReadsFastqc; chRawReadsStar; chRawReadsHisat2; chRawReadsTophat2; chRawReadsRnaMapping; chRawReadsPrepRseqc; chRawReadsStrandness; chSaveStrandness }
+      .into { chRawReadsFastqc; chRawReadsStar; chRawReadsHisat2; chRawReadsRnaMapping; chRawReadsPrepRseqc; chRawReadsStrandness; chSaveStrandness }
   } else {
     Channel
       .from(params.readPaths)
       .map { row -> [ row[0], [file(row[1][0]), file(row[1][1])]] }
       .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-      .into { chRawReadsFastqc; chRawReadsStar; chRawReadsHisat2; chRawReadsTophat2; chRawReadsRnaMapping; chRawReadsPrepRseqc; chRawReadsStrandness; chSaveStrandness }
+      .into { chRawReadsFastqc; chRawReadsStar; chRawReadsHisat2; chRawReadsRnaMapping; chRawReadsPrepRseqc; chRawReadsStrandness; chSaveStrandness }
   }
 } else {
   Channel
     .fromFilePairs( params.reads, size: params.singleEnd ? 1 : 2 )
     .ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\nNB: Path needs to be enclosed in quotes!\nNB: Path requires at least one * wildcard!\nIf this is single-end data, please specify --singleEnd on the command line." }
-    .into { chRawReadsFastqc; chRawReadsStar; chRawReadsHisat2; chRawReadsTophat2; chRawReadsRnaMapping; chRawReadsPrepRseqc; chRawReadsStrandness; chSaveStrandness }
+    .into { chRawReadsFastqc; chRawReadsStar; chRawReadsHisat2; chRawReadsRnaMapping; chRawReadsPrepRseqc; chRawReadsStrandness; chSaveStrandness }
 }
 
 /*
@@ -330,9 +323,6 @@ summary['Strandedness'] = params.stranded
 if(params.aligner == 'star'){
   summary['Aligner'] = "star"
   if(params.starIndex) summary['STAR Index'] = params.starIndex
-} else if(params.aligner == 'tophat2') {
-  summary['Aligner'] = "Tophat2"
-  if(params.bowtie2Index) summary['Tophat2 Index'] = params.bowtie2Index
 } else if(params.aligner == 'hisat2') {
   summary['Aligner'] = "HISAT2"
   if(params.hisat2Index) summary['HISAT2 Index'] = params.hisat2Index
@@ -349,7 +339,7 @@ summary['Current home']   = "$HOME"
 summary['Current user']   = "$USER"
 summary['Current path']   = "$PWD"
 summary['Working dir']    = workflow.workDir
-summary['Output dir']     = params.outdir
+summary['Output dir']     = params.outDir
 summary['Config Profile'] = workflow.profile
 log.info summary.collect { k,v -> "${k.padRight(15)}: $v" }.join("\n")
 log.info "========================================="
@@ -360,9 +350,10 @@ log.info "========================================="
  */
 process fastqc {
   tag "${prefix}"
+  label 'fastqc'
   label 'medCpu'
   label 'lowMem'
-  publishDir "${params.outdir}/fastqc", mode: 'copy',
+  publishDir "${params.outDir}/fastqc", mode: 'copy',
     saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
 
   when:
@@ -389,9 +380,10 @@ process fastqc {
  */
 process rRNAMapping {
   tag "${prefix}"
+  label 'bowtie'
   label 'medCpu'
   label 'lowMem'
-  publishDir "${params.outdir}/rRNA_mapping", mode: 'copy',
+  publishDir "${params.outDir}/rRNA_mapping", mode: 'copy',
     saveAs: {filename ->
       if (filename.indexOf("fastq.gz") > 0 &&  params.saveAlignedIntermediates) filename
       else if (filename.indexOf(".log") > 0) "logs/$filename"
@@ -440,24 +432,11 @@ process rRNAMapping {
  * Strandness
  */
 
-// User defined
-
-if (params.stranded == 'reverse' || params.stranded == 'forward' || params.stranded == 'no'){
-  chRawReadsStrandness
-    .map { file ->
-           def key = params.stranded
-           return tuple(key)
-    }
-    .into { chStrandedResultsFeatureCounts; chStrandedResultsGenetype; chStrandedResultsHTseqCounts;
-            chStrandedResultsDupradar; chStrandedResultsTophat; chStrandedResultsHisat; chStrandedResultsTable }
-}else if (params.stranded == 'auto' && !params.bed12){
-  log.warn "Strandness ('auto') cannot be run without GTF annotation - will be skipped !"
-}
-
 process saveStrandness {
+  label 'unix'
   label 'lowCpu'
   label 'lowMem'
-  publishDir "${params.outdir}/strandness" , mode: 'copy',
+  publishDir "${params.outDir}/strandness" , mode: 'copy',
     saveAs: {filename ->
       if (filename.indexOf(".txt") > 0) "$filename"
       else null
@@ -484,71 +463,81 @@ process saveStrandness {
   }
 }
 
-// auto
 
-process prepRseqc {
-  tag "${prefix}"
-  label 'medCpu'
-  label 'medMem'
-
-  input:
-  set val(prefix), file(reads) from chRawReadsPrepRseqc
-
-  when:
-  params.stranded == 'auto' && params.bed12
-
-  output:
-  set val("${prefix}"), file("${prefix}_subsample.bam") into chBamRseqc
-
-  script:
-  if (params.singleEnd) {
-  """
-  bowtie2 --fast --end-to-end --reorder \\
-          -p ${task.cpus} \\
-          -u ${params.nCheck} \\
-          -x ${params.bowtie2Index} \\
-          -U ${reads} > ${prefix}_subsample.bam 
-   """
-  } else {
-  """
-  bowtie2 --fast --end-to-end --reorder \\
-          -p ${task.cpus} \\
-          -u ${params.nCheck} \\
-          -x ${params.bowtie2Index} \\
-          -1 ${reads[0]} \\
-          -2 ${reads[1]} > ${prefix}_subsample.bam
-  """
-  }
-}
-
-process rseqc {
-  tag "${prefix - '_subsample'}"
-  label 'medCpu'
-  label 'lowMem'
-  publishDir "${params.outdir}/strandness" , mode: 'copy',
-    saveAs: {filename ->
-      if (filename.indexOf(".txt") > 0) "$filename"
-      else null
+// User defined
+if (params.stranded == 'reverse' || params.stranded == 'forward' || params.stranded == 'no'){
+  chRawReadsStrandness
+    .map { file ->
+           def key = params.stranded
+           return tuple(key)
     }
+    .into { chStrandedResultsFeatureCounts; chStrandedResultsGenetype; chStrandedResultsHTseqCounts;
+            chStrandedResultsDupradar; chStrandedResultsHisat; chStrandedResultsTable }
+}else if (params.stranded == 'auto' && !params.bed12){
+  log.warn "Strandness ('auto') cannot be run without GTF annotation - will be skipped !"
+}else if (params.stranded == 'auto' && params.bed12){
+ 
+  // auto
+  process prepRseqc {
+    tag "${prefix}"
+    label 'bowtie2'
+    label 'medCpu'
+    label 'medMem'
 
-  input:
-  set val(prefix), file(bamRseqc) from chBamRseqc
-  file bed12 from chBedRseqc.collect()
+    input:
+    set val(prefix), file(reads) from chRawReadsPrepRseqc
 
-  output:
-  file "*.{txt,pdf,r,xls}" into chRseqcResults
-  stdout into ( chStrandedResultsFeatureCounts, chStrandedResultsGenetype, chStrandedResultsHTseqCounts,
-                chStrandedResultsDupradar, chStrandedResultsTophat, chStrandedResultsHisat, chStrandedResultsTable )
+    output:
+    set val("${prefix}"), file("${prefix}_subsample.bam") into chBamRseqc
 
-  when:
-  params.stranded == 'auto' && params.bed12
+    script:
+    if (params.singleEnd) {
+    """
+    bowtie2 --fast --end-to-end --reorder \\
+            -p ${task.cpus} \\
+            -u ${params.nCheck} \\
+            -x ${params.bowtie2Index} \\
+            -U ${reads} > ${prefix}_subsample.bam 
+     """
+    } else {
+    """
+    bowtie2 --fast --end-to-end --reorder \\
+            -p ${task.cpus} \\
+            -u ${params.nCheck} \\
+            -x ${params.bowtie2Index} \\
+            -1 ${reads[0]} \\
+            -2 ${reads[1]} > ${prefix}_subsample.bam
+    """
+    }
+  }
+
+  process rseqc {
+    tag "${prefix - '_subsample'}"
+    label 'preseq'
+    label 'medCpu'
+    label 'lowMem'
+    publishDir "${params.outDir}/strandness" , mode: 'copy',
+      saveAs: {filename ->
+        if (filename.indexOf(".txt") > 0) "$filename"
+        else null
+      }
+
+    input:
+    set val(prefix), file(bamRseqc) from chBamRseqc
+    file bed12 from chBedRseqc.collect()
+
+    output:
+    file "*.{txt,pdf,r,xls}" into chRseqcResults
+    stdout into ( chStrandedResultsFeatureCounts, chStrandedResultsGenetype, chStrandedResultsHTseqCounts,
+                  chStrandedResultsDupradar, chStrandedResultsHisat, chStrandedResultsTable )
   
-  script:
-  """
-  infer_experiment.py -i $bamRseqc -r $bed12 > ${prefix}.txt
-  parse_rseq_output.sh ${prefix}.txt > ${prefix}_strandness.txt
-  cat ${prefix}_strandness.txt
-  """  
+    script:
+    """
+    infer_experiment.py -i $bamRseqc -r $bed12 > ${prefix}.txt
+    parse_rseq_output.sh ${prefix}.txt > ${prefix}_strandness.txt
+    cat ${prefix}_strandness.txt
+    """  
+  }
 }
 
 chStrandnessResults = Channel.empty()
@@ -567,7 +556,7 @@ if (params.stranded == 'auto' && params.bed12){
 // Function that checks the alignment rate of the STAR output
 // and returns true if the alignment passed and otherwise false
 skippedPoorAlignment = []
-def checkLog(logs) {
+def checkStarLog(logs) {
   def percentAligned = 0;
   logs.eachLine { line ->
     if ((matcher = line =~ /Uniquely mapped reads %\s*\|\s*([\d\.]+)%/)) {
@@ -599,15 +588,16 @@ if(params.aligner == 'star'){
   hisatStdout = Channel.from(false)
   process star {
     tag "$prefix"
+    label 'star'
     label 'highCpu'
     label 'highMem'
-    publishDir "${params.outdir}/mapping", mode: 'copy',
+    publishDir "${params.outDir}/mapping", mode: 'copy',
       saveAs: {filename ->
         if (filename.indexOf(".bam") == -1) "logs/$filename"
         else if (params.saveAlignedIntermediates) filename
         else null
       }
-    publishDir "${params.outdir}/counts", mode: 'copy',
+    publishDir "${params.outDir}/counts", mode: 'copy',
       saveAs: {filename ->
         if (filename.indexOf("ReadsPerGene.out.tab") > 0) "$filename"
         else null
@@ -648,9 +638,10 @@ if(params.aligner == 'star'){
 
   process starSort {
     tag "$prefix"
+    label 'samtools'
     label 'medCpu'
     label 'medMem'
-    publishDir "${params.outdir}/mapping", mode: 'copy'
+    publishDir "${params.outDir}/mapping", mode: 'copy'
  
     input:
     set val(prefix), file(LogFinalOut), file (starBam) from chStarSam
@@ -673,14 +664,13 @@ if(params.aligner == 'star'){
 
     // Filter removes all 'aligned' channels that fail the check
     chStarAligned
-      .filter { logs, bams -> checkLog(logs) }
+      .filter { logs, bams -> checkStarLog(logs) }
       .flatMap {  logs, bams -> bams }
       .into { chBamCount; chBamPreseq; chBamMarkduplicates; chBamFeaturecounts; chBamGenetype; chBamHTseqCounts; chBamReadDist; chBamForSubsamp; chBamSkipSubsamp }
 }
 
 
 // HiSat2
-
 chHisat2RawReads = Channel.empty()
 if( params.rrna && !params.skipRrna ){
     chHisat2RawReads = chRrnaMappingRes
@@ -692,9 +682,10 @@ if(params.aligner == 'hisat2'){
   chStarLog = Channel.from(false)
   
   process makeHisatSplicesites {
+     label 'hisat2'
      label 'lowCpu'
      label 'lowMem'
-     publishDir "${params.outdir}/mapping", mode: 'copy',
+     publishDir "${params.outDir}/mapping", mode: 'copy',
        saveAs: { filename ->
          if (params.saveAlignedIntermediates) filename
          else null
@@ -708,15 +699,16 @@ if(params.aligner == 'hisat2'){
 
      script:
      """
-     hisat2_extract_splice_sites.py $gtf > ${gtf.baseName}.hisat2_splice_sites.txt
+     hisat2_extract_splice_sites.py $gtf > ${gtf.baseName}.hisat2SpliceSites.txt
      """
   }
 
   process hisat2Align {
     tag "$prefix"
+    label 'hisat2'
     label 'highCpu'
     label 'highMem'
-    publishDir "${params.outdir}/mapping", mode: 'copy',
+    publishDir "${params.outDir}/mapping", mode: 'copy',
       saveAs: {filename ->
         if (filename.indexOf(".hisat2_summary.txt") > 0) "logs/$filename"
         else if (params.saveAlignedIntermediates) filename
@@ -725,7 +717,7 @@ if(params.aligner == 'hisat2'){
 
     input:
     set val(prefix), file(reads) from chHisat2RawReads 
-    file hs2Index from chHisat2Indices.collect()
+    file hs2Index from chHisat2Index.collect()
     file alignmentSplicesites from chAlignmentSplicesites.collect()
     val parseRes from chStrandedResultsHisat
 
@@ -774,93 +766,35 @@ if(params.aligner == 'hisat2'){
 
   process hisat2Sort {
     tag "${hisat2Bam.baseName}"
+    label 'samtools'
     label 'medCpu'
     label 'medMem'  
-    publishDir "${params.outdir}/mapping", mode: 'copy'
+    publishDir "${params.outDir}/mapping", mode: 'copy'
 
     input:
-    file hisatBam from chHisat2Bam
+    file hisat2Bam from chHisat2Bam
 
     output:
-    file "${hisatBam.baseName}.sorted.bam" into chBamCount, chBamPreseq, chBamMarkduplicates, bchBmFeaturecounts, chBamGenetype, chBamHTseqCounts, chBamReadDist, chBamForSubsamp, chBamSkipSubsamp
-    file "${hisatBam.baseName}.sorted.bam.bai" into chBamIndexHisat
+    file "${hisat2Bam.baseName}.sorted.bam" into chBamCount, chBamPreseq, chBamMarkduplicates, chBamFeaturecounts, chBamGenetype, chBamHTseqCounts, chBamReadDist, chBamForSubsamp, chBamSkipSubsamp
+    file "${hisat2Bam.baseName}.sorted.bam.bai" into chBamIndexHisat
  
     script:
     def availMem = task.memory ? "-m ${task.memory.toBytes() / task.cpus}" : ''
     """
     samtools sort \\
-             $hisat2_bam \\
+             ${hisat2Bam} \\
              -@ ${task.cpus} $availMem \\
              -m ${params.sortMaxMemory} \\
              -o ${hisat2Bam.baseName}.sorted.bam
-    samtools index ${hisatBam.baseName}.sorted.bam
+    samtools index ${hisat2Bam.baseName}.sorted.bam
     """
   }
 }
 
-// Update channel for TopHat2
-chTophat2RawReads = Channel.empty()
-if( params.rrna && !params.skipRrna ){
-  chTophat2RawReads = chRrnaMappingRes
-}
-else {
-  chTophat2RawReads = chRawReadsTophat2
-}
-
-if(params.aligner == 'tophat2'){
-  process tophat2 {
-   tag "${prefix}"
-   label 'highCpu'
-   label 'highMed'
-   publishDir "${params.outdir}/mapping", mode: 'copy',
-     saveAs: {filename ->
-       if (filename.indexOf(".align_summary.txt") > 0) "logs/$filename"
-       else filename
-     }
-
-   input:
-   set val(prefix), file(reads) from chTophat2RawReads 
-   file "tophat2" from chTophat2Index.collect()
-   file gtf from chGtfTophat.collect()
-   val parseRes from chStrandedResultsTophat
-
-   output:
-   file "${prefix}.bam" into chBamCount, chBamPreseq, chBamMarkduplicates, chBamFeaturecounts, chBamGenetype, chBamHTseqCounts, chBamReadDist, chBamForSubsamp, chBamSkipSubsamp
-   file "${prefix}.align_summary.txt" into chAlignmentLogs
-   file "${prefix}.bam.bai" into chBamIndexTophat
-
-   script:
-   def availMem = task.memory ? "-m ${task.memory.toBytes() / task.cpus}" : ''
-   def strandedOpt = '--library-type fr-unstranded'
-   if (parseRes == 'forward'){
-     strandedOpt = '--library-type fr-secondstrand'
-   }else if ((parseRes == 'reverse')){
-     strandedOpt = '--library-type fr-firststrand'
-   }
-   def out = './mapping'
-   def sample = "--rg-id ${prefix} --rg-sample ${prefix} --rg-library Illumina --rg-platform Illumina --rg-platform-unit ${prefix}"
-   """
-   mkdir -p ${out}
-   tophat2 -p ${task.cpus} \\
-           ${sample} \\
-           ${params.tophat2Opts} \\
-           --GTF $gtf \\
-           ${strandedOpt} \\
-           -o ${out} \\
-           ${params.bowtie2Index} \\
-           ${reads} 
-
-   mv ${out}/accepted_hits.bam ${prefix}.bam
-   mv ${out}/align_summary.txt ${prefix}.align_summary.txt
-   samtools index ${prefix}.bam
-   """
-  }
-}
-
-
 /*
  * Subsample the BAM files if necessary
  */
+
 chBamForSubsamp
   .filter { it.size() > params.subsampFilesizeThreshold }
   .map { [it, params.subsampFilesizeThreshold / it.size() ] }
@@ -871,6 +805,7 @@ chBamSkipSubsamp
 
 process bamSubsample {
   tag "${bam.baseName - '.sorted'}"
+  label 'samtools'
   label 'lowCpu'
   label 'lowMem'
   input:
@@ -891,9 +826,10 @@ process bamSubsample {
 
 process genebodyCoverage {
   tag "${bam.baseName - '.sorted'}"
+  label 'rseqc'
   label 'lowCpu'
   label 'medMem'
-  publishDir "${params.outdir}/genecov" , mode: 'copy',
+  publishDir "${params.outDir}/genecov" , mode: 'copy',
      saveAs: {filename ->
        if (filename.indexOf("geneBodyCoverage.curves.pdf") > 0)       "geneBodyCoverage/$filename"
        else if (filename.indexOf("geneBodyCoverage.r") > 0)           "geneBodyCoverage/rscripts/$filename"
@@ -929,9 +865,10 @@ process genebodyCoverage {
 
 process preseq {
   tag "${bamPreseq}"
+  label 'preseq'
   label 'lowCpu'
   label 'lowMem'
-  publishDir "${params.outdir}/preseq", mode: 'copy'
+  publishDir "${params.outDir}/preseq", mode: 'copy'
 
   when:
   !params.skipQC && !params.skipSaturation
@@ -955,9 +892,10 @@ process preseq {
 
 process markDuplicates {
   tag "${bam}"
+  label 'picard'
   label 'lowCpu'
   label 'medMem'
-  publishDir "${params.outdir}/markDuplicates", mode: 'copy',
+  publishDir "${params.outDir}/markDuplicates", mode: 'copy',
     saveAs: {filename -> 
       if (filename.indexOf("_metrics.txt") > 0) "metrics/$filename" 
       else if (params.saveAlignedIntermediates) filename
@@ -975,16 +913,10 @@ process markDuplicates {
   file "${bam.baseName}.markDups.bam.bai"
 
   script:
-  if( !task.memory ){
-    log.info "[Picard MarkDuplicates] Available memory not known - defaulting to 3GB. Specify process memory requirements to change this."
-    availMem = 3
-  } else {
-    availMem = task.memory.toGiga()
-  }
-
-  markdupJavaOptions = availMem > 8 ? params.markdupJavaOptions : "\"-Xms" +  (task.memory.toGiga() / 2).trunc() + "g -Xmx" + (task.memory.toGiga() - 1) + "g\""  
+  markdupMemOption = "\"-Xms" +  (task.memory.toGiga() / 2).trunc() + "g -Xmx" + (task.memory.toGiga() - 1) + "g\""
+  log.info "[Picard MarkDuplicates] Run picard MarkDuplicates with parameter : ${markdupMemOption}"
   """
-  picard ${markdupJavaOptions} -Djava.io.tmpdir=/local/scratch MarkDuplicates \\
+  picard ${markdupMemOption} -Djava.io.tmpdir=/local/scratch MarkDuplicates \\
       MAX_RECORDS_IN_RAM=50000 \\
       INPUT=$bam \\
       OUTPUT=${bam.baseName}.markDups.bam \\
@@ -999,9 +931,10 @@ process markDuplicates {
 
 process dupradar {
   tag "${bamMd}"
+  label 'dupradar'
   label 'lowCpu'
   label 'lowMem'
-  publishDir "${params.outdir}/dupradar", mode: 'copy',
+  publishDir "${params.outDir}/dupradar", mode: 'copy',
     saveAs: {filename ->
       if (filename.indexOf("_duprateExpDens.pdf") > 0) "scatter_plots/$filename"
       else if (filename.indexOf("_duprateExpBoxplot.pdf") > 0) "box_plots/$filename"
@@ -1042,9 +975,10 @@ process dupradar {
 
 process featureCounts {
   tag "${bamFeaturecounts.baseName - 'Aligned.sortedByCoord.out'}"
+  label 'featurecounts'
   label 'medCpu'
   label 'medMem'
-  publishDir "${params.outdir}/counts", mode: 'copy',
+  publishDir "${params.outDir}/counts", mode: 'copy',
     saveAs: {filename ->
       if (filename.indexOf("_counts.csv.summary") > 0) "gene_count_summaries/$filename"
       else if (filename.indexOf("_counts.csv") > 0) "gene_counts/$filename"
@@ -1077,9 +1011,10 @@ process featureCounts {
 
 process HTseqCounts {
   tag "${bamHTseqCounts}"
+  label 'htseq'
   label 'medCpu'
   label 'medMem'
-  publishDir "${params.outdir}/counts", mode: 'copy',
+  publishDir "${params.outDir}/counts", mode: 'copy',
     saveAs: {filename ->
       if (filename.indexOf("_gene.HTseqCounts.txt.summary") > 0) "gene_count_summaries/$filename"
       else if (filename.indexOf("_gene.HTseqCounts.txt") > 0) "gene_counts/$filename"
@@ -1109,7 +1044,6 @@ process HTseqCounts {
   """
 }
 
-
 chCountsToMerge = Channel.empty()
 chCountsToR = Channel.empty()
 if( params.counts == 'featureCounts' ){
@@ -1124,7 +1058,8 @@ if( params.counts == 'featureCounts' ){
 }
 
 process mergeCounts {
-  publishDir "${params.outdir}/counts", mode: 'copy'
+  publishDir "${params.outDir}/counts", mode: 'copy'
+  label 'r'
   label 'lowCpu'
   label 'lowMem'
 
@@ -1161,9 +1096,10 @@ if( params.counts == 'featureCounts' ){
  */
 
 process geneSaturation {
+  label 'r'
   label 'lowCpu'
   label 'medMem'
-  publishDir "${params.outdir}/gene_saturation" , mode: 'copy'
+  publishDir "${params.outDir}/gene_saturation" , mode: 'copy'
 
   when:
   !params.skipQC && !params.skipSaturation
@@ -1187,9 +1123,10 @@ process geneSaturation {
 
 process readDistribution {
   tag "${bamReadDist}"
+  label 'rseqc'
   label 'lowCpu'
   label 'medMem'
-  publishDir "${params.outdir}/read_distribution" , mode: 'copy'
+  publishDir "${params.outDir}/read_distribution" , mode: 'copy'
 
   when:
   !params.skipReaddist
@@ -1209,9 +1146,10 @@ process readDistribution {
 
 
 process getCountsPerGeneType {
+  label 'r'
   label 'lowCpu'
   label 'lowMem'
-  publishDir "${params.outdir}/read_distribution", mode: 'copy'
+  publishDir "${params.outDir}/read_distribution", mode: 'copy'
 
   when:
   !params.skipReaddist
@@ -1235,9 +1173,10 @@ process getCountsPerGeneType {
  */
 
 process exploratoryAnalysis {
+  label 'r'
   label 'lowCpu'
   label 'lowMem'
-  publishDir "${params.outdir}/exploratory_analysis", mode: 'copy'
+  publishDir "${params.outDir}/exploratory_analysis", mode: 'copy'
 
   when:
   !params.skipExpan && numSample > 1
@@ -1266,8 +1205,8 @@ process exploratoryAnalysis {
  * MultiQC
  */
 
-/*
 process getSoftwareVersions {
+  label 'python'
   label 'lowCpu'
   label 'lowMem'
 
@@ -1280,7 +1219,6 @@ process getSoftwareVersions {
   echo $workflow.nextflow.version &> v_nextflow.txt
   fastqc --version &> v_fastqc.txt
   STAR --version &> v_star.txt
-  tophat2 --version &> v_tophat2.txt
   hisat2 --version &> v_hisat2.txt
   preseq &> v_preseq.txt
   infer_experiment.py --version &> v_rseqc.txt
@@ -1293,8 +1231,7 @@ process getSoftwareVersions {
   scrape_software_versions.py &> software_versions_mqc.yaml
   """
 }
-*/
-softwareVersionsYaml = Channel.empty()
+
 
 process workflowSummaryMqc {
   when:
@@ -1319,9 +1256,10 @@ ${summary.collect { k,v -> "            <dt>$k</dt><dd><samp>${v ?: '<span style
 }
 
 process multiqc {
+  label 'multiqc'
   label 'lowCpu'
   label 'lowMem'
-  publishDir "${params.outdir}/MultiQC", mode: 'copy'
+  publishDir "${params.outDir}/MultiQC", mode: 'copy'
 
   when:
   !params.skipMultiQC
@@ -1358,7 +1296,7 @@ process multiqc {
   splanOpts = params.samplePlan ? "--splan ${params.samplePlan}" : ""
   isPE = params.singleEnd ? 0 : 1
     
-  modulesList = "-m custom_content -m preseq -m rseqc -m bowtie1 -m hisat2 -m star -m tophat -m cutadapt -m fastqc"
+  modulesList = "-m custom_content -m preseq -m rseqc -m bowtie1 -m hisat2 -m star -m cutadapt -m fastqc"
   modulesList = params.counts == 'featureCounts' ? "${modulesList} -m featureCounts" : "${modulesList}"  
   modulesList = params.counts == 'HTseqCounts' ? "${modulesList} -m htseq" : "${modulesList}"  
  
@@ -1380,7 +1318,7 @@ process outputDocumentation {
   label 'python'
   label 'lowCpu'
   label 'lowMem'
-  publishDir "${params.outdir}/pipeline_info", mode: 'copy'
+  publishDir "${params.outDir}/pipeline_info", mode: 'copy'
 
   input:
   file outputDocs from chOutputDocs
@@ -1398,75 +1336,70 @@ process outputDocumentation {
 
 workflow.onComplete {
 
-    /*pipeline_report.html*/
+  /*pipeline_report.html*/
 
-    def report_fields = [:]
-    report_fields['version'] = workflow.manifest.version
-    report_fields['runName'] = customRunName ?: workflow.runName
-    report_fields['success'] = workflow.success
-    report_fields['dateComplete'] = workflow.complete
-    report_fields['duration'] = workflow.duration
-    report_fields['exitStatus'] = workflow.exitStatus
-    report_fields['errorMessage'] = (workflow.errorMessage ?: 'None')
-    report_fields['errorReport'] = (workflow.errorReport ?: 'None')
-    report_fields['commandLine'] = workflow.commandLine
-    report_fields['projectDir'] = workflow.projectDir
-    report_fields['summary'] = summary
-    report_fields['summary']['Date Started'] = workflow.start
-    report_fields['summary']['Date Completed'] = workflow.complete
-    report_fields['summary']['Pipeline script file path'] = workflow.scriptFile
-    report_fields['summary']['Pipeline script hash ID'] = workflow.scriptId
-    if(workflow.repository) report_fields['summary']['Pipeline repository Git URL'] = workflow.repository
-    if(workflow.commitId) report_fields['summary']['Pipeline repository Git Commit'] = workflow.commitId
-    if(workflow.revision) report_fields['summary']['Pipeline Git branch/tag'] = workflow.revision
+  def report_fields = [:]
+  report_fields['version'] = workflow.manifest.version
+  report_fields['runName'] = customRunName ?: workflow.runName
+  report_fields['success'] = workflow.success
+  report_fields['dateComplete'] = workflow.complete
+  report_fields['duration'] = workflow.duration
+  report_fields['exitStatus'] = workflow.exitStatus
+  report_fields['errorMessage'] = (workflow.errorMessage ?: 'None')
+  report_fields['errorReport'] = (workflow.errorReport ?: 'None')
+  report_fields['commandLine'] = workflow.commandLine
+  report_fields['projectDir'] = workflow.projectDir
+  report_fields['summary'] = summary
+  report_fields['summary']['Date Started'] = workflow.start
+  report_fields['summary']['Date Completed'] = workflow.complete
+  report_fields['summary']['Pipeline script file path'] = workflow.scriptFile
+  report_fields['summary']['Pipeline script hash ID'] = workflow.scriptId
+  if(workflow.repository) report_fields['summary']['Pipeline repository Git URL'] = workflow.repository
+  if(workflow.commitId) report_fields['summary']['Pipeline repository Git Commit'] = workflow.commitId
+  if(workflow.revision) report_fields['summary']['Pipeline Git branch/tag'] = workflow.revision
 
-    report_fields['skippedPoorAlignment'] = skippedPoorAlignment
+  report_fields['skippedPoorAlignment'] = skippedPoorAlignment
 
-    // Render the TXT template
-    def engine = new groovy.text.GStringTemplateEngine()
-    def tf = new File("$baseDir/assets/onCompleteTemplate.txt")
-    def txt_template = engine.createTemplate(tf).make(report_fields)
-    def report_txt = txt_template.toString()
+  // Render the TXT template
+  def engine = new groovy.text.GStringTemplateEngine()
+  def tf = new File("$baseDir/assets/onCompleteTemplate.txt")
+  def txt_template = engine.createTemplate(tf).make(report_fields)
+  def report_txt = txt_template.toString()
     
-    // Render the HTML template
-    def hf = new File("$baseDir/assets/onCompleteTemplate.html")
-    def html_template = engine.createTemplate(hf).make(report_fields)
-    def report_html = html_template.toString()
+  // Render the HTML template
+  def hf = new File("$baseDir/assets/onCompleteTemplate.html")
+  def html_template = engine.createTemplate(hf).make(report_fields)
+  def report_html = html_template.toString()
+  // Write summary e-mail HTML to a file
+  def output_d = new File( "${params.outDir}/pipeline_info/" )
+  if( !output_d.exists() ) {
+    output_d.mkdirs()
+  }
+ def output_hf = new File( output_d, "pipeline_report.html" )
+  output_hf.withWriter { w -> w << report_html }
+  def output_tf = new File( output_d, "pipeline_report.txt" )
+  output_tf.withWriter { w -> w << report_txt }
 
-    // Write summary e-mail HTML to a file
-    def output_d = new File( "${params.outdir}/pipeline_info/" )
-    if( !output_d.exists() ) {
-      output_d.mkdirs()
-    }
-    def output_hf = new File( output_d, "pipeline_report.html" )
-    output_hf.withWriter { w -> w << report_html }
-    def output_tf = new File( output_d, "pipeline_report.txt" )
-    output_tf.withWriter { w -> w << report_txt }
+  /*oncomplete file*/
+  File woc = new File("${params.outDir}/workflow.oncomplete.txt")
+  Map endSummary = [:]
+  endSummary['Completed on'] = workflow.complete
+  endSummary['Duration']     = workflow.duration
+  endSummary['Success']      = workflow.success
+  endSummary['exit status']  = workflow.exitStatus
+  endSummary['Error report'] = workflow.errorReport ?: '-'
+  String endWfSummary = endSummary.collect { k,v -> "${k.padRight(30, '.')}: $v" }.join("\n")
+  println endWfSummary
+  String execInfo = "Execution summary\n${endWfSummary}\n"
+  woc.write(execInfo)
 
-    /*oncomplete file*/
-
-    File woc = new File("${params.outdir}/workflow.oncomplete.txt")
-    Map endSummary = [:]
-    endSummary['Completed on'] = workflow.complete
-    endSummary['Duration']     = workflow.duration
-    endSummary['Success']      = workflow.success
-    endSummary['exit status']  = workflow.exitStatus
-    endSummary['Error report'] = workflow.errorReport ?: '-'
-    String endWfSummary = endSummary.collect { k,v -> "${k.padRight(30, '.')}: $v" }.join("\n")
-    println endWfSummary
-    String execInfo = "Execution summary\n${endWfSummary}\n"
-    woc.write(execInfo)
-
-    /*final logs*/
-
-    if(skippedPoorAlignment.size() > 0){
-        log.info "[rnaseq] WARNING - ${skippedPoorAlignment.size()} samples skipped due to poor alignment scores!"
-    }
-
-    if(workflow.success){
-        log.info "[rnaseq] Pipeline Complete"
-    }else{
-        log.info "[rnaseq] FAILED: $workflow.runName"
-    }
- 
+  /*final logs*/
+  if(skippedPoorAlignment.size() > 0){
+    log.info "[rnaseq] WARNING - ${skippedPoorAlignment.size()} samples skipped due to poor alignment scores!"
+  }
+  if(workflow.success){
+    log.info "[rnaseq] Pipeline Complete"
+  }else{
+    log.info "[rnaseq] FAILED: $workflow.runName"
+  } 
 }

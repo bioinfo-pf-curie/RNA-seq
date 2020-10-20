@@ -1,0 +1,5 @@
+name: rseqc
+channels:
+  - bioconda
+dependencies:
+  - bioconda::rseqc=4.0.0

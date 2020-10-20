@@ -1,153 +1,125 @@
-CHANGES IN VERSION 3.1.7
+version-3.2.0
+
+SIGNIFICANT USER-VISIBLE CHANGES
+  - Use new Newflow template
+  - Update all tool versions
+
+BUG FIXES
+  - Fix bug when --stranded is set on command line (#120)
+
+DEPRECATED
+  - Tophat2 is no longer supported. `--tophat2_index` is now deprecated and `--aligner` has been updated.
+  - option `--markdup_java_options` is deprecated. The Java memory is calculated
+    from the process memomry
+
+**************************************
+version-3.1.7
 
 NEW FEATURES
-
-   o Add Rhopalosiphum_padi/v2 annotation
+  - Add Rhopalosiphum_padi/v2 annotation
 
 BUG FIXES
-
-   o Remove null values in WorkflowOnComplete
+  - Remove null values in WorkflowOnComplete
 
 *************************************
-CHANGES IN VERSION 3.1.6
+version-3.1.6
 
 NEW FEATURES
-
-   o Add Acyrthosiphon_pisum/Acyr2.0 genome annotation
-
-BUG FIXES
-
-   o Increase preseq memory limites (#73)
-
-*************************************
-CHANGES IN VERSION 3.1.5
+  - Add Acyrthosiphon_pisum/Acyr2.0 genome annotation
 
 BUG FIXES
-
-   o Fix bug in skip_expan (#71)
+  - Increase preseq memory limites (#73)
 
 *************************************
-CHANGES IN VERSION 3.1.4
+version-3.1.5
 
 BUG FIXES
-
-   o Fix bug in report when bed12 is not available and stranded='auto' (#112)
-
-   o Fix bug in report #116
-
-   o Fix bug in Mouse mm10 annotation
-
-   o Update in gene type information. Fix bug #113
+  - Fix bug in skip_expan (#71)
 
 *************************************
-CHANGES IN VERSION 3.1.3
+version-3.1.4
+
+BUG FIXES
+ - Fix bug in report when bed12 is not available and stranded='auto' (#112)
+ - Fix bug in report #116
+ - Fix bug in Mouse mm10 annotation
+ - Update in gene type information (#113)
+
+*************************************
+version-3.1.3
 
 NEW FEATURES
-
-   o update Bmori annotation (BmoriV3, BmoriV3_base, BmoriV4_base)
-
-   o Add Human hg38 base reference genome
-
-   o Add Plasmodium falciparum 3D7 reference genome
+  - update Bmori annotation (BmoriV3, BmoriV3_base, BmoriV4_base)
+  - Add Human hg38 base reference genome
+  - Add Plasmodium falciparum 3D7 reference genome
 
 *************************************
-CHANGES IN VERSION 3.1.2
+version-3.1.2
 
 BUG FIXES
-
-   o Update STAR option for s288c, sacCer2 and sacCer 3 (#58)
-
-   o Fix bug in genome.conf (#57)
-
-   o Fix number format in main table
+  - Update STAR option for s288c, sacCer2 and sacCer 3 (#58)
+  - Fix bug in genome.conf (#57)
+  - Fix number format in main table
 
 *************************************
-CHANGES IN VERSION 3.1.1
+version-3.1.1
 
 BUG FIXES
-
-   o Change output name of the multiQC report
-
-   o Fix bug in STAR counts publishdir (#108)
-
-   o Remove regexpr on run name (#109)
-
-   o Fix minor bugs in report (#104)
+  - Change output name of the multiQC report
+  - Fix bug in STAR counts publishdir (#108)
+  - Remove regexpr on run name (#109)
+  - Fix minor bugs in report (#104)
 
 *************************************
-CHANGES IN VERSION 3.1.0
+version-3.1.0
 
 NEW FEATURES
-
-   o Bump stable version 3.1.0
+  - Bump stable version 3.1.0
 
 *************************************
-CHANGES IN VERSION 3.0.3
+version-3.0.3
 
 NEW FEATURES
-
-   o Add cmake interface to configure / install the pipeline
+  - Add cmake interface to configure / install the pipeline
 
 ***********************************
-CHANGES IN VERSION 3.0.2
+version-3.0.2
 
 NEW FEATURES
-
-   o Add Naumovozyma_castellii in genome indexes
-
-   o Strandness 'yes' is replaced by 'forward'
-
-   o Update MultiQC version to 1.7
-
-   o MultiQC : update RSeQC read distribution color (MultiQC v1.8) (#80)
-
-   o MultiQC : update rRNA barplot colors (MultiQC v1.8) (#78)
-
-   o MultiQC : add a new buton to switch from sample ID to sample name
-
-   o MultiQC : add condition formatting rules in the stats table
-
-   o Update columns/scale/name in general stats (#77)
-
-   o Add more steps in gene-base saturation for reads number <10M (#82)
+  - Add Naumovozyma_castellii in genome indexes
+  - Strandness 'yes' is replaced by 'forward'
+  - Update MultiQC version to 1.7
+  - MultiQC : update RSeQC read distribution color (MultiQC v1.8) (#80)
+  - MultiQC : update rRNA barplot colors (MultiQC v1.8) (#78)
+  - MultiQC : add a new buton to switch from sample ID to sample name
+  - MultiQC : add condition formatting rules in the stats table
+  - Update columns/scale/name in general stats (#77)
+  - Add more steps in gene-base saturation for reads number <10M (#82)
 
 ************************************
-CHANGES IN VERSION 3.0.1
+version-3.0.1
 
 NEW FEATURES
-
-   o Add disclamer in log and mqc report for devel
-
-   o Update R output with counts and annotation
-
-   o Add gene body coverage tool (RSeQC)
-
-   o Add HiSat2 for hg19, hg19_base, hg38, mm9, mm10
-
-   o Add tools.config [#56]
-
-   o Support sample_plan and reads as input [#60]
-
-   o Update conda environment
-
-   o Remove picard from multiQC report
-
-   o Add gene-based saturation curves [#57]
-
-   o Add gene type expression (gencode) [#58]
-
-   o Add exploratory analysis in multiQC report [#44]
+  - Add disclamer in log and mqc report for devel
+  - Update R output with counts and annotation
+  - Add gene body coverage tool (RSeQC)
+  - Add HiSat2 for hg19, hg19_base, hg38, mm9, mm10
+  - Add tools.config [#56]
+  - Support sample_plan and reads as input (#60)
+  - Update conda environment
+  - Remove picard from multiQC report
+  - Add gene-based saturation curves (#57)
+  - Add gene type expression (gencode) (#58)
+  - Add exploratory analysis in multiQC report (#44)
 
 BUG FIXES
-
-   o Fix minor bugs [#48, #62, #63]
+  - Fix minor bugs (#48, #62, #63)
 
 ***********************************
-CHANGES IN VERSION 3.0.0dev
+version-3.0.0
 
 NEW FEATURES
-
-   o Initialise release of RNA-seq pipeline
+  - Initialise release of RNA-seq pipeline
 
 
 

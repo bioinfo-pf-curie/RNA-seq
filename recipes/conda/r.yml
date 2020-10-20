@@ -1,0 +1,15 @@
+name: rnaseqr
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  # R-packages
+  - r-base=4.0.3
+  - conda-forge::r-data.table=1.13.0
+  - conda-forge::r-gplots=3.1.0
+  - bioconda::bioconductor-rtracklayer=1.48.0
+  - bioconda::bioconductor-genomicfeatures=1.40.0
+  - bioconda::bioconductor-edger=3.30.0
+  - bioconda::bioconductor-deseq2=1.28.0
+

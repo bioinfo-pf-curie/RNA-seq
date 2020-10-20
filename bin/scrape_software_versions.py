@@ -9,7 +9,6 @@ regexes = {
     'FastQC': ['v_fastqc.txt', r"FastQC v(\S+)"],
     'STAR': ['v_star.txt', r"(\S+)"],
     'HISAT2': ['v_hisat2.txt', r"version (\S+)"],
-    'TopHat2': ['v_tophat2.txt', r"TopHat v(\S+)"],
     'Picard MarkDuplicates': ['v_markduplicates.txt', r"([\d\.]+)-SNAPSHOT"],
     'Samtools': ['v_samtools.txt', r"samtools (\S+)"],
     'featureCounts': ['v_featurecounts.txt', r"featureCounts v(\S+)"],
@@ -24,7 +23,6 @@ results['Nextflow'] = '<span style="color:#999999;\">N/A</span>'
 results['FastQC'] = '<span style="color:#999999;\">N/A</span>'
 results['STAR'] = False
 results['HISAT2'] = False
-results['TopHat2'] = '<span style="color:#999999;\">N/A</span>'
 results['Picard MarkDuplicates'] = '<span style="color:#999999;\">N/A</span>'
 results['Samtools'] = '<span style="color:#999999;\">N/A</span>'
 results['featureCounts'] = '<span style="color:#999999;\">N/A</span>'

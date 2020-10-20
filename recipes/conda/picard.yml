@@ -1,0 +1,6 @@
+name: picard
+channels:
+  - bioconda
+dependencies:
+  - bioconda::picard=2.23.8
+  - bioconda::samtools=1.11

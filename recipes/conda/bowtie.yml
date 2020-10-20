@@ -1,0 +1,5 @@
+name: bowtie
+channels:
+  - bioconda
+dependencies:
+  - bioconda::bowtie=1.3.0
