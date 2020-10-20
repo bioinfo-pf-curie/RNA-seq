@@ -383,7 +383,7 @@ process rRNAMapping {
   label 'bowtie'
   label 'medCpu'
   label 'lowMem'
-  publishDir "${params.outDir}/rRNA_mapping", mode: 'copy',
+  publishDir "${params.outDir}/rRNAmapping", mode: 'copy',
     saveAs: {filename ->
       if (filename.indexOf("fastq.gz") > 0 &&  params.saveAlignedIntermediates) filename
       else if (filename.indexOf(".log") > 0) "logs/$filename"
@@ -1099,7 +1099,7 @@ process geneSaturation {
   label 'r'
   label 'lowCpu'
   label 'medMem'
-  publishDir "${params.outDir}/gene_saturation" , mode: 'copy'
+  publishDir "${params.outDir}/geneSaturation" , mode: 'copy'
 
   when:
   !params.skipQC && !params.skipSaturation
@@ -1126,7 +1126,7 @@ process readDistribution {
   label 'rseqc'
   label 'lowCpu'
   label 'medMem'
-  publishDir "${params.outDir}/read_distribution" , mode: 'copy'
+  publishDir "${params.outDir}/readDistribution" , mode: 'copy'
 
   when:
   !params.skipReaddist
@@ -1149,7 +1149,7 @@ process getCountsPerGeneType {
   label 'r'
   label 'lowCpu'
   label 'lowMem'
-  publishDir "${params.outDir}/read_distribution", mode: 'copy'
+  publishDir "${params.outDir}/readDistribution", mode: 'copy'
 
   when:
   !params.skipReaddist
@@ -1176,7 +1176,7 @@ process exploratoryAnalysis {
   label 'r'
   label 'lowCpu'
   label 'lowMem'
-  publishDir "${params.outDir}/exploratory_analysis", mode: 'copy'
+  publishDir "${params.outDir}/exploratoryAnalysis", mode: 'copy'
 
   when:
   !params.skipExpan && numSample > 1
@@ -1280,9 +1280,9 @@ process multiqc {
   file ('picard/*') from chPicardResults.collect().ifEmpty([])	
   file ('counts/*') from chCountsLogs.collect().ifEmpty([])
   file ('genetype/*') from chCountsPerGenetype.collect().ifEmpty([])
-  file ('exploratory_analysis_results/*') from chExploratoryAnalysisResults.collect().ifEmpty([]) 
-  file ('software_versions/*') from softwareVersionsYaml.collect().ifEmpty([])
-  file ('workflow_summary/*') from workflowSummaryYaml.collect().ifEmpty([])
+  file ('exploratoryAnalysis_results/*') from chExploratoryAnalysisResults.collect().ifEmpty([]) 
+  file ('softwareVersions/*') from softwareVersionsYaml.collect().ifEmpty([])
+  file ('workflowSummary/*') from workflowSummaryYaml.collect().ifEmpty([])
 
   output:
   file splan
@@ -1318,7 +1318,7 @@ process outputDocumentation {
   label 'python'
   label 'lowCpu'
   label 'lowMem'
-  publishDir "${params.outDir}/pipeline_info", mode: 'copy'
+  publishDir "${params.outDir}/pipelineInfo", mode: 'copy'
 
   input:
   file outputDocs from chOutputDocs
