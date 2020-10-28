@@ -1318,7 +1318,7 @@ process outputDocumentation {
   label 'python'
   label 'lowCpu'
   label 'lowMem'
-  publishDir "${params.outDir}/pipelineInfo", mode: 'copy'
+  publishDir "${params.summaryDir}/", mode: 'copy'
 
   input:
   file outputDocs from chOutputDocs
@@ -1371,7 +1371,7 @@ workflow.onComplete {
   def html_template = engine.createTemplate(hf).make(report_fields)
   def report_html = html_template.toString()
   // Write summary e-mail HTML to a file
-  def output_d = new File( "${params.outDir}/pipeline_info/" )
+  def output_d = new File( "${params.summaryDir}/" )
   if( !output_d.exists() ) {
     output_d.mkdirs()
   }
