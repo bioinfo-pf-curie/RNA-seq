@@ -15,7 +15,7 @@ custom_data:
     my_stats:
         file_format: 'csv'
         section_name: 'General Metrics'
-        description: ' of sequenced data. Note that in the context of paired-end data, the number pairs are reported (as reads).'
+        description: ' of sequenced data. High-quality RNA-seq experiments usually present a low ribosomal RNA fraction and a majority of uniquely aligned reads on coding sequences.' 
         plot_type: 'table'
         pconfig:
             namespace: 'stats'
@@ -30,7 +30,7 @@ custom_data:
               format: '{:.0f}'
               placement: 2000
             Number_of_reads:
-              title: 'Total Reads'
+              title: 'Total Fragments'
               scale: 'YlGnBu'
               format: '{:,.0f}'
               placement: 4000
@@ -226,6 +226,14 @@ custom_plot_config:
      other_intergenic_tag_count:
         color: '#ccebc5'
 
+#############################
+## Removed plots
+remove_sections :
+  - fastqc_sequence_counts
+  - fastqc_per_sequence_quality_scores
+  - fastqc_overrepresented_sequences
+  - fastqc_status_checks
+  - plotFingerprint
 
 #############################
 ## Display

@@ -3,6 +3,7 @@ version-3.2.0
 SIGNIFICANT USER-VISIBLE CHANGES
   - Use new Newflow template
   - Update all tool versions
+  - Duplicates are now calculed over mapped reads using all duplicate types (single, pair, optical)
 
 BUG FIXES
   - Fix bug when --stranded is set on command line (#120)

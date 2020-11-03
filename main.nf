@@ -334,7 +334,6 @@ summary['Save Intermeds'] = params.saveAlignedIntermediates ? 'Yes' : 'No'
 summary['Max Memory']     = params.maxMemory
 summary['Max CPUs']       = params.maxCpus
 summary['Max Time']       = params.maxTime
-summary['Container Engine'] = workflow.containerEngine
 summary['Current home']   = "$HOME"
 summary['Current user']   = "$USER"
 summary['Current path']   = "$PWD"
@@ -364,10 +363,12 @@ process fastqc {
 
   output:
   file "*_fastqc.{zip,html}" into chFastqcResults
+  file("v_fastqc.txt") into chFastqcVersion
 
   script:
   pbase = reads[0].toString() - ~/(\.fq)?(\.fastq)?(\.gz)?$/
   """
+  fastqc --version &> v_fastqc.txt
   fastqc -q $reads
   mv ${pbase}_fastqc.html ${prefix}_fastqc.html
   mv ${pbase}_fastqc.zip ${prefix}_fastqc.zip
@@ -401,10 +402,12 @@ process rRNAMapping {
   set val(prefix), file("*fastq.gz") into chRrnaMappingRes
   set val(prefix), file("*.sam") into chRrnaSam
   file "*.log" into chRrnaLogs
+  file("v_bowtie.txt") into chBowtieVersion
 
   script:
   if (params.singleEnd) {
   """
+  bowtie --version &> v_bowtie.txt
   bowtie ${params.bowtieOpts} \\
          -p ${task.cpus} \\
          --un ${prefix}_norRNA.fastq \\
@@ -412,9 +415,10 @@ process rRNAMapping {
          ${reads} \\
          ${prefix}.sam  2> ${prefix}.log && \
   gzip -f ${prefix}_norRNA*.fastq 
- """
+  """
   } else {
   """
+  bowtie --version &> v_bowtie.txt
   bowtie ${params.bowtieOpts} \\
          -p ${task.cpus} \\
          --un ${prefix}_norRNA.fastq \\
@@ -489,10 +493,12 @@ if (params.stranded == 'reverse' || params.stranded == 'forward' || params.stran
 
     output:
     set val("${prefix}"), file("${prefix}_subsample.bam") into chBamRseqc
+    file("v_bowtie2.txt") into chBowtie2Version
 
     script:
     if (params.singleEnd) {
     """
+    bowtie2 --version &> v_bowtie2.txt
     bowtie2 --fast --end-to-end --reorder \\
             -p ${task.cpus} \\
             -u ${params.nCheck} \\
@@ -501,6 +507,7 @@ if (params.stranded == 'reverse' || params.stranded == 'forward' || params.stran
      """
     } else {
     """
+    bowtie2 --version &> v_bowtie2.txt
     bowtie2 --fast --end-to-end --reorder \\
             -p ${task.cpus} \\
             -u ${params.nCheck} \\
@@ -513,7 +520,7 @@ if (params.stranded == 'reverse' || params.stranded == 'forward' || params.stran
 
   process rseqc {
     tag "${prefix - '_subsample'}"
-    label 'preseq'
+    label 'rseqc'
     label 'medCpu'
     label 'lowMem'
     publishDir "${params.outDir}/strandness" , mode: 'copy',
@@ -530,9 +537,11 @@ if (params.stranded == 'reverse' || params.stranded == 'forward' || params.stran
     file "*.{txt,pdf,r,xls}" into chRseqcResults
     stdout into ( chStrandedResultsFeatureCounts, chStrandedResultsGenetype, chStrandedResultsHTseqCounts,
                   chStrandedResultsDupradar, chStrandedResultsHisat, chStrandedResultsTable )
-  
+    file("v_rseqc.txt") into chRseqcVersionInferExperiment
+
     script:
     """
+    infer_experiment.py --version &> v_rseqc.txt    
     infer_experiment.py -i $bamRseqc -r $bed12 > ${prefix}.txt
     parse_rseq_output.sh ${prefix}.txt > ${prefix}_strandness.txt
     cat ${prefix}_strandness.txt
@@ -585,7 +594,9 @@ if( params.rrna && !params.skipRrna){
 
 // STAR
 if(params.aligner == 'star'){
-  hisatStdout = Channel.from(false)
+  chHisat2Version = Channel.empty()
+  chSamtoolsVersionHisat2Sort = Channel.empty()
+
   process star {
     tag "$prefix"
     label 'star'
@@ -614,11 +625,13 @@ if(params.aligner == 'star'){
     file "*.out.tab" into chStarLogCounts
     file "*Log.out" into chStarLog
     file "*ReadsPerGene.out.tab" optional true into chStarCountsToMerge, chStarCountsToR
+    file("v_star.txt") into chStarVersion
 
     script:
     def starCountOpt = params.counts == 'star' && params.gtf ? params.starOptsCounts : ''
     def starGtfOpt = params.gtf ? "--sjdbGTFfile $gtf" : ''
     """
+    STAR --version &> v_star.txt
     STAR --genomeDir $index \\
          ${starGtfOpt} \\
          --readFilesIn $reads  \\
@@ -649,14 +662,16 @@ if(params.aligner == 'star'){
     output:
     set file("${prefix}Log.final.out"), file ('*.bam') into  chStarAligned  
     file "${prefix}Aligned.sortedByCoord.out.bam.bai" into chBamIndexStar
+    file("v_samtools.txt") into chSamtoolsVersionStarSort
 
     script:
     """
+    samtools --version &> v_samtools.txt
     samtools sort  \\
         -@  ${task.cpus}  \\
         -m ${params.sortMaxMemory} \\
         -o ${prefix}Aligned.sortedByCoord.out.bam  \\
-        ${starBam}   
+        ${starBam}
 
     samtools index ${prefix}Aligned.sortedByCoord.out.bam
     """
@@ -679,8 +694,10 @@ if( params.rrna && !params.skipRrna ){
 }
 
 if(params.aligner == 'hisat2'){
-  chStarLog = Channel.from(false)
-  
+  chStarLog = Channel.empty()
+  chStarVersion = Channel.empty()  
+  chSamtoolsVersionHisat2Sort = Channel.empty()
+
   process makeHisatSplicesites {
      label 'hisat2'
      label 'lowCpu'
@@ -724,6 +741,7 @@ if(params.aligner == 'hisat2'){
     output:
     file "${prefix}.bam" into chHisat2Bam
     file "${prefix}.hisat2_summary.txt" into chAlignmentLogs
+    file("v_hisat2.txt") into chHisat2Version
 
     script:
     indexBase = hs2Index[0].toString() - ~/.\d.ht2/
@@ -736,6 +754,7 @@ if(params.aligner == 'hisat2'){
     }
     if (params.singleEnd) {
     """
+    hisat2 --version &> v_hisat2.txt
     hisat2 -x $indexBase \\
            -U $reads \\
            $rnastrandness \\
@@ -748,6 +767,7 @@ if(params.aligner == 'hisat2'){
     """
     } else {
     """
+    hisat2 --version &> v_hisat2.txt
     hisat2 -x $indexBase \\
            -1 ${reads[0]} \\
            -2 ${reads[1]} \\
@@ -777,10 +797,12 @@ if(params.aligner == 'hisat2'){
     output:
     file "${hisat2Bam.baseName}.sorted.bam" into chBamCount, chBamPreseq, chBamMarkduplicates, chBamFeaturecounts, chBamGenetype, chBamHTseqCounts, chBamReadDist, chBamForSubsamp, chBamSkipSubsamp
     file "${hisat2Bam.baseName}.sorted.bam.bai" into chBamIndexHisat
- 
+    file("v_samtools.txt") into chSamtoolsVersionHisat2Sort 
+
     script:
     def availMem = task.memory ? "-m ${task.memory.toBytes() / task.cpus}" : ''
     """
+    samtools --version &> v_samtools.txt
     samtools sort \\
              ${hisat2Bam} \\
              -@ ${task.cpus} $availMem \\
@@ -813,9 +835,11 @@ process bamSubsample {
 
   output:
   file "*_subsamp.bam" into chBamSubsampled
+  file("v_samtools.txt") into chSamtoolsVersionBamSubsample
 
   script:
   """
+  samtools --version &> v_samtools.txt
   samtools view -@ ${task.cpus} -s $fraction -b $bam | samtools sort -o ${bam.baseName}_subsamp.bam
   """
 }
@@ -847,9 +871,11 @@ process genebodyCoverage {
 
   output:
   file "*.{txt,pdf,r}" into chGenebodyCoverageResults
+  file("v_rseqc.txt") into chRseqcVersionGeneBodyCoverage
 
   script:
   """
+  geneBody_coverage.py --version &> v_rseqc.txt
   samtools index $bam
   geneBody_coverage.py \\
     -i $bam \\
@@ -878,10 +904,12 @@ process preseq {
 
   output:
   file "*ccurve.txt" into chPreseqResults
+  file("v_preseq.txt") into chPreseqVersion
 
   script:
   prefix = bamPreseq.toString() - ~/(.bam)?$/
   """
+  preseq &> v_preseq.txt
   preseq lc_extrap -v -B $bamPreseq -o ${prefix}.extrap_ccurve.txt -e 200e+06
   """
 }
@@ -911,11 +939,13 @@ process markDuplicates {
   file "${bam.baseName}.markDups.bam" into chBamMd
   file "${bam.baseName}.markDups_metrics.txt" into chPicardResults
   file "${bam.baseName}.markDups.bam.bai"
+  file("v_picard.txt") into chPicardVersion
 
   script:
   markdupMemOption = "\"-Xms" +  (task.memory.toGiga() / 2).trunc() + "g -Xmx" + (task.memory.toGiga() - 1) + "g\""
   log.info "[Picard MarkDuplicates] Run picard MarkDuplicates with parameter : ${markdupMemOption}"
   """
+  echo \$(picard MarkDuplicates --version 2>&1) &> v_picard.txt
   picard ${markdupMemOption} -Djava.io.tmpdir=/local/scratch MarkDuplicates \\
       MAX_RECORDS_IN_RAM=50000 \\
       INPUT=$bam \\
@@ -996,6 +1026,7 @@ process featureCounts {
   output:
   file "${bamFeaturecounts.baseName}_counts.csv" into chFeatureCountsCountsToMerge, chFeatureCountsCountsToR
   file "${bamFeaturecounts.baseName}_counts.csv.summary" into chFeatureCountsLogs
+  file("v_featurecounts.txt") into chFeaturecountsVersion
 
   script:
   def featureCountsDirection = 0
@@ -1005,6 +1036,7 @@ process featureCounts {
       featureCountsDirection = 2
   }
   """
+  featureCounts -v &> v_featurecounts.txt
   featureCounts ${params.featurecountsOpts} -T ${task.cpus} -a $gtf -o ${bamFeaturecounts.baseName}_counts.csv -p -s $featureCountsDirection $bamFeaturecounts
   """
 }
@@ -1030,7 +1062,8 @@ process HTseqCounts {
   val parseRes from  chStrandedResultsHTseqCounts
 
   output: 
-  file "*_counts.csv" into chHtseqCountsToMerge, chHtseqCountsToR, chHTSeqCountsLogs
+  file "*_counts.csv" into chHtseqCountsToMerge, chHtseqCountsToR, chHtseqCountsLogs
+  file("v_htseq.txt") into chHtseqVersion 
 
   script:
   def strandedOpt = '-s no' 
@@ -1040,6 +1073,7 @@ process HTseqCounts {
       strandedOpt= '-s reverse'
   }
   """
+  htseq-count -h | grep version  &> v_htseq.txt
   htseq-count ${params.htseqOpts} $strandedOpt $bamHTseqCounts $gtf > ${bamHTseqCounts.baseName}_counts.csv
   """
 }
@@ -1072,9 +1106,11 @@ process mergeCounts {
   file 'tablecounts_raw.csv' into chRawCounts, chCountsSaturation
   file 'tablecounts_tpm.csv' into chTpmCounts, chTpmGenetype
   file 'tableannot.csv' into chGenesAnnot
+  file("v_R.txt") into chMergeCountsVersion
 
   script:
   """
+  R --version &> v_R.txt
   echo -e ${inputCounts} | tr " " "\n" > listofcounts.tsv
   echo -n "${parseRes}" | sed -e "s/\\[//" -e "s/\\]//" -e "s/,//g" | tr " " "\n" > listofstrandness.tsv
   makeCountTable.r listofcounts.tsv ${gtf} ${params.counts} listofstrandness.tsv
@@ -1085,7 +1121,7 @@ chCountsLogs = Channel.empty()
 if( params.counts == 'featureCounts' ){
   chCountsLogs = chFeatureCountsLogs
 } else if (params.counts == 'HTseqCounts'){
-  chCountsLogs = chHTSeqCountsLogs
+  chCountsLogs = chHtseqCountsLogs
 }else if (params.counts == 'star'){
   chCountsLogs = chStarLogCounts
 }
@@ -1109,9 +1145,11 @@ process geneSaturation {
 
   output:
   file "*gcurve.txt" into chGenesatResults
+  file("v_R.txt") into chGeneSaturationVersion
 
   script:
   """
+  R --version &> v_R.txt
   gene_saturation.r $inputCounts counts.gcurve.txt
   """
 }
@@ -1137,9 +1175,12 @@ process readDistribution {
 
   output:
   file "*.txt" into chReadDistResults
+  file("v_rseqc.txt") into chRseqcVersionReadDistribution
+  file("v_rseqc.txt") into chRseqcReadDistribVersion
 
   script:
   """
+  read_distribution.py --version &> v_rseqc.txt
   read_distribution.py -i ${bamReadDist} -r ${bed12} > ${bamReadDist.baseName}.read_distribution.txt
   """
 }
@@ -1160,9 +1201,11 @@ process getCountsPerGeneType {
  
   output:
   file "*genetype.txt" into chCountsPerGenetype
+  file("v_R.txt") into chGeneTypeVersion
 
   script:
   """
+  R --version &> v_R.txt
   gene_type_expression.r ${tpmGenetype} ${gtf} counts_genetype.txt 
   """
 }
@@ -1190,9 +1233,11 @@ process exploratoryAnalysis {
 
   output:
   file "*.{txt,pdf,csv}" into chExploratoryAnalysisResults
+  file("v_R.txt") into chAnaExpVersion
 
   script:
   """
+  R --version &> v_R.txt
   exploratory_analysis.r ${tableRaw}
   cat $pcaHeader deseq2_pca_coords_mqc.csv >> tmp_file
   mv tmp_file deseq2_pca_coords_mqc.csv 
@@ -1205,33 +1250,39 @@ process exploratoryAnalysis {
  * MultiQC
  */
 
-process getSoftwareVersions {
+process getSoftwareVersions{
   label 'python'
   label 'lowCpu'
   label 'lowMem'
+  publishDir path: "${params.outDir}/software_versions", mode: "copy"
+
+  when:
+  !params.skipSoftVersions
+
+  input:
+  file 'v_fastqc.txt' from chFastqcVersion.first().ifEmpty([])
+  file 'v_star.txt' from chStarVersion.first().ifEmpty([])
+  file 'v_hisat2.txt' from chHisat2Version.first().ifEmpty([])
+  file 'v_bowtie.txt' from chBowtieVersion.first().ifEmpty([])
+  file 'v_bowtie2.txt' from chBowtie2Version.first().ifEmpty([])
+  file 'v_samtools.txt' from chSamtoolsVersionBamSubsample.concat(chSamtoolsVersionHisat2Sort,chSamtoolsVersionStarSort).first().ifEmpty([])
+  file 'v_picard.txt' from chPicardVersion.first().ifEmpty([])
+  file 'v_preseq.txt' from chPreseqVersion.first().ifEmpty([])
+  file 'v_R.txt' from chMergeCountsVersion.concat(chGeneSaturationVersion,chGeneTypeVersion,chAnaExpVersion).first().ifEmpty([])
+  file 'v_rseqc.txt' from chRseqcVersionInferExperiment.concat(chRseqcVersionGeneBodyCoverage,chRseqcReadDistribVersion).first().ifEmpty([])
+  file 'v_featurecounts.txt' from chFeaturecountsVersion.first().ifEmpty([])
+  file 'v_htseq.txt' from chHtseqVersion.first().ifEmpty([])
 
   output:
   file 'software_versions_mqc.yaml' into softwareVersionsYaml
 
   script:
   """
-  echo $workflow.manifest.version &> v_rnaseq.txt
+  echo $workflow.manifest.version &> v_pipeline.txt
   echo $workflow.nextflow.version &> v_nextflow.txt
-  fastqc --version &> v_fastqc.txt
-  STAR --version &> v_star.txt
-  hisat2 --version &> v_hisat2.txt
-  preseq &> v_preseq.txt
-  infer_experiment.py --version &> v_rseqc.txt
-  read_duplication.py --version &> v_read_duplication.txt
-  featureCounts -v &> v_featurecounts.txt
-  htseq-count -h | grep version  &> v_htseq.txt
-  picard MarkDuplicates --version &> v_markduplicates.txt || true
-  samtools --version &> v_samtools.txt
-  multiqc --version &> v_multiqc.txt
   scrape_software_versions.py &> software_versions_mqc.yaml
   """
 }
-
 
 process workflowSummaryMqc {
   when:
@@ -1313,7 +1364,7 @@ process multiqc {
  * Sub-routine
  */
 
-/*
+
 process outputDocumentation {
   label 'python'
   label 'lowCpu'
@@ -1332,7 +1383,7 @@ process outputDocumentation {
   markdown_to_html.py $outputDocs -o results_description.html
   """
 }                                                                                                                                                                                                           
-*/
+
 
 workflow.onComplete {
 
