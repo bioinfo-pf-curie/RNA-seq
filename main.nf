@@ -534,7 +534,7 @@ if (params.stranded == 'reverse' || params.stranded == 'forward' || params.stran
     file bed12 from chBedRseqc.collect()
 
     output:
-    file "*.{txt,pdf,r,xls}" into chRseqcResults
+    file "${prefix}*.{txt,pdf,r,xls}" into chRseqcResults
     stdout into ( chStrandedResultsFeatureCounts, chStrandedResultsGenetype, chStrandedResultsHTseqCounts,
                   chStrandedResultsDupradar, chStrandedResultsHisat, chStrandedResultsTable )
     file("v_rseqc.txt") into chRseqcVersionInferExperiment
@@ -870,7 +870,7 @@ process genebodyCoverage {
   file bed12 from chBedGenebodyCoverage.collect()
 
   output:
-  file "*.{txt,pdf,r}" into chGenebodyCoverageResults
+  file "${bam.baseName}*.{txt,pdf,r}" into chGenebodyCoverageResults
   file("v_rseqc.txt") into chRseqcVersionGeneBodyCoverage
 
   script:
@@ -1174,7 +1174,7 @@ process readDistribution {
   file bed12 from chBedReadDist.collect()
 
   output:
-  file "*.txt" into chReadDistResults
+  file "*read_distribution.txt" into chReadDistResults
   file("v_rseqc.txt") into chRseqcVersionReadDistribution
   file("v_rseqc.txt") into chRseqcReadDistribVersion
 

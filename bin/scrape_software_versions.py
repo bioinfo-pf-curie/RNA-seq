@@ -12,7 +12,7 @@ regexes = {
     'HISAT2': ['v_hisat2.txt', r"version (\S+)"],
     'bowtie': ['v_bowtie.txt', r"version (\S+)"],
     'bowtie2': ['v_bowtie2.txt', r"version (\S+)"],
-    'Picard': ['v_picard.txt', r"([\d\.]+)-SNAPSHOT"],
+    'Picard': ['v_picard.txt', r"Version:(\S+)"],
     'Samtools': ['v_samtools.txt', r"samtools (\S+)"],
     'featureCounts': ['v_featurecounts.txt', r"featureCounts v(\S+)"],
     'HTseqCounts': ['v_htseq.txt', r"version (\S+)"],
