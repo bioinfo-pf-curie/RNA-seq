@@ -1,0 +1,6 @@
+name: deeptools
+channels:
+  - bioconda
+dependencies:
+  - bioconda::samtools=1.11
+  - bioconda::deeptools=3.5.0=py_0

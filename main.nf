@@ -59,7 +59,7 @@ def helpMessage() {
     --genomeAnnotationPath [file]        Path  to genome annotation folder
     --starIndex [dir]                    Path to STAR index
     --hisat2Index [file]                 Path to HiSAT2 index
-     --gtf [file]                         Path to GTF file
+    --gtf [file]                         Path to GTF file
     --bed12 [file]                       Path to gene bed12 file
     --saveAlignedIntermediates [bool]    Save the intermediate files from the Aligment step  - not done by default
 
@@ -78,7 +78,9 @@ def helpMessage() {
     --skipDupradar [bool]                Skip dupRadar (and Picard MarkDups)
     --skipReaddist [bool]                Skip read distribution steps
     --skipExpan [bool]                   Skip exploratory analysis
+    --skipBigwig [bool]                  Skip bigwig files 
     --skipMultiQC [bool]                 Skip MultiQC
+    --skipSoftVersions [bool]            Skip getSoftwareVersion
 
   =======================================================
   Available Profiles
@@ -196,7 +198,7 @@ if( params.bed12 ){
   log.warn "No BED gene annotation specified - strandness detection, gene body coverage, read distribution - will be skipped !"
   Channel
     .empty()
-    .into { chBedRseqc; chBedReadDist; chBedGenebodyCoverage}
+    .into { chBedRseq; chBedReadDist; chBedGenebodyCoverage}
 }
 
 if( params.rrna ){
@@ -475,7 +477,7 @@ if (params.stranded == 'reverse' || params.stranded == 'forward' || params.stran
            def key = params.stranded
            return tuple(key)
     }
-    .into { chStrandedResultsFeatureCounts; chStrandedResultsGenetype; chStrandedResultsHTseqCounts;
+    .into { chStrandedResultsBigwig ; chStrandedResultsFeatureCounts; chStrandedResultsGenetype; chStrandedResultsHTseqCounts;
             chStrandedResultsDupradar; chStrandedResultsHisat; chStrandedResultsTable }
 }else if (params.stranded == 'auto' && !params.bed12){
   log.warn "Strandness ('auto') cannot be run without GTF annotation - will be skipped !"
@@ -535,7 +537,7 @@ if (params.stranded == 'reverse' || params.stranded == 'forward' || params.stran
 
     output:
     file "${prefix}*.{txt,pdf,r,xls}" into chRseqcResults
-    stdout into ( chStrandedResultsFeatureCounts, chStrandedResultsGenetype, chStrandedResultsHTseqCounts,
+    stdout into ( chStrandedResultsBigwig, chStrandedResultsFeatureCounts, chStrandedResultsGenetype, chStrandedResultsHTseqCounts,
                   chStrandedResultsDupradar, chStrandedResultsHisat, chStrandedResultsTable )
     file("v_rseqc.txt") into chRseqcVersionInferExperiment
 
@@ -595,7 +597,6 @@ if( params.rrna && !params.skipRrna){
 // STAR
 if(params.aligner == 'star'){
   chHisat2Version = Channel.empty()
-  chSamtoolsVersionHisat2Sort = Channel.empty()
 
   process star {
     tag "$prefix"
@@ -661,8 +662,8 @@ if(params.aligner == 'star'){
 
     output:
     set file("${prefix}Log.final.out"), file ('*.bam') into  chStarAligned  
-    file "${prefix}Aligned.sortedByCoord.out.bam.bai" into chBamIndexStar
-    file("v_samtools.txt") into chSamtoolsVersionStarSort
+    file "${prefix}_sorted.bam.bai"
+    file("v_samtools.txt") into chSamtoolsVersionSort
 
     script:
     """
@@ -670,10 +671,9 @@ if(params.aligner == 'star'){
     samtools sort  \\
         -@  ${task.cpus}  \\
         -m ${params.sortMaxMemory} \\
-        -o ${prefix}Aligned.sortedByCoord.out.bam  \\
+        -o ${prefix}_sorted.bam  \\
         ${starBam}
-
-    samtools index ${prefix}Aligned.sortedByCoord.out.bam
+    samtools index ${prefix}_sorted.bam
     """
     }
 
@@ -681,7 +681,8 @@ if(params.aligner == 'star'){
     chStarAligned
       .filter { logs, bams -> checkStarLog(logs) }
       .flatMap {  logs, bams -> bams }
-      .into { chBamCount; chBamPreseq; chBamMarkduplicates; chBamFeaturecounts; chBamGenetype; chBamHTseqCounts; chBamReadDist; chBamForSubsamp; chBamSkipSubsamp }
+      .into { chBamBigwig; chBamCount; chBamPreseq; chBamMarkduplicates; chBamFeaturecounts; 
+              chBamGenetype; chBamHTseqCounts; chBamReadDist; chBamForSubsamp; chBamSkipSubsamp }
 }
 
 
@@ -696,7 +697,6 @@ if( params.rrna && !params.skipRrna ){
 if(params.aligner == 'hisat2'){
   chStarLog = Channel.empty()
   chStarVersion = Channel.empty()  
-  chSamtoolsVersionHisat2Sort = Channel.empty()
 
   process makeHisatSplicesites {
      label 'hisat2'
@@ -795,9 +795,11 @@ if(params.aligner == 'hisat2'){
     file hisat2Bam from chHisat2Bam
 
     output:
-    file "${hisat2Bam.baseName}.sorted.bam" into chBamCount, chBamPreseq, chBamMarkduplicates, chBamFeaturecounts, chBamGenetype, chBamHTseqCounts, chBamReadDist, chBamForSubsamp, chBamSkipSubsamp
-    file "${hisat2Bam.baseName}.sorted.bam.bai" into chBamIndexHisat
-    file("v_samtools.txt") into chSamtoolsVersionHisat2Sort 
+    file "${hisat2Bam.baseName}.sorted.bam" into chBamBigwig, chBamCount, chBamPreseq, chBamMarkduplicates, 
+                                                 chBamFeaturecounts, chBamGenetype, chBamHTseqCounts, 
+                                                 chBamReadDist, chBamForSubsamp, chBamSkipSubsamp
+    file "${hisat2Bam.baseName}_sorted.bam.bai"
+    file("v_samtools.txt") into chSamtoolsVersionSort 
 
     script:
     def availMem = task.memory ? "-m ${task.memory.toBytes() / task.cpus}" : ''
@@ -807,11 +809,51 @@ if(params.aligner == 'hisat2'){
              ${hisat2Bam} \\
              -@ ${task.cpus} $availMem \\
              -m ${params.sortMaxMemory} \\
-             -o ${hisat2Bam.baseName}.sorted.bam
+             -o ${hisat2Bam.baseName}_sorted.bam
     samtools index ${hisat2Bam.baseName}.sorted.bam
     """
   }
 }
+
+/*
+ * Generate bigwig file
+ */
+
+process bigWig {
+  tag "${prefix}"
+  label 'deeptools'
+  label 'medCpu'
+  label 'medMem'
+  publishDir "${params.outDir}/bigWig", mode: "copy",
+    saveAs: {filename ->
+    	     if ( filename.endsWith(".bigwig") ) "$filename"
+             else null}
+
+  when:
+  !params.skipBigwig
+
+  input:
+  file(bam) from chBamBigwig
+  val parseRes from chStrandedResultsBigwig
+
+  output:
+  file('*.bigwig') into chBigWig
+  file("v_deeptools.txt") into chDeeptoolsVersion
+
+  script:
+  prefix = bamPreseq.toString() - ~/(_sorted)?(.bam)?$/
+  strandOpt = parseRes == 'forward' ? '--filterRNAstrand forward' : parseRes == 'reverse' ? '--filterRNAstrand reverse' : ''
+  """
+  bamCoverage --version &> v_deeptools.txt
+  samtools index ${bam}
+  bamCoverage -b ${bam} \\
+              -o ${prefix}_norm.bigwig \\
+              -p ${task.cpus} \\
+              ${strandOpt} \\
+              --normalizeUsing BPM
+  """
+}
+
 
 /*
  * Subsample the BAM files if necessary
@@ -910,7 +952,7 @@ process preseq {
   prefix = bamPreseq.toString() - ~/(.bam)?$/
   """
   preseq &> v_preseq.txt
-  preseq lc_extrap -v -B $bamPreseq -o ${prefix}.extrap_ccurve.txt -e 200e+06
+  preseq lc_extrap -v -B $bamPreseq -o ${bamPreseq.baseName}_extrap_ccurve.txt -e 200e+06
   """
 }
 
@@ -1265,12 +1307,13 @@ process getSoftwareVersions{
   file 'v_hisat2.txt' from chHisat2Version.first().ifEmpty([])
   file 'v_bowtie.txt' from chBowtieVersion.first().ifEmpty([])
   file 'v_bowtie2.txt' from chBowtie2Version.first().ifEmpty([])
-  file 'v_samtools.txt' from chSamtoolsVersionBamSubsample.concat(chSamtoolsVersionHisat2Sort,chSamtoolsVersionStarSort).first().ifEmpty([])
+  file 'v_samtools.txt' from chSamtoolsVersionBamSubsample.concat(chSamtoolsVersionSort).first().ifEmpty([])
   file 'v_picard.txt' from chPicardVersion.first().ifEmpty([])
   file 'v_preseq.txt' from chPreseqVersion.first().ifEmpty([])
   file 'v_R.txt' from chMergeCountsVersion.concat(chGeneSaturationVersion,chGeneTypeVersion,chAnaExpVersion).first().ifEmpty([])
   file 'v_rseqc.txt' from chRseqcVersionInferExperiment.concat(chRseqcVersionGeneBodyCoverage,chRseqcReadDistribVersion).first().ifEmpty([])
   file 'v_featurecounts.txt' from chFeaturecountsVersion.first().ifEmpty([])
+  file 'v_deeptools.txt' from chDeeptoolsVersion.first().ifEmpty([])
   file 'v_htseq.txt' from chHtseqVersion.first().ifEmpty([])
 
   output:

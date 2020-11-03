@@ -18,6 +18,7 @@ regexes = {
     'HTseqCounts': ['v_htseq.txt', r"version (\S+)"],
     'Preseq': ['v_preseq.txt', r"Version: (\S+)"],
     'RSeQC': ['v_rseqc.txt', r"infer_experiment.py ([\d\.]+)"],
+    'deeptools': ['v_deeptools.txt', r"deeptools (\S+)"],
     'R': ['v_R.txt', r"R version (\S+)"]
 }
 results = OrderedDict()
@@ -32,6 +33,7 @@ results['featureCounts'] = '<span style="color:#999999;\">N/A</span>'
 results['HTseqCounts'] = '<span style="color:#999999;\">N/A</span>'
 results['Preseq'] = '<span style="color:#999999;\">N/A</span>'
 results['RSeQC'] = '<span style="color:#999999;\">N/A</span>'
+results['Deeptools'] = '<span style="color:#999999;\">N/A</span>'
 results['R'] = '<span style="color:#999999;\">N/A</span>'
 
 # Search each file using its regex
