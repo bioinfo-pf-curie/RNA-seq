@@ -57,10 +57,12 @@ def helpMessage() {
 
   References: If not specified in the configuration file or you wish to overwrite any of the references.
     --genomeAnnotationPath [file]        Path  to genome annotation folder
+    --fasta [file]                       Path the genome fasta file
     --starIndex [dir]                    Path to STAR index
     --hisat2Index [file]                 Path to HiSAT2 index
     --gtf [file]                         Path to GTF file
     --bed12 [file]                       Path to gene bed12 file
+    --polym [file]                       Path to BED file with polym to check
     --saveAlignedIntermediates [bool]    Save the intermediate files from the Aligment step  - not done by default
 
   Other options:
@@ -79,6 +81,7 @@ def helpMessage() {
     --skipReaddist [bool]                Skip read distribution steps
     --skipExpan [bool]                   Skip exploratory analysis
     --skipBigwig [bool]                  Skip bigwig files 
+    --skipPolym [bool]                   Skip plymorphism call
     --skipMultiQC [bool]                 Skip MultiQC
     --skipSoftVersions [bool]            Skip getSoftwareVersion
 
@@ -119,6 +122,8 @@ params.hisat2Index = params.genome ? params.genomes[ params.genome ].hisat2 ?: f
 params.rrna = params.genome ? params.genomes[ params.genome ].rrna ?: false : false
 params.gtf = params.genome ? params.genomes[ params.genome ].gtf ?: false : false
 params.bed12 = params.genome ? params.genomes[ params.genome ].bed12 ?: false : false
+params.fasta = params.genome ? params.genomes[ params.genome ].fasta ?: false : false
+params.polym = params.genome ? params.genomes[ params.genome ].polym ?: false : false
 
 // Tools option configuration
 // Add here the list of options that can change from a reference genome to another
@@ -216,6 +221,25 @@ if ( params.metadata ){
     .fromPath( params.metadata )
     .ifEmpty { exit 1, "Metadata file not found: ${params.metadata}" }
     .set { chMetadata }
+}
+
+if ( params.fasta ){
+  Channel
+    .fromPath( params.fasta )
+    .ifEmpty { exit 1, "Genome fasta file not found: ${params.fasta}" }
+    .set { chFasta }
+}else {
+  chFasta = Channel.empty()
+}
+
+if ( params.polym ){
+  Channel
+    .fromPath( params.polym )
+    .ifEmpty { exit 1, "Polym BED file not found: ${params.polym}" }
+    .into { chPolymBedCall; chPolymBedCombine } 
+}else{
+  chPolymBedCall = Channel.empty()
+  chPolymBedCombine = Channel.empty()
 }
 
 /*
@@ -332,6 +356,7 @@ if(params.aligner == 'star'){
 summary['Counts'] = params.counts
 if(params.gtf)  summary['GTF Annotation']  = params.gtf
 if(params.bed12) summary['BED Annotation']  = params.bed12
+if(params.polym) summary['BED Polym']  = params.polym
 summary['Save Intermeds'] = params.saveAlignedIntermediates ? 'Yes' : 'No'
 summary['Max Memory']     = params.maxMemory
 summary['Max CPUs']       = params.maxCpus
@@ -978,7 +1003,7 @@ process markDuplicates {
   file bam from chBamMarkduplicates
 
   output:
-  file "${bam.baseName}.markDups.bam" into chBamMd
+  file "${bam.baseName}.markDups.bam" into ( chBamMd, chBamPolym )
   file "${bam.baseName}.markDups_metrics.txt" into chPicardResults
   file "${bam.baseName}.markDups.bam.bai"
   file("v_picard.txt") into chPicardVersion
@@ -1038,6 +1063,59 @@ process dupradar {
   def paired = params.singleEnd ? 'single' :  'paired'
   """
   dupRadar.r $bamMd $gtf $dupradarDirection $paired ${task.cpus}
+  """
+}
+
+/* 
+ * Identito - polym
+ */
+
+process callPolym {
+  label 'bcftools'
+  label 'lowCpu'
+  label 'lowMem'
+
+  when:
+  !params.skipPolym
+
+  input:
+  file bamMd from chBamPolym
+  file polymBed from chPolymBedCall.collect()
+  file fasta from chFasta.collect()
+
+  output:
+  file("*.vcf") into chPolymVCF
+  file("v_bcftools.txt") into chBcftoolsVersion
+
+  script:
+  """
+  bcftools --version &> v_bcftools.txt
+  bcftools mpileup -R ${polymBed} -f ${fasta} --annotate FORMAT/DP,FORMAT/AD ${bamMd} > ${bamMd.baseName}_polym.vcf
+  """
+}
+
+
+process combinePolym {
+  label 'r'
+  label 'lowCpu'
+  label 'lowMem'
+
+  when:
+  !params.skipPolym
+
+  input:
+  file(inputVcf) from chPolymVCF.collect()  
+  file polymBed from chPolymBedCombine.collect()
+
+  output:
+  file("*.tsv") into chPolymResults
+  file("v_R.txt") into chCombinePolymVersion
+
+  script:
+  """
+  R --version &> v_R.txt
+  echo -e ${inputVcf} | tr " " "\n" > listofcounts.tsv
+  getPolym.r listofcounts.tsv combinePolym.tsv ${polymBed}
   """
 }
 
@@ -1310,10 +1388,11 @@ process getSoftwareVersions{
   file 'v_samtools.txt' from chSamtoolsVersionBamSubsample.concat(chSamtoolsVersionSort).first().ifEmpty([])
   file 'v_picard.txt' from chPicardVersion.first().ifEmpty([])
   file 'v_preseq.txt' from chPreseqVersion.first().ifEmpty([])
-  file 'v_R.txt' from chMergeCountsVersion.concat(chGeneSaturationVersion,chGeneTypeVersion,chAnaExpVersion).first().ifEmpty([])
+  file 'v_R.txt' from chMergeCountsVersion.concat(chCombinePolymVersion,chGeneSaturationVersion,chGeneTypeVersion,chAnaExpVersion).first().ifEmpty([])
   file 'v_rseqc.txt' from chRseqcVersionInferExperiment.concat(chRseqcVersionGeneBodyCoverage,chRseqcReadDistribVersion).first().ifEmpty([])
   file 'v_featurecounts.txt' from chFeaturecountsVersion.first().ifEmpty([])
   file 'v_deeptools.txt' from chDeeptoolsVersion.first().ifEmpty([])
+  file 'v_bcftools.txt' from chBcftoolsVersion.first().ifEmpty([])
   file 'v_htseq.txt' from chHtseqVersion.first().ifEmpty([])
 
   output:

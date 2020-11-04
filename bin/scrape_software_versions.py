@@ -14,6 +14,7 @@ regexes = {
     'bowtie2': ['v_bowtie2.txt', r"version (\S+)"],
     'Picard': ['v_picard.txt', r"Version:(\S+)"],
     'Samtools': ['v_samtools.txt', r"samtools (\S+)"],
+    'Bcftools': ['v_bcftools.txt', r"bcftools (\S+)"],
     'featureCounts': ['v_featurecounts.txt', r"featureCounts v(\S+)"],
     'HTseqCounts': ['v_htseq.txt', r"version (\S+)"],
     'Preseq': ['v_preseq.txt', r"Version: (\S+)"],
@@ -29,6 +30,7 @@ results['STAR'] = '<span style="color:#999999;\">N/A</span>'
 results['HISAT2'] = '<span style="color:#999999;\">N/A</span>' 
 results['Picard'] = '<span style="color:#999999;\">N/A</span>'
 results['Samtools'] = '<span style="color:#999999;\">N/A</span>'
+results['Bcftools'] = '<span style="color:#999999;\">N/A</span>'
 results['featureCounts'] = '<span style="color:#999999;\">N/A</span>'
 results['HTseqCounts'] = '<span style="color:#999999;\">N/A</span>'
 results['Preseq'] = '<span style="color:#999999;\">N/A</span>'

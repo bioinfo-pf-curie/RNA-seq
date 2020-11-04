@@ -2,6 +2,7 @@ version-3.2.0
 
 NEW FEATURES:
   - Generate bigwig files
+  - Add polymorphism call for Human identito-vigilance
 
 SIGNIFICANT USER-VISIBLE CHANGES
   - Use new Newflow template

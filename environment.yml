@@ -11,6 +11,7 @@ dependencies:
   - bioconda::fastqc=0.11.9
   - bioconda::multiqc=1.9
   - bioconda::samtools=1.11
+  - bioconda::bcftools=1.11
   - bioconda::star=2.7.6a
   - bioconda::hisat2=2.2.1
   - bioconda::bowtie2=2.4.2
