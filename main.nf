@@ -841,7 +841,7 @@ process bigWig {
   file("v_deeptools.txt") into chDeeptoolsVersion
 
   script:
-  prefix = bamPreseq.toString() - ~/(_sorted)?(.bam)?$/
+  prefix = bam.toString() - ~/(_sorted)?(.bam)?$/
   strandOpt = parseRes == 'forward' ? '--filterRNAstrand forward' : parseRes == 'reverse' ? '--filterRNAstrand reverse' : ''
   """
   bamCoverage --version &> v_deeptools.txt
@@ -1296,7 +1296,7 @@ process getSoftwareVersions{
   label 'python'
   label 'lowCpu'
   label 'lowMem'
-  publishDir path: "${params.outDir}/software_versions", mode: "copy"
+  publishDir path: "${params.outDir}/softwareVersions", mode: "copy"
 
   when:
   !params.skipSoftVersions
@@ -1469,13 +1469,13 @@ workflow.onComplete {
   if( !output_d.exists() ) {
     output_d.mkdirs()
   }
- def output_hf = new File( output_d, "pipeline_report.html" )
+  def output_hf = new File( output_d, "pipelineReport.html" )
   output_hf.withWriter { w -> w << report_html }
-  def output_tf = new File( output_d, "pipeline_report.txt" )
+  def output_tf = new File( output_d, "pipelineReport.txt" )
   output_tf.withWriter { w -> w << report_txt }
 
   /*oncomplete file*/
-  File woc = new File("${params.outDir}/workflow.oncomplete.txt")
+  File woc = new File("${params.outDir}/workflowOnComplete.txt")
   Map endSummary = [:]
   endSummary['Completed on'] = workflow.complete
   endSummary['Duration']     = workflow.duration
