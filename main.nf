@@ -1073,6 +1073,7 @@ process callPolym {
   label 'bcftools'
   label 'lowCpu'
   label 'lowMem'
+  publishDir "${params.outDir}/polym", mode: 'copy'
 
   when:
   !params.skipPolym
@@ -1098,6 +1099,7 @@ process combinePolym {
   label 'r'
   label 'lowCpu'
   label 'lowMem'
+  publishDir "${params.outDir}/polym", mode: 'copy'
 
   when:
   !params.skipPolym
@@ -1113,8 +1115,8 @@ process combinePolym {
   script:
   """
   R --version &> v_R.txt
-  echo -e ${inputVcf} | tr " " "\n" > listofcounts.tsv
-  getPolym.r listofcounts.tsv combinePolym.tsv ${polymBed}
+  echo -e ${inputVcf} | tr " " "\n" > listofpolym.txt
+  getPolym.r listofpolym.txt combinePolym.tsv ${polymBed}
   """
 }
 
@@ -1214,7 +1216,7 @@ process mergeCounts {
   publishDir "${params.outDir}/counts", mode: 'copy'
   label 'r'
   label 'lowCpu'
-  label 'lowMem'
+  label 'medMem'
 
   input:
   file inputCounts from chCountsToMerge.collect()
