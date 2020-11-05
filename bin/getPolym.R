@@ -12,7 +12,7 @@ minDP<-ifelse(is.na(args[4]),10,as.numeric(as.character(args[4])))
 
 ## load BED with polym
 bed <- read.table(polym)[,c(1,3:4)]
-bed <- cbind(bed,data.frame(Reduce(function(x,y) rbind(x,y), strsplit(gsub(">","_",as.character(bed[,4])),"_"), accumulate=FALSE)))
+bed <- cbind(bed,data.frame(Reduce(function(x,y) rbind(x,y), strsplit(gsub(">","_",as.character(bed[,"V4"])),"_"), accumulate=FALSE)))
 colnames(bed) <- c("chr","pos","name","gene","rs","ref","alt")
 
 ## look for files
