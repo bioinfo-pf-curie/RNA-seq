@@ -686,7 +686,7 @@ if(params.aligner == 'star'){
     set val(prefix), file(LogFinalOut), file (starBam) from chStarSam
 
     output:
-    set file("${prefix}Log.final.out"), file ('*.bam') into  chStarAligned  
+    set file("${prefix}Log.final.out"), file ("*.{bam,bam.bai}") into chStarAligned
     file "${prefix}_sorted.bam.bai"
     file("v_samtools.txt") into chSamtoolsVersionSort
 
@@ -705,7 +705,8 @@ if(params.aligner == 'star'){
     // Filter removes all 'aligned' channels that fail the check
     chStarAligned
       .filter { logs, bams -> checkStarLog(logs) }
-      .flatMap {  logs, bams -> bams }
+      .map { logs, bams -> bams }
+      .dump (tag:'starbams')
       .into { chBamBigwig; chBamCount; chBamPreseq; chBamMarkduplicates; chBamFeaturecounts; 
               chBamGenetype; chBamHTseqCounts; chBamReadDist; chBamForSubsamp; chBamSkipSubsamp }
 }
@@ -820,9 +821,9 @@ if(params.aligner == 'hisat2'){
     file hisat2Bam from chHisat2Bam
 
     output:
-    file "${hisat2Bam.baseName}.sorted.bam" into chBamBigwig, chBamCount, chBamPreseq, chBamMarkduplicates, 
-                                                 chBamFeaturecounts, chBamGenetype, chBamHTseqCounts, 
-                                                 chBamReadDist, chBamForSubsamp, chBamSkipSubsamp
+    file ('*sorted.{bam,bam.bai}') into chBamBigwig, chBamCount, chBamPreseq, chBamMarkduplicates, 
+                                        chBamFeaturecounts, chBamGenetype, chBamHTseqCounts, 
+                                        chBamReadDist, chBamForSubsamp, chBamSkipSubsamp
     file "${hisat2Bam.baseName}_sorted.bam.bai"
     file("v_samtools.txt") into chSamtoolsVersionSort 
 
@@ -866,12 +867,11 @@ process bigWig {
   file("v_deeptools.txt") into chDeeptoolsVersion
 
   script:
-  prefix = bam.toString() - ~/(_sorted)?(.bam)?$/
+  prefix = bam[0].toString() - ~/(_sorted)?(.bam)?$/
   strandOpt = parseRes == 'forward' ? '--filterRNAstrand forward' : parseRes == 'reverse' ? '--filterRNAstrand reverse' : ''
   """
   bamCoverage --version &> v_deeptools.txt
-  samtools index ${bam}
-  bamCoverage -b ${bam} \\
+  bamCoverage -b ${bam[0]} \\
               -o ${prefix}_norm.bigwig \\
               -p ${task.cpus} \\
               ${strandOpt} \\
@@ -897,17 +897,19 @@ process bamSubsample {
   label 'samtools'
   label 'lowCpu'
   label 'lowMem'
+
   input:
   set file(bam), val(fraction) from chBamForSubsampFiltered
 
   output:
-  file "*_subsamp.bam" into chBamSubsampled
+  file "*_subsamp.{bam,bam.bai}" into chBamSubsampled
   file("v_samtools.txt") into chSamtoolsVersionBamSubsample
 
   script:
   """
   samtools --version &> v_samtools.txt
-  samtools view -@ ${task.cpus} -s $fraction -b $bam | samtools sort -o ${bam.baseName}_subsamp.bam
+  samtools view -@ ${task.cpus} -s ${fraction} -b ${bam[0]} | samtools sort -o ${bam[0].baseName}_subsamp.bam
+  samtools index ${bam[0].baseName}_subsamp.bam
   """
 }
 
@@ -937,18 +939,17 @@ process genebodyCoverage {
   file bed12 from chBedGenebodyCoverage.collect()
 
   output:
-  file "${bam.baseName}*.{txt,pdf,r}" into chGenebodyCoverageResults
+  file "${bam[0].baseName}*.{txt,pdf,r}" into chGenebodyCoverageResults
   file("v_rseqc.txt") into chRseqcVersionGeneBodyCoverage
 
   script:
   """
   geneBody_coverage.py --version &> v_rseqc.txt
-  samtools index $bam
   geneBody_coverage.py \\
-    -i $bam \\
-    -o ${bam.baseName}.rseqc \\
-    -r $bed12
-  mv log.txt ${bam.baseName}.rseqc.log.txt
+    -i ${bam[0]} \\
+    -o ${bam[0].baseName}.rseqc \\
+    -r ${bed12}
+  mv log.txt ${bam[0].baseName}.rseqc.log.txt
   """
 }
 
@@ -967,17 +968,16 @@ process preseq {
   !params.skipQC && !params.skipSaturation
 
   input:
-  file bamPreseq from chBamPreseq
+  file bam from chBamPreseq
 
   output:
   file "*ccurve.txt" into chPreseqResults
   file("v_preseq.txt") into chPreseqVersion
 
   script:
-  prefix = bamPreseq.toString() - ~/(.bam)?$/
   """
   preseq &> v_preseq.txt
-  preseq lc_extrap -v -B $bamPreseq -o ${bamPreseq.baseName}_extrap_ccurve.txt -e 200e+06
+  preseq lc_extrap -v -B ${bam[0]} -o ${bam[0].baseName}_extrap_ccurve.txt -e 200e+06
   """
 }
 
@@ -1003,10 +1003,9 @@ process markDuplicates {
   file bam from chBamMarkduplicates
 
   output:
-  file "${bam.baseName}.markDups.bam" into ( chBamMd, chBamPolym )
-  file "${bam.baseName}.markDups_metrics.txt" into chPicardResults
-  file "${bam.baseName}.markDups.bam.bai"
-  file("v_picard.txt") into chPicardVersion
+  file('*markDups.{bam,bai}') into ( chBamMd, chBamPolym )
+  file('*markDups_metrics.txt') into chPicardResults
+  file('v_picard.txt') into chPicardVersion
 
   script:
   markdupMemOption = "\"-Xms" +  (task.memory.toGiga() / 2).trunc() + "g -Xmx" + (task.memory.toGiga() - 1) + "g\""
@@ -1015,14 +1014,14 @@ process markDuplicates {
   echo \$(picard MarkDuplicates --version 2>&1) &> v_picard.txt
   picard ${markdupMemOption} -Djava.io.tmpdir=/local/scratch MarkDuplicates \\
       MAX_RECORDS_IN_RAM=50000 \\
-      INPUT=$bam \\
-      OUTPUT=${bam.baseName}.markDups.bam \\
-      METRICS_FILE=${bam.baseName}.markDups_metrics.txt \\
+      INPUT=${bam[0]} \\
+      OUTPUT=${bam[0].baseName}.markDups.bam \\
+      METRICS_FILE=${bam[0].baseName}.markDups_metrics.txt \\
       REMOVE_DUPLICATES=false \\
       ASSUME_SORTED=true \\
       PROGRAM_RECORD_ID='null' \\
       VALIDATION_STRINGENCY=LENIENT
-  samtools index ${bam.baseName}.markDups.bam
+  samtools index ${bam[0].baseName}.markDups.bam
   """
 }
 
@@ -1062,7 +1061,7 @@ process dupradar {
   }
   def paired = params.singleEnd ? 'single' :  'paired'
   """
-  dupRadar.r $bamMd $gtf $dupradarDirection $paired ${task.cpus}
+  dupRadar.r ${bamMd[0]} ${gtf} ${dupradarDirection} ${paired} ${task.cpus}
   """
 }
 
@@ -1090,7 +1089,7 @@ process callPolym {
   script:
   """
   bcftools --version &> v_bcftools.txt
-  bcftools mpileup -R ${polymBed} -f ${fasta} --annotate FORMAT/DP,FORMAT/AD ${bamMd} > ${bamMd.baseName}_polym.vcf
+  bcftools mpileup -R ${polymBed} -f ${fasta} --annotate FORMAT/DP,FORMAT/AD ${bamMd[0]} > ${bamMd[0].baseName}_polym.vcf
   """
 }
 
@@ -1139,13 +1138,13 @@ process featureCounts {
   params.counts == 'featureCounts'
 
   input:
-  file bamFeaturecounts from chBamFeaturecounts
+  file bam from chBamFeaturecounts
   file gtf from chGtfFeatureCounts.collect()
   val parseRes from chStrandedResultsFeatureCounts
 
   output:
-  file "${bamFeaturecounts.baseName}_counts.csv" into chFeatureCountsCountsToMerge, chFeatureCountsCountsToR
-  file "${bamFeaturecounts.baseName}_counts.csv.summary" into chFeatureCountsLogs
+  file "${bam.baseName}_counts.csv" into chFeatureCountsCountsToMerge, chFeatureCountsCountsToR
+  file "${bam.baseName}_counts.csv.summary" into chFeatureCountsLogs
   file("v_featurecounts.txt") into chFeaturecountsVersion
 
   script:
@@ -1157,7 +1156,7 @@ process featureCounts {
   }
   """
   featureCounts -v &> v_featurecounts.txt
-  featureCounts ${params.featurecountsOpts} -T ${task.cpus} -a $gtf -o ${bamFeaturecounts.baseName}_counts.csv -p -s $featureCountsDirection $bamFeaturecounts
+  featureCounts ${params.featurecountsOpts} -T ${task.cpus} -a ${gtf} -o ${bam[0].baseName}_counts.csv -p -s ${featureCountsDirection} ${bamFeaturecounts}
   """
 }
 
@@ -1177,7 +1176,7 @@ process HTseqCounts {
   params.counts == 'HTseqCounts'
 
   input:
-  file bamHTseqCounts from chBamHTseqCounts
+  file bam from chBamHTseqCounts
   file gtf from chGtfHTseqCounts.collect()
   val parseRes from  chStrandedResultsHTseqCounts
 
@@ -1194,7 +1193,7 @@ process HTseqCounts {
   }
   """
   htseq-count -h | grep version  &> v_htseq.txt
-  htseq-count ${params.htseqOpts} $strandedOpt $bamHTseqCounts $gtf > ${bamHTseqCounts.baseName}_counts.csv
+  htseq-count ${params.htseqOpts} ${strandedOpt} ${bam[0]} $gtf > ${bam[0].baseName}_counts.csv
   """
 }
 
@@ -1290,7 +1289,7 @@ process readDistribution {
   !params.skipReaddist
 
   input:
-  file bamReadDist from chBamReadDist
+  file bam from chBamReadDist
   file bed12 from chBedReadDist.collect()
 
   output:
@@ -1301,7 +1300,7 @@ process readDistribution {
   script:
   """
   read_distribution.py --version &> v_rseqc.txt
-  read_distribution.py -i ${bamReadDist} -r ${bed12} > ${bamReadDist.baseName}.read_distribution.txt
+  read_distribution.py -i ${bam[0]} -r ${bed12} > ${bam[0].baseName}.read_distribution.txt
   """
 }
 
