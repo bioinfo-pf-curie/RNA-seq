@@ -1003,7 +1003,7 @@ process markDuplicates {
   file bam from chBamMarkduplicates
 
   output:
-  file('*markDups.{bam,bai}') into ( chBamMd, chBamPolym )
+  file('*markDups.{bam,bam.bai}') into ( chBamMd, chBamPolym )
   file('*markDups_metrics.txt') into chPicardResults
   file('v_picard.txt') into chPicardVersion
 
