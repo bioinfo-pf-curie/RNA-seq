@@ -61,11 +61,11 @@ res <- lapply(1:length(lfile),function(i){
     tab[,name] <- round(tab[,"AD"]*100/tab[,"DP"],2)
     
     if(length(which(is.na(tab[,name]) & tab[,"DP"]>=minDP))>0){
-        tab[which(is.na(tab[,name]) & tab[,"DP"]>=dp_min),name] <- 0
+        tab[which(is.na(tab[,name]) & tab[,"DP"]>=minDP),name] <- 0
     }
     
     if(length(which(is.na(tab[,name]) & tab[,"DP"]<minDP))>0){
-        tab[which(is.na(tab[,name]) & tab[,"DP"]<dp_min),name] <- paste0("NEC:",tab[which(is.na(tab[,name]) & tab[,"DP"]<dp_min),"DP"])
+        tab[which(is.na(tab[,name]) & tab[,"DP"]<minDP),name] <- paste0("NEC:",tab[which(is.na(tab[,name]) & tab[,"DP"]<minDP),"DP"])
     }
     tab[,"Sample_ID"] <- paste(tab[,"gene"],tab[,"rs"],sep="_")
     #return(tab[,c("Sample_ID",name)])
