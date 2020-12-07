@@ -25,7 +25,7 @@ params {
     'hg19_base' {
       star    = "${params.genomes_base}/Human/hg19_base/indexes/STAR/"
       bowtie2 = "${params.genomes_base}/Human/hg19_base/indexes/bowtie2/hg19_base"	
-      hisat2  =	"${params.genomes_base}/Human/hg19/indexes/hisat2/hg19_base"
+      hisat2  =	"${params.genomes_base}/Human/hg19_base/indexes/hisat2/hg19_base"
       rrna    = "${params.genomes_base}/Human/rRNA/rRNA_human_complete"
       bed12   = "${params.genomes_base}/Human/hg19_base/gtf/parseGTFAnnotation/gencode.v19.annotation.bed12"
       gtf     = "${params.genomes_base}/Human/hg19_base/gtf/gencode.v19.annotation.gtf"
@@ -85,7 +85,7 @@ params {
       gtf     = "${params.genomes_base}/Zebrafish/danRer10/gtf/danRer10_UCSC_RefGene.gtf"
     }
 
-    'dmel_r6.21_FB2018_02' {
+    'dmelr6.21' {
       star    = "${params.genomes_base}/Drosophila_melanogaster/dmel_r6.21_FB2018_02/indexes/STAR/"
       bowtie2 = "${params.genomes_base}/Drosophila_melanogaster/dmel_r6.21_FB2018_02/indexes/bowtie2/dmel-all-chromosome-r6.21"
       hisat2  = ""
@@ -130,7 +130,7 @@ params {
       gtf     = "${params.genomes_base}/Saccharomyces_cerevisiae/S288c/gtf/Saccharomyces_cerevisiae.R64-1-1.93.gtf"
     }
 
-    'Erdman' {
+    'Erdman-ASM35020v1' {
       star    = "${params.genomes_base}/Mycobacterium_tuberculosis/Erdman/indexes/STAR/"
       bowtie2 = "${params.genomes_base}/Mycobacterium_tuberculosis/Erdman/indexes/bowtie2/Mycobacterium_tuberculosis_str_erdman_atcc_35801.ASM35020v1"
       hisat2  = ""
@@ -175,7 +175,7 @@ params {
       gtf     = ""
     }
 
-    'CBS_4309_ASM23734v1' {
+    'CBS4309-ASM23734v1' {
       star    = "${params.genomes_base}/Naumovozyma_castellii/CBS_4309_ASM23734v1/indexes/STAR/"
       bowtie2 = "${params.genomes_base}/Naumovozyma_castellii/CBS_4309_ASM23734v1/indexes/bowtie2/Naumovozyma_castellii_cbs_4309_gca_000237345.ASM23734v1.dna.toplevel"
       hisat2  = "${params.genomes_base}/Naumovozyma_castellii/CBS_4309_ASM23734v1/indexes/hisat2/Naumovozyma_castellii_cbs_4309_gca_000237345.ASM23734v1.dna.toplevel"
@@ -202,7 +202,7 @@ params {
      gtf      = "${params.genomes_base}/Acyrthosiphon_pisum/Acyr2.0.47/gtf/Acyrthosiphon_pisum.Acyr_2.0.47.gtf"
     }
 
-    'Rhopalosiphum_padi_v2' {
+    'Rpadi-v2.0' {
     star      = "${params.genomes_base}/Rhopalosiphum_padi/v2/indexes/STAR"
     bowtie2   = "${params.genomes_base}/Rhopalosiphum_padi/v2/indexes/bowtie2/Rhopalosiphum_padi_v2"
     hisat2    =	"${params.genomes_base}/Rhopalosiphum_padi/v2/indexes/hisat2/Rhopalosiphum_padi_v2"
