@@ -207,8 +207,8 @@ params {
     bowtie2   = "${params.genomes_base}/Rhopalosiphum_padi/v2/indexes/bowtie2/Rhopalosiphum_padi_v2"
     hisat2    =	"${params.genomes_base}/Rhopalosiphum_padi/v2/indexes/hisat2/Rhopalosiphum_padi_v2"
     rrna      = ""
-    bed12     = "${params.genomes_base}/Rhopalosiphum_padi/v2/gtf/Rpadi_v2.bed12"
-    gtf       = "${params.genomes_base}/Rhopalosiphum_padi/v2/gtf/Rpadi_v2.gtf"
+    bed12     = "${params.genomes_base}/Rhopalosiphum_padi/v2/gtf/Rpadi_v2.with.exons.bed12"
+    gtf       = "${params.genomes_base}/Rhopalosiphum_padi/v2/gtf/Rpadi_v2.with.exons.gtf"
     }
   }
 }
