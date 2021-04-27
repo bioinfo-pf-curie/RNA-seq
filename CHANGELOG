@@ -1,6 +1,7 @@
+***************************************
 version-3.2.0
 
-NEW FEATURES:
+NEW FEATURES
   - Generate bigwig files
   - Add polymorphism call for Human identito-vigilance
 
@@ -16,6 +17,12 @@ DEPRECATED
   - Tophat2 is no longer supported. `--tophat2_index` is now deprecated and `--aligner` has been updated.
   - option `--markdup_java_options` is deprecated. The Java memory is calculated
     from the process memomry
+
+**************************************
+version-3.1.8
+
+NEW FEATURES
+   o Add Caenorhabditis_elegans/WBcel235 annotation
 
 **************************************
 version-3.1.7
