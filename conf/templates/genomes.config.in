@@ -194,21 +194,30 @@ params {
     }
 
     'Acyr2.0' {
-     star     = "${params.genomes_base}/Acyrthosiphon_pisum/Acyr2.0.47/indexes/STAR/"
-     bowtie2  = "${params.genomes_base}/Acyrthosiphon_pisum/Acyr2.0.47/indexes/bowtie2/Acyrthosiphon_pisum.Acyr_2.0.dna.toplevel"
-     hisat2   = "${params.genomes_base}/Acyrthosiphon_pisum/Acyr2.0.47/indexes/hisat2/Acyrthosiphon_pisum.Acyr_2.0.dna.toplevel"
-     rrna     = ""
-     bed12    = "${params.genomes_base}/Acyrthosiphon_pisum/Acyr2.0.47/gtf/parseGTFAnnotation/Acyrthosiphon_pisum.Acyr_2.0.47.bed12"
-     gtf      = "${params.genomes_base}/Acyrthosiphon_pisum/Acyr2.0.47/gtf/Acyrthosiphon_pisum.Acyr_2.0.47.gtf"
+      star    = "${params.genomes_base}/Acyrthosiphon_pisum/Acyr2.0.47/indexes/STAR/"
+      bowtie2 = "${params.genomes_base}/Acyrthosiphon_pisum/Acyr2.0.47/indexes/bowtie2/Acyrthosiphon_pisum.Acyr_2.0.dna.toplevel"
+      hisat2  = "${params.genomes_base}/Acyrthosiphon_pisum/Acyr2.0.47/indexes/hisat2/Acyrthosiphon_pisum.Acyr_2.0.dna.toplevel"
+      rrna    = ""
+      bed12   = "${params.genomes_base}/Acyrthosiphon_pisum/Acyr2.0.47/gtf/parseGTFAnnotation/Acyrthosiphon_pisum.Acyr_2.0.47.bed12"
+      gtf     = "${params.genomes_base}/Acyrthosiphon_pisum/Acyr2.0.47/gtf/Acyrthosiphon_pisum.Acyr_2.0.47.gtf"
     }
 
     'Rpadi-v2.0' {
-    star      = "${params.genomes_base}/Rhopalosiphum_padi/v2/indexes/STAR"
-    bowtie2   = "${params.genomes_base}/Rhopalosiphum_padi/v2/indexes/bowtie2/Rhopalosiphum_padi_v2"
-    hisat2    =	"${params.genomes_base}/Rhopalosiphum_padi/v2/indexes/hisat2/Rhopalosiphum_padi_v2"
-    rrna      = ""
-    bed12     = "${params.genomes_base}/Rhopalosiphum_padi/v2/gtf/Rpadi_v2.with.exons.bed12"
-    gtf       = "${params.genomes_base}/Rhopalosiphum_padi/v2/gtf/Rpadi_v2.with.exons.gtf"
+      star    = "${params.genomes_base}/Rhopalosiphum_padi/v2/indexes/STAR"
+      bowtie2 = "${params.genomes_base}/Rhopalosiphum_padi/v2/indexes/bowtie2/Rhopalosiphum_padi_v2"
+      hisat2  =	"${params.genomes_base}/Rhopalosiphum_padi/v2/indexes/hisat2/Rhopalosiphum_padi_v2"
+      rrna    = ""
+      bed12   = "${params.genomes_base}/Rhopalosiphum_padi/v2/gtf/Rpadi_v2.with.exons.bed12"
+      gtf     = "${params.genomes_base}/Rhopalosiphum_padi/v2/gtf/Rpadi_v2.with.exons.gtf"
+    }
+   
+    'WBcel235' {
+      star    = "${params.genomes_base}/Caenorhabditis_elegans/WBcel235/indexes/STAR"
+      bowtie2 = "${params.genomes_base}/Caenorhabditis_elegans/WBcel235/indexes/bowtie2/Caenorhabditis_elegans.WBcel235.dna.toplevel"
+      hisat2  = "${params.genomes_base}/Caenorhabditis_elegans/WBcel235/indexes/hisat2/Caenorhabditis_elegans.WBcel235.dna.toplevel"
+      rrna    = ""
+      bed12   = "${params.genomes_base}/Caenorhabditis_elegans/WBcel235/gtf/Caenorhabditis_elegans.WBcel235.103.bed12"
+      gtf     = "${params.genomes_base}/Caenorhabditis_elegans/WBcel235/gtf/Caenorhabditis_elegans.WBcel235.103.gtf"
     }
   }
 }
