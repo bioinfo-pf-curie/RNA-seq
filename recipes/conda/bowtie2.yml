@@ -1,5 +1,7 @@
-name: bowtie2
+name: bowtie2-2.4.2
 channels:
+  - conda-forge
   - bioconda
+  - defaults
 dependencies:
-  - bioconda::bowtie2=2.4.2
+  - bioconda::bowtie2=2.4.2=py37h8270d21_1

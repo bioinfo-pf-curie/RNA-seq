@@ -1,9 +1,8 @@
-name: python
+name: python-3.7.10
 channels:
   - conda-forge
   - bioconda
   - defaults
 dependencies:
-  # Add required software dependencies here
-  - python=3.7
-  - pymdown-extensions=7.1
+  - python=3.7.10=hffdb5ce_100_cpython
+  - conda-forge::pymdown-extensions=7.1

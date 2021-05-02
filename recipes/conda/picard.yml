@@ -1,6 +1,8 @@
-name: picard
+name: picard-2.25.3
 channels:
+  - conda-forge
   - bioconda
+  - defaults
 dependencies:
-  - bioconda::picard=2.23.8
-  - bioconda::samtools=1.11
+  - bioconda::picard=2.25.3=hdfd78af_0
+  - bioconda::samtools=1.12=h9aed4be_1
