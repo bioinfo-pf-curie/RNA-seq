@@ -57,7 +57,7 @@ Strandedness:
   --stranded                    Library strandness ['auto', 'forward', 'reverse', 'no']. Default: 'auto'
 
 Mapping:
-  --aligner                     Tool for read alignments ['star', 'hisat2', 'tophat2']. Default: 'star'
+  --aligner                     Tool for read alignments ['star', 'hisat2']. Default: 'star'
 
 Counts:
   --counts                      Tool to use to estimate the raw counts per gene ['star', 'featureCounts', 'HTseqCounts']. Default: 'star'
