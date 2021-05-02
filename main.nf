@@ -63,7 +63,7 @@ def helpMessage() {
     --gtf [file]                         Path to GTF file
     --bed12 [file]                       Path to gene bed12 file
     --polym [file]                       Path to BED file with polym to check
-    --saveAlignedIntermediates [bool]    Save the intermediate files from the Aligment step  - not done by default
+    --saveAlignedIntermediates [bool]    Save the intermediate files from the Aligment step. Default: false
 
   Other options:
     --metadata [file]                    Add metadata file for multiQC report
