@@ -3,7 +3,7 @@
 **Institut Curie - Nextflow rna-seq analysis pipeline**
 
 [![Nextflow](https://img.shields.io/badge/nextflow-%E2%89%A50.32.0-brightgreen.svg)](https://www.nextflow.io/)
-[![MultiQC](https://img.shields.io/badge/MultiQC-1.7-blue.svg)](https://multiqc.info/)
+[![MultiQC](https://img.shields.io/badge/MultiQC-1.10-blue.svg)](https://multiqc.info/)
 [![Install with](https://anaconda.org/anaconda/conda-build/badges/installer/conda.svg)](https://conda.anaconda.org/anaconda)
 [![Singularity Container available](https://img.shields.io/badge/singularity-available-7E4C74.svg)](https://singularity.lbl.gov/)
 <!--[![Docker Container available](https://img.shields.io/badge/docker-available-003399.svg)](https://www.docker.com/)-->
@@ -37,7 +37,7 @@ See the [nf-core](https://nf-co.re/) project for more details.
 nextflow run main.nf --help
 N E X T F L O W  ~  version 19.04.0
 Launching `main.nf` [stupefied_darwin] - revision: aa905ab621
-rnaseq v2.0.0dev
+rnaseq v3.2.0
 =======================================================
 
 Usage:
@@ -62,40 +62,41 @@ Counts:
   --counts                      Tool to use to estimate the raw counts per gene ['star', 'featureCounts', 'HTseqCounts']. Default: 'star'
 
 References:                     If not specified in the configuration file or you wish to overwrite any of the references.
-  --star_index                  Path to STAR index
-  --hisat2_index                Path to HiSAT2 index
-  --tophat2_index	        Path to TopHat2 index
+  --starIndex                   Path to STAR index
+  --hisat2Index                 Path to HiSAT2 index
   --gtf                         Path to GTF file
   --bed12                       Path to gene bed12 file
-  --saveAlignedIntermediates    Save the BAM files from the Aligment step  - not done by default
+  --polym                       Path to polymorphism used for identito monitoring (BED format) 
+  --saveAlignedIntermediates      Save the BAM files from the Aligment step  - not done by default
 
 Other options:
   --metadata                    Add metadata file for multiQC report
   --outdir                      The output directory where the results will be saved
   -w/--work-dir                 The temporary directory where intermediate data will be saved
-  --email                       Set this parameter to your e-mail address to get a summary e-mail with details of the run sent to you when the workflow exits
   -name                         Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic.
 
 QC options:
-  --skip_qc                     Skip all QC steps apart from MultiQC
-  --skip_rrna                   Skip rRNA mapping
-  --skip_fastqc                 Skip FastQC
-  --skip_genebody_coverage      Skip calculating genebody coverage 
-  --skip_saturation             Skip Saturation qc
-  --skip_dupradar               Skip dupRadar (and Picard MarkDups)
-  --skip_readdist               Skip read distribution steps
-  --skip_expan                  Skip exploratory analysis
-  --skip_multiqc                Skip MultiQC
+  --skipQc                      Skip all QC steps apart from MultiQC
+  --skipRrna                    Skip rRNA mapping
+  --skipFastqc                  Skip FastQC
+  --skipGenebodyCoverage        Skip calculating genebody coverage 
+  --skipSaturation              Skip Saturation qc
+  --skipDupradar                Skip dupRadar (and Picard MarkDups)
+  --skipReaddist                Skip read distribution steps
+  --skipExpan                   Skip exploratory analysis
+  --skipMultiqc                 Skip MultiQC
 
 =======================================================
 Available Profiles
-
-  -profile test                Set up the test dataset
-  -profile conda               Build a new conda environment before running the pipeline
-  -profile toolsPath           Use the paths defined in configuration for each tool
-  -profile singularity         Use the Singularity images for each process
-  -profile cluster             Run the workflow on the cluster, instead of locally
-		  
+  -profile test                 Run the test dataset
+  -profile conda                Build a new conda environment before running the pipeline. Use `--condaCacheDir` to define the conda cache path
+  -profile multiconda           Build a new conda environment per process before running the pipeline. Use `--condaCacheDir` to define the conda cache path
+  -profile path                 Use the installation path defined for all tools. Use `--globalPath` to define the insallation path
+  -profile multipath            Use the installation paths defined for each tool. Use `--globalPath` to define the insallation path
+  -profile docker               Use the Docker images for each process
+  -profile singularity          Use the Singularity images for each process. Use `--singularityPath` to define the insallation path
+  -profile cluster              Run the workflow on the cluster, instead of locally
+						  
 ```
 
 ### Quick run
@@ -113,14 +114,14 @@ nextflow run main.nf -profile test,conda
 #### Run the pipeline from a sample plan
 
 ```
-nextflow run main.nf --samplePlan MY_SAMPLE_PLAN --genome 'hg19' --outdir MY_OUTPUT_DIR -profile conda
+nextflow run main.nf --samplePlan MY_SAMPLE_PLAN --genome 'hg19' --outDir MY_OUTPUT_DIR -profile conda
 
 ```
 
 #### Run the pipeline on a computational cluster
 
 ```
-echo "nextflow run main.nf --reads '*.R{1,2}.fastq.gz' --genome 'hg19' --outdir MY_OUTPUT_DIR -profile singularity,cluster" | qsub -N rnaseq-2.0
+echo "nextflow run main.nf --reads '*.R{1,2}.fastq.gz' --genome 'hg19' --outDir MY_OUTPUT_DIR -profile singularity,cluster" | qsub -N rnaseq
 
 ```
 
@@ -131,34 +132,36 @@ By default (whithout any profile), Nextflow will excute the pipeline locally, ex
 In addition, we set up a few profiles that should allow you i/ to use containers instead of local installation, ii/ to run the pipeline on a cluster instead of on a local architecture.
 The description of each profile is available on the help message (see above).
 
-Here are a few examples of how to set the profile option.
+Here are a few examples of how to set the profile option. See the [full documentation](docs/profiles) for details.
 
 ```
-## Run the pipeline locally, using the paths defined in the configuration for each tool (see conf.tool-path.config)
--profile toolsPath
+## Run the pipeline locally, using the paths defined in the configuration for each tool (see conf/path.config)
+-profile path --globalPath INSTALLATION_PATH 
 
 ## Run the pipeline on the cluster, using the Singularity containers
--profile cluster,singularity
+-profile cluster,singularity --singularityPath SINGULARITY_PATH 
 
 ## Run the pipeline on the cluster, building a new conda environment
--profile cluster,conda
+-profile cluster,conda --condaCacheDir CONDA_CACHE 
 
 ```
 
 ### Sample Plan
 
-A sample plan is a csv file (comma separated) that list all samples with their biological IDs.
+A sample plan is a csv file (comma separated) that list all samples with their biological IDs, **with no header**.
 
 
-Sample ID | Sample Name | Path R1 .fastq file | [Path R2 .fastq file]
+SAMPLE_ID | SAMPLE_NAME | PATH_TO_R1_FASTQ | [PATH_TO_R2_FASTQ]
 
 ### Full Documentation
 
 1. [Installation](docs/installation.md)
-2. [Reference genomes](docs/reference_genomes.md)
-3. [Running the pipeline](docs/usage.md)
-4. [Output and how to interpret the results](docs/output.md)
-5. [Troubleshooting](docs/troubleshooting.md)
+2. [Geniac](docs/geniac.md)
+3. [Reference genomes](docs/referenceGenomes.md)
+4. [Running the pipeline](docs/usage.md)
+5. [Profiles](docs/profiles.md)
+6. [Output and how to interpret the results](docs/output.md)
+7. [Troubleshooting](docs/troubleshooting.md)
 
 #### Credits
 
@@ -167,4 +170,3 @@ This pipeline has been written by the bioinformatics platform of the Institut Cu
 #### Contacts
 
 For any question, bug or suggestion, please use the issues system or contact the bioinformatics core facility.
-
