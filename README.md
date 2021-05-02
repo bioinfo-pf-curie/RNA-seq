@@ -6,7 +6,7 @@
 [![MultiQC](https://img.shields.io/badge/MultiQC-1.10-blue.svg)](https://multiqc.info/)
 [![Install with](https://anaconda.org/anaconda/conda-build/badges/installer/conda.svg)](https://conda.anaconda.org/anaconda)
 [![Singularity Container available](https://img.shields.io/badge/singularity-available-7E4C74.svg)](https://singularity.lbl.gov/)
-<!--[![Docker Container available](https://img.shields.io/badge/docker-available-003399.svg)](https://www.docker.com/)-->
+[![Docker Container available](https://img.shields.io/badge/docker-available-003399.svg)](https://www.docker.com/)
 
 ### Introduction
 
@@ -20,16 +20,17 @@ See the [nf-core](https://nf-co.re/) project for more details.
 
 1. Run quality control of raw sequencing reads ([`fastqc`](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/))
 2. Align reads on ribosomal RNAs sequences when available ([`bowtie1`](http://bowtie-bio.sourceforge.net/index.shtml))
-3. Align reads on reference genome ([`STAR`](https://github.com/alexdobin/STAR) / [`tophat2`](http://ccb.jhu.edu/software/tophat/index.shtml) / [`hisat2`](http://ccb.jhu.edu/software/hisat2/index.shtml))
+3. Align reads on reference genome ([`STAR`](https://github.com/alexdobin/STAR) / [`hisat2`](http://ccb.jhu.edu/software/hisat2/index.shtml))
 4. Infer reads orientation ([`rseqc`](http://rseqc.sourceforge.net/))
 5. Dedicated quality controls
     - Saturation curves ([`preseq`](http://smithlabresearch.org/software/preseq/) / [`R`](https://www.r-project.org/))
     - Duplicates ([`picard`](https://broadinstitute.github.io/picard/) / [`dupRadar`](https://bioconductor.org/packages/release/bioc/html/dupRadar.html))
     - Reads annotation ([`rseqc`](http://rseqc.sourceforge.net/) / [`R`](https://www.r-project.org/))
     - Gene body coverage ([`rseqc`](http://rseqc.sourceforge.net/))
-6. Generate counts table ([`STAR`](https://github.com/alexdobin/STAR) / [`featureCounts`](http://bioinf.wehi.edu.au/featureCounts/) / [`HTSeqCounts`](https://htseq.readthedocs.io/en/release_0.11.1/count.html))
-7. Exploratory analysis ([`R`](https://www.r-project.org/))
-8. Present all QC results in a final report ([`MultiQC`](http://multiqc.info/))
+6. Identito monitoring based on a list of known polymorphism
+7. Generate counts table ([`STAR`](https://github.com/alexdobin/STAR) / [`featureCounts`](http://bioinf.wehi.edu.au/featureCounts/) / [`HTSeqCounts`](https://htseq.readthedocs.io/en/release_0.11.1/count.html))
+8. Exploratory analysis ([`R`](https://www.r-project.org/))
+9. Present all QC results in a final report ([`MultiQC`](http://multiqc.info/))
 
 ### Quick help
 
@@ -108,21 +109,18 @@ See the conf/test.conf to set your test dataset.
 
 ```
 nextflow run main.nf -profile test,conda
-
 ```
 
 #### Run the pipeline from a sample plan
 
 ```
 nextflow run main.nf --samplePlan MY_SAMPLE_PLAN --genome 'hg19' --outDir MY_OUTPUT_DIR -profile conda
-
 ```
 
 #### Run the pipeline on a computational cluster
 
 ```
 echo "nextflow run main.nf --reads '*.R{1,2}.fastq.gz' --genome 'hg19' --outDir MY_OUTPUT_DIR -profile singularity,cluster" | qsub -N rnaseq
-
 ```
 
 ### Defining the '-profile'
@@ -143,7 +141,6 @@ Here are a few examples of how to set the profile option. See the [full document
 
 ## Run the pipeline on the cluster, building a new conda environment
 -profile cluster,conda --condaCacheDir CONDA_CACHE 
-
 ```
 
 ### Sample Plan
