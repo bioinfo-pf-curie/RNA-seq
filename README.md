@@ -130,7 +130,7 @@ By default (whithout any profile), Nextflow will excute the pipeline locally, ex
 In addition, we set up a few profiles that should allow you i/ to use containers instead of local installation, ii/ to run the pipeline on a cluster instead of on a local architecture.
 The description of each profile is available on the help message (see above).
 
-Here are a few examples of how to set the profile option. See the [full documentation](docs/profiles) for details.
+Here are a few examples of how to set the profile option. See the [full documentation](docs/profiles.md) for details.
 
 ```
 ## Run the pipeline locally, using the paths defined in the configuration for each tool (see conf/path.config)
