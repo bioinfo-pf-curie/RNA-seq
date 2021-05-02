@@ -81,7 +81,7 @@ def helpMessage() {
     --skipReaddist [bool]                Skip read distribution steps
     --skipExpan [bool]                   Skip exploratory analysis
     --skipBigwig [bool]                  Skip bigwig files 
-    --skipPolym [bool]                   Skip plymorphism call
+    --skipIdentito [bool]                Skip identito checks
     --skipMultiQC [bool]                 Skip MultiQC
     --skipSoftVersions [bool]            Skip getSoftwareVersion
 
@@ -236,10 +236,9 @@ if ( params.polym ){
   Channel
     .fromPath( params.polym )
     .ifEmpty { exit 1, "Polym BED file not found: ${params.polym}" }
-    .into { chPolymBedCall; chPolymBedCombine } 
+    .set { chPolymBed }
 }else{
-  chPolymBedCall = Channel.empty()
-  chPolymBedCombine = Channel.empty()
+  chPolymBed = Channel.empty()
 }
 
 /*
@@ -872,10 +871,11 @@ process bigWig {
   """
   bamCoverage --version &> v_deeptools.txt
   bamCoverage -b ${bam[0]} \\
-              -o ${prefix}_norm.bigwig \\
+              -o ${prefix}_cpm.bigwig \\
               -p ${task.cpus} \\
               ${strandOpt} \\
-              --normalizeUsing BPM
+	      --normalizeUsing CPM \\
+	      --skipNonCoveredRegions
   """
 }
 
@@ -918,7 +918,7 @@ process bamSubsample {
  */
 
 process genebodyCoverage {
-  tag "${bam.baseName - '.sorted'}"
+  tag "${bam[0].baseName}"
   label 'rseqc'
   label 'lowCpu'
   label 'medMem'
@@ -958,7 +958,7 @@ process genebodyCoverage {
  */
 
 process preseq {
-  tag "${bamPreseq}"
+  tag "${bam[0]}"
   label 'preseq'
   label 'lowCpu'
   label 'lowMem'
@@ -986,7 +986,7 @@ process preseq {
  */
 
 process markDuplicates {
-  tag "${bam}"
+  tag "${bam[0]}"
   label 'picard'
   label 'lowCpu'
   label 'medMem'
@@ -1003,7 +1003,7 @@ process markDuplicates {
   file bam from chBamMarkduplicates
 
   output:
-  file('*markDups.{bam,bam.bai}') into ( chBamMd, chBamPolym )
+  file('*markDups.{bam,bam.bai}') into ( chBamMd, chBamMdPolym )
   file('*markDups_metrics.txt') into chPicardResults
   file('v_picard.txt') into chPicardVersion
 
@@ -1026,7 +1026,7 @@ process markDuplicates {
 }
 
 process dupradar {
-  tag "${bamMd}"
+  tag "${bamMd[0]}"
   label 'dupradar'
   label 'lowCpu'
   label 'lowMem'
@@ -1069,56 +1069,109 @@ process dupradar {
  * Identito - polym
  */
 
-process callPolym {
-  label 'bcftools'
+process getPolym {
   label 'lowCpu'
-  label 'lowMem'
-  publishDir "${params.outDir}/polym", mode: 'copy'
+  label 'medMem'
+  label 'identito'
+
+  publishDir "${params.outDir}/identito", mode: 'copy'
 
   when:
-  !params.skipPolym
+  !params.skipQC && !params.skipIdentito
 
   input:
-  file bamMd from chBamPolym
-  file polymBed from chPolymBedCall.collect()
-  file fasta from chFasta.collect()
+  file(fasta) from chFasta.collect()
+  file(polyms) from chPolymBed.collect()
+  file(bam) from chBamMdPolym
 
   output:
-  file("*.vcf") into chPolymVCF
   file("v_bcftools.txt") into chBcftoolsVersion
+  file("*matrix.tsv") into clustPolymCh
 
   script:
   """
-  bcftools --version &> v_bcftools.txt
-  bcftools mpileup -R ${polymBed} -f ${fasta} --annotate FORMAT/DP,FORMAT/AD ${bamMd[0]} > ${bamMd[0].baseName}_polym.vcf
+  bcftools --version &> v_bcftools.txt 2>&1 || true
+  bcftools mpileup -R ${polyms} -f ${fasta} -x -A -B -q 20 -I -Q 0 -d 1000 --annotate FORMAT/DP,FORMAT/AD ${bam[0]} > ${bam[0].baseName}_bcftools.vcf
+  SnpSift extractFields -e "."  -s ";" ${bam[0].baseName}_bcftools.vcf CHROM POS REF ALT GEN[*].DP GEN[*].AD > ${bam[0].baseName}_bcftools.tsv
+  computePolym.R ${bam[0].baseName}_bcftools.tsv ${bam[0].baseName}_matrix.tsv ${bam[0].baseName} ${polyms}
   """
 }
 
-
 process combinePolym {
-  label 'r'
   label 'lowCpu'
   label 'lowMem'
-  publishDir "${params.outDir}/polym", mode: 'copy'
+  label 'identito'
+
+  publishDir "${params.outDir}/identito", mode: 'copy'
 
   when:
-  !params.skipPolym
+  !params.skipQC && !params.skipIdentito
 
   input:
-  file(inputVcf) from chPolymVCF.collect()  
-  file polymBed from chPolymBedCombine.collect()
+  file(matrix) from clustPolymCh.collect()
 
   output:
-  file("*.tsv") into chPolymResults
+  file("*.csv") into clustPolymResultsCh
   file("v_R.txt") into chCombinePolymVersion
 
   script:
   """
   R --version &> v_R.txt
-  echo -e ${inputVcf} | tr " " "\n" > listofpolym.txt
-  getPolym.r listofpolym.txt combinePolym.tsv ${polymBed}
+  (head -1 "${matrix[0]}"; tail -n +2 -q *matrix.tsv) > clust_mat.tsv
+  computeClust.R clust_mat.tsv . clustering_plot
   """
 }
+
+
+//process callPolym {
+//  label 'bcftools'
+//  label 'lowCpu'
+//  label 'lowMem'
+//  publishDir "${params.outDir}/polym", mode: 'copy'
+
+//  when:
+//  !params.skipPolym
+
+//  input:
+//  file bamMd from chBamPolym
+//  file polymBed from chPolymBedCall.collect()
+//  file fasta from chFasta.collect()
+
+//  output:
+//  file("*.vcf") into chPolymVCF
+//  file("v_bcftools.txt") into chBcftoolsVersion
+
+//  script:
+//  """
+//  bcftools --version &> v_bcftools.txt
+//  bcftools mpileup -R ${polymBed} -f ${fasta} --annotate FORMAT/DP,FORMAT/AD ${bamMd[0]} > ${bamMd[0].baseName}_polym.vcf
+//  """
+//}
+
+//process combinePolym {
+//  label 'r'
+//  label 'lowCpu'
+//  label 'lowMem'
+//  publishDir "${params.outDir}/polym", mode: 'copy'
+
+//  when:
+//  !params.skipPolym
+
+//  input:
+//  file(inputVcf) from chPolymVCF.collect()  
+//  file polymBed from chPolymBedCombine.collect()
+
+//  output:
+//  file("*.tsv") into chPolymResults
+//  file("v_R.txt") into chCombinePolymVersion
+
+//  script:
+//  """
+//  R --version &> v_R.txt
+//  echo -e ${inputVcf} | tr " " "\n" > listofpolym.txt
+//  getPolym.r listofpolym.txt combinePolym.tsv ${polymBed}
+//  """
+//}
 
 /*
  * Counts
@@ -1281,7 +1334,7 @@ process geneSaturation {
  */
 
 process readDistribution {
-  tag "${bamReadDist}"
+  tag "${bam[0]}"
   label 'rseqc'
   label 'lowCpu'
   label 'medMem'
@@ -1296,8 +1349,7 @@ process readDistribution {
 
   output:
   file "*read_distribution.txt" into chReadDistResults
-  file("v_rseqc.txt") into chRseqcVersionReadDistribution
-  file("v_rseqc.txt") into chRseqcReadDistribVersion
+  file("v_rseqc.txt") into chRseqcVersionReadDistrib
 
   script:
   """
@@ -1390,7 +1442,7 @@ process getSoftwareVersions{
   file 'v_picard.txt' from chPicardVersion.first().ifEmpty([])
   file 'v_preseq.txt' from chPreseqVersion.first().ifEmpty([])
   file 'v_R.txt' from chMergeCountsVersion.concat(chCombinePolymVersion,chGeneSaturationVersion,chGeneTypeVersion,chAnaExpVersion).first().ifEmpty([])
-  file 'v_rseqc.txt' from chRseqcVersionInferExperiment.concat(chRseqcVersionGeneBodyCoverage,chRseqcReadDistribVersion).first().ifEmpty([])
+  file 'v_rseqc.txt' from chRseqcVersionInferExperiment.concat(chRseqcVersionGeneBodyCoverage,chRseqcVersionReadDistrib).first().ifEmpty([])
   file 'v_featurecounts.txt' from chFeaturecountsVersion.first().ifEmpty([])
   file 'v_deeptools.txt' from chDeeptoolsVersion.first().ifEmpty([])
   file 'v_bcftools.txt' from chBcftoolsVersion.first().ifEmpty([])
@@ -1454,6 +1506,7 @@ process multiqc {
   file ('picard/*') from chPicardResults.collect().ifEmpty([])	
   file ('counts/*') from chCountsLogs.collect().ifEmpty([])
   file ('genetype/*') from chCountsPerGenetype.collect().ifEmpty([])
+  file ('identito/*') from clustPolymResultsCh.collect().ifEmpty([])
   file ('exploratoryAnalysis_results/*') from chExploratoryAnalysisResults.collect().ifEmpty([]) 
   file ('softwareVersions/*') from softwareVersionsYaml.collect().ifEmpty([])
   file ('workflowSummary/*') from workflowSummaryYaml.collect().ifEmpty([])
