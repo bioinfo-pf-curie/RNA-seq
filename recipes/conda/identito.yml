@@ -1,0 +1,15 @@
+name: identito-1.0.0
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - bioconda::bcftools=1.12=h45bccc9_1
+  - bioconda::snpsift=4.3.1t=hdfd78af_3
+  - conda-forge::r-base=4.0.3=h349a78a_8
+  - conda-forge::r-matrix=1.3_2=r40he454529_0
+  - conda-forge::r-mgcv=1.8_34=r40he454529_0
+  - conda-forge::r-vegan=2.5_7=r40h52d45c5_0
+  - conda-forge::r-pheatmap=1.0.12=r40h6115d3f_2
+  - conda-forge::r-rcolorbrewer=1.1_2=r40h6115d3f_1003
+
