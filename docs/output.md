@@ -4,8 +4,7 @@ This document describes the output produced by the pipeline. Most of the plots a
 
 ## Pipeline overview
 The pipeline is built using [Nextflow](https://www.nextflow.io/) and processes RNA-seq from raw sequencing reads to count table for downstream analysis.
-Briefly, the overall quality of raw sequencing data is first checked using [FastQC](#fastqc). Reads are then aligned on a [ribosomal RNAs database](#rrna-mapping) and on the reference genome.
-Addition controls on aligned data are performed to infer [strandness](#strandness), [complexity](#complexity-curves), [gene-based saturation](#gene-based-saturation), [read Distribution](#read-distribution) or [duplication level](#dupradar). The aligned data are then used to generate a final [count matrix](#counts) with all genes and all samples. Finaly, the pipeline runs a few first-level analysis including the [number of expressed genes](#expressed-number), their [functional classes](#expressed-genes-types) and an exploratory analysis ([correlation](#correlation), [PCA](#pca)). The [identito monitoring](#identito) is also available for Human data.
+Briefly, the overall quality of raw sequencing data is first checked using [FastQC](#fastqc). Reads are then aligned on a [ribosomal RNAs database](#rrna-mapping) and on the [reference genome](#genome-mapping). Additional controls on aligned data are performed to infer [strandness](#strandness), [complexity](#complexity-curves), [gene-based saturation](#gene-based-saturation), [read Distribution](#read-distribution) or [duplication level](#dupradar). The aligned data are then used to generate a final [count matrix](#counts) with all genes and all samples. A first-level analysis is run, including the [number of expressed genes](#expressed-number), their [functional classes](#expressed-genes-types) and an exploratory analysis ([correlation](#correlation), [PCA](#pca)). The [identito monitoring](#identito) is also available for Human data.
 
 ## FastQC
 [FastQC](http://www.bioinformatics.babraham.ac.uk/projects/fastqc/) gives general quality metrics about your reads. It provides information about the quality score distribution across your reads, the per base sequence content (%T/A/G/C). You get information about adapter contamination and other overrepresented sequences.
@@ -114,7 +113,7 @@ This script calculates the reads coverage across gene bodies. This makes it easy
 * `[SAMPLE]_rseqc.geneBodyCoverage.r`
 * `[SAMPLE]_rseqc.geneBodyCoverage.txt`
 
-![MultiQC - RSeQC gene body coverage](images/rseq_gene_body_coverage_plot.png)
+![MultiQC - RSeQC gene body coverage](images/rseqc_gene_body_coverage_plot.png)
 
 ## Complexity Curves
 
