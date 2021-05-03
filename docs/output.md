@@ -17,9 +17,9 @@ For details about reads trimming, see the `raw_qc` pipeline.
 
 **Output directory: `results/fastqc`**
 
-* `sample_fastqc.html`
+* `[SAMPLE]_fastqc.html`
   * FastQC report, containing quality metrics for your untrimmed raw fastq files
-* `zips/sample_fastqc.zip`
+* `zips/[SAMPLE]_fastqc.zip`
   * zip file containing the FastQC report, tab-delimited data file and plot images
 
 ## rRNA Mapping
@@ -32,9 +32,9 @@ For detail about the bowtie1 mapper, see the [bowtie help](http://bowtie-bio.sou
 
 **Output directory: `results/rRNA_mapping`**
 
-* `logs/sample.log`
+* `logs/[SAMPLE].log`
   * Log file of bowtie1 mapping with the number of aligned reads on rRNA sequences
-* `sample_norRNA_R{1,2}.fastq.gz`
+* `[SAMPLE]_norRNA_R{1,2}.fastq.gz`
   * The fastq file after rRNA cleaning
 
 ![MultiQC - Bowtie rRNA mapping](images/bowtie1_alignment.png)
@@ -55,9 +55,9 @@ For further detail on the infer experiment tool see the [RSeQC help page](http:/
 
 **Output directory: `results/strandness`
 
-* `sample.txt`
+* `[SAMPLE].txt`
   * RSeQC infer experiment output file
-* `sample_strandness.txt`
+* `[SAMPLE]_strandness.txt`
   * Readable Strandness information
 
 ![MultiQC - RNA-seq strandness with RSeQC](images/rseqc_infer_experiment_plot.png)
@@ -83,9 +83,9 @@ Use the `--saveAlignedIntermediates` options to save all files.
 
 * `logs/`
   * Log files with mapping statistics
-* `sample.bam`
+* `[SAMPLE].bam`
   * The final sorted bam file
-* `sample.bam.bai`
+* `[SAMPLE].bam.bai`
   * The index file of the sorted bam file
 
 ![MultiQC - STAR genome alignment ](images/star_alignment_plot.png)
@@ -97,7 +97,7 @@ See the read_distribution tool from [RSeQC](http://rseqc.sourceforge.net/) for d
 
 **Output directory: `results/read_distribution`**
 
-* `sample.read_distribution.txt`
+* `[SAMPLE].read_distribution.txt`
   * Results file with the number of reads assigned to each annotation.
 
 ![MultiQC - RSeQC read distribution](images/rseqc_read_distribution_plot.png)
@@ -110,9 +110,9 @@ This script calculates the reads coverage across gene bodies. This makes it easy
 
 **Output directory: `results/read_distribution`**
 
-* `sample_rseqc.geneBodyCoverage.curves.pdf`
-* `sample_rseqc.geneBodyCoverage.r`
-* `sample_rseqc.geneBodyCoverage.txt`
+* `[SAMPLE]_rseqc.geneBodyCoverage.curves.pdf`
+* `[SAMPLE]_rseqc.geneBodyCoverage.r`
+* `[SAMPLE]_rseqc.geneBodyCoverage.txt`
 
 ![MultiQC - RSeQC gene body coverage](images/rseq_gene_body_coverage_plot.png)
 
@@ -126,7 +126,7 @@ The dashed line shows a perfectly complex library where total reads = unique rea
 
 **Output directory: `results/preseq`**
 
-* `sample.extrap_ccurve.txt`
+* `[SAMPLE].extrap_ccurve.txt`
   * Results of complexity extrapolation up to 200 millions reads
 
 ![MultiQC - Complexity curves](images/preseq_plot.png)
@@ -156,9 +156,9 @@ For furhter information about TPM calculation, see the [RNAseq blog page](https:
 
 **Output directory: `results/counts`**
 
-* `sample_counts.csv`
+* `[SAMPLE]_counts.csv`
   * Individual counts file per sample
-* `sample*.summary`
+* `[SAMPLE].summary`
   * Log file of each tool specifying the number of reads assigned to a feature
 * `tablecounts_raw.csv`
   * The raw counts value for all samples and all genes
@@ -187,12 +187,12 @@ For details about the dupRadar results, see the [help page](https://www.biocondu
 
 **Output directory: `results/dupradar`**
 
-* `sample_markDups.bam_duprateExpDens.pdf`
-* `sample_markDups.bam_duprateExpBoxplot.pdf`
-* `sample_markDups.bam_expressionHist.pdf`
-* `sample_markDups.bam_dupMatrix.txt`
-* `sample_markDups.bam_duprateExpDensCurve.txt`
-* `sample_markDups.bam_intercept_slope.txt`
+* `[SAMPLE]_markDups.bam_duprateExpDens.pdf`
+* `[SAMPLE]_markDups.bam_duprateExpBoxplot.pdf`
+* `[SAMPLE]_markDups.bam_expressionHist.pdf`
+* `[SAMPLE]_markDups.bam_dupMatrix.txt`
+* `[SAMPLE]_markDups.bam_duprateExpDensCurve.txt`
+* `[SAMPLE]_markDups.bam_intercept_slope.txt`
 
 ![MultiQC - Duplication rate over expression level (DupRadar)](images/dupradar.png) 
 
@@ -242,9 +242,9 @@ The pipeline has special steps which allow the software versions used to be repo
 
 **Output directory: `results/multiqc`**
 
-* `Project_multiqc_report.html`
+* `rnseq_report.html`
   * MultiQC report - a standalone HTML file that can be viewed in your web browser
-* `Project_multiqc_data/`
+* `multiqc_data/`
   * Directory containing parsed statistics from the different tools used in the pipeline
 
 For more information about how to use MultiQC reports, see http://multiqc.info.
