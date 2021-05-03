@@ -181,7 +181,9 @@ table_cond_formatting_rules:
 ## Clean sample names
 
 extra_fn_clean_exts:
-    - 'gcurve.txt'
+  - 'gcurve.txt'
+  - '_sorted.markDups_matrix.tsv'
+  - '_sorted'
 
 ###############################
 ## Modules 
