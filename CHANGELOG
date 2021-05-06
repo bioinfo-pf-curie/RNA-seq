@@ -2,6 +2,7 @@
 version-3.2.0
 
 NEW FEATURES
+  - Add Warnings in the report
   - Generate bigwig files
   - Add polymorphism call for Human identito-vigilance
 
