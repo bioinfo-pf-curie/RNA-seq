@@ -1483,6 +1483,16 @@ ${summary.collect { k,v -> "            <dt>$k</dt><dd><samp>${v ?: '<span style
   """.stripIndent()
 }
 
+
+if (skippedPoorAlignment.size() > 0){
+  Channel.fromList(skippedPoorAlignment)
+         .map{ it -> it + "- POOR ALIGNMENT RATE - SAMPLE DISCARDED]"}
+         .collectFile(name: 'warnings.txt', newLine: true)
+         .set{chWarn}
+}else{
+  chWarn = Channel.empty()
+}
+
 process multiqc {
   label 'multiqc'
   label 'lowCpu'
@@ -1512,6 +1522,7 @@ process multiqc {
   file ('exploratoryAnalysis_results/*') from chExploratoryAnalysisResults.collect().ifEmpty([]) 
   file ('softwareVersions/*') from softwareVersionsYaml.collect().ifEmpty([])
   file ('workflowSummary/*') from workflowSummaryYaml.collect().ifEmpty([])
+  file ('workflowSummary/*') from chWarn.collect().ifEmpty([]) 
 
   output:
   file splan
@@ -1529,10 +1540,11 @@ process multiqc {
   modulesList = params.counts == 'featureCounts' ? "${modulesList} -m featureCounts" : "${modulesList}"  
   modulesList = params.counts == 'HTseqCounts' ? "${modulesList} -m htseq" : "${modulesList}"  
  
+  warn=skippedPoorAlignment.size() > 0 ? "--warn workflowSummary/warnings.txt" : ""
   """
   stats2multiqc.sh ${splan} ${params.aligner} ${isPE}
   medianReadNb="\$(sort -t, -k3,3n mq.stats | awk -F, '{a[i++]=\$3;} END{x=int((i+1)/2); if (x<(i+1)/2) printf "%.0f", (a[x-1]+a[x])/2; else printf "%.0f",a[x-1];}')"
-  mqc_header.py --name "RNA-seq" --version ${workflow.manifest.version} ${metadataOpts} ${splanOpts} --nbreads \${medianReadNb} > multiqc-config-header.yaml
+  mqc_header.py --name "RNA-seq" --version ${workflow.manifest.version} ${metadataOpts} ${splanOpts} --nbreads \${medianReadNb} ${warn} > multiqc-config-header.yaml
   multiqc . -f $rtitle $rfilename -c $multiqcConfig -c multiqc-config-header.yaml $modulesList
   """    
 }
