@@ -47,8 +47,8 @@ if args.warn is not None:
         warn_data=myfile.readlines()
         warn_str = ""
         for x in warn_data:
-            warn_str += "<br>" + x.rstrip()
-        report_comment += " Warnings: the following messages have been raised by the pipeline:" + warn_str
+            warn_str += "<br>[WARNING] " + x.rstrip()
+        report_comment += warn_str
 
 multiqc_list += [report_comment]
 

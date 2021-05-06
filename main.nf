@@ -1486,7 +1486,7 @@ ${summary.collect { k,v -> "            <dt>$k</dt><dd><samp>${v ?: '<span style
 
 if (skippedPoorAlignment.size() > 0){
   Channel.fromList(skippedPoorAlignment)
-         .map{ it -> it + "- POOR ALIGNMENT RATE - SAMPLE DISCARDED]"}
+         .flatMap{ it -> it + ": Poor alignment rate. Sample discarded"}
          .collectFile(name: 'warnings.txt', newLine: true)
          .set{chWarn}
 }else{
