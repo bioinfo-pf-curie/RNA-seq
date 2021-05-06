@@ -596,10 +596,12 @@ def checkStarLog(logs) {
   logs.eachLine { line ->
     if ((matcher = line =~ /Uniquely mapped reads %\s*\|\s*([\d\.]+)%/)) {
       percentAligned = matcher[0][1]
+    }else if ((matcher = line =~ /Uniquely mapped reads number\s*\|\s*([\d\.]+)/)) {
+      numAligned = matcher[0][1]
     }
   }
   logname = logs.getBaseName() - 'Log.final'
-  if(percentAligned.toFloat() <= '2'.toFloat() ){
+  if(percentAligned.toFloat() <= '2'.toFloat() || numAligned.toInteger() <= 1000.toInteger() ){
       log.info "#################### VERY POOR ALIGNMENT RATE! IGNORING FOR FURTHER DOWNSTREAM ANALYSIS! ($logname)    >> ${percentAligned}% <<"
       skippedPoorAlignment << logname
       return false
@@ -1118,7 +1120,7 @@ process combinePolym {
   """
   R --version &> v_R.txt
   (head -1 "${matrix[0]}"; tail -n +2 -q *matrix.tsv) > clust_mat.tsv
-  computeClust.R clust_mat.tsv . clustering_plot
+  computeClust.R clust_mat.tsv ./ 10
   """
 }
 

@@ -7,23 +7,16 @@ if (length(args) < 3) {
 
 # Load arguments
 inputTable <- args[1]
-outputDir<-args[2]
-figureName<-args[3]
+outputDir <- args[2]
+minSNPsNumber <- ifelse(is.na(args[3]),10,as.numeric(as.character(args[3])))
 
-#inputTable <- "/data/tmp/tgutman/EUCANCAN/test_clustering/test_clustering/work/55/a66cc70bc1b873125fadd3977feaec/clust_mat.tsv"
-#outputDir<-"/data/tmp/tgutman/EUCANCAN/test_clustering/test_clustering/work/55/a66cc70bc1b873125fadd3977feaec"
-#figureName<-"test_clust"
-
-#inputTable <- "/data/tmp/tgutman/clust_mat.tsv"
 # Handle path & Output Names
-outputFile=paste(outputDir,"/",figureName,sep = "")
-outputPlot=paste(outputDir,"/",figureName,".png",sep = "")
-outputMatrix=paste(outputDir,"/",figureName,"_identito.csv",sep = "")
+outputPlot <- paste0(outputDir,"/clustering_identito.png")
+outputMatrix <- paste0(outputDir,"/clustering_identito.csv")
 
 # Load libraries
-library(vegan)
 library(pheatmap)
-library(RColorBrewer)
+library(proxy)
 
 # Saving function
 save_pheatmap_png <- function(x, filename, width=1000, height=1000) {
@@ -36,73 +29,59 @@ save_pheatmap_png <- function(x, filename, width=1000, height=1000) {
 }
 
 #Load data
-clust_mat=read.table(inputTable, header=T, stringsAsFactors = F)
-#clust_mat[,-1]=apply(clust_mat[,-1],2,function(x){x[which(x=="NEC")]=0;return(as.numeric(x))})
-rownames(clust_mat)=clust_mat$rs
-clust_mat=clust_mat[,-1]
+d <- read.table(inputTable, header=TRUE, stringsAsFactors=FALSE, row.names=1)
+d <- as.matrix(d)
+d[which(d == "NEC")] <- NA
 
-temp_colnames=colnames(clust_mat)
-temp_rownames=rownames(clust_mat)
-
-# Filter matrix
-#small_clust_mat=clust_mat[, !sapply(clust_mat, is.character)]
-
-# Handle NA:
-clust_mat=as.matrix(clust_mat)
-clust_mat[which(clust_mat == "NEC")]=NA
-clust_mat=matrix(as.numeric(clust_mat),ncol=ncol(clust_mat))
-
-colnames(clust_mat)=temp_colnames
-rownames(clust_mat)=temp_rownames
+clust_mat <- matrix(as.numeric(d), ncol=ncol(d),
+                    dimnames=list(rownames(d),colnames(d)))
 
 # Handle sample full of NA
+toRemove <- c()
 for (i in 1:nrow(as.matrix(clust_mat))){
-    if (sum(is.na(clust_mat[i,])) == ncol(clust_mat)){
+    if (sum(!is.na(clust_mat[i,])) < minSNPsNumber){
         warning('One or more samples contain only NAs, those samples will be removed')
-        #print(dim(clust_mat))
-        clust_mat=clust_mat[-i,]
-        if(is.null(dim(clust_mat))){
-            print("this matrix has only one sample")
-            file.create(outputMatrix)
-            df <- data.frame()
-            #write.table(df, file="my.csv", sep=",", row.names=FALSE, append=TRUE)
-            write.csv(df, outputMatrix)
-            quit(save="no", status = 0)
-        }
+        toRemove <- c(toRemove, i)
     }
 }
-print(is.null(dim(clust_mat)))
-print(clust_mat)
 
-# Compute distance
-jacdist <- vegdist(clust_mat,method="jaccard",na.rm=TRUE)
-jacdist_mat = as.matrix(jacdist)
+if (length(toRemove) > 0){
+    clust_mat <- clust_mat[-toRemove,]
+}
 
-## reduce matrix
-#jacdist <- vegdist(small_clust_mat,method="jaccard",na.rm=TRUE)
-#jacdist_mat = as.matrix(jacdist)
+if (is.null(dim(clust_mat)) || nrow(clust_mat) == 0){
+    warning("Not enough samples to run the clustering")
+    file.create(outputMatrix)
+    df <- data.frame()
+    write.csv(df, outputMatrix)
+    quit(save="no", status = 0)
+}
 
-## 1-dist matrix:
-corr_mat= 1-jacdist_mat
+jacdist <- as.matrix(dist(clust_mat, method="eJaccard"))
 
-# Create heatmap
-clust=pheatmap(corr_mat,
-               method = "Ward.D",
-               show_rownames = TRUE,
-               show_colnames = TRUE,
-               clustering_distance_cols = "correlation",
-               clustering_distance_rows = "correlation",
-               display_numbers = TRUE,
-               legend = TRUE ,
-               fontsize = 20,
-               silent = TRUE)
+## remove NA values in Jaccard distances
+naToRemove <- which(apply(jacdist, 1, function(x){length(which(is.na(x)))}) > 1)
+jacmat <- jacdist[-naToRemove, -naToRemove]
 
-clust_order=clust$tree_col$order
-
-# Save figure:
-save_pheatmap_png(clust, outputPlot)
-write.csv(round(corr_mat[clust_order,clust_order],3), outputMatrix, quote=TRUE, row.names=TRUE)
+if (!is.null(dim(jacmat)) && dim(jacmat)[1]>1){
+    clust <- pheatmap(jacmat,
+                      method = "ward.D2",
+                      clustering_distance_rows=as.dist(jacdist),
+                      clustering_distance_cols=as.dist(jacdist),
+                      show_rownames = TRUE,
+                      show_colnames = TRUE,
+                      display_numbers = TRUE,
+                      legend = TRUE ,
+                      fontsize = 20,
+                      silent = TRUE)
+    
+    clust_order <- clust$tree_col$order
+    save_pheatmap_png(clust, outputPlot)
+    write.csv(round(jacmat[clust_order,clust_order],3), outputMatrix, quote=TRUE, row.names=TRUE)
+}else{
+    warning("Not enough samples to run the clustering")
+    write.csv(round(jacdist,3), outputMatrix, quote=TRUE, row.names=TRUE)
+}
 
 # End message + Path:
 print("script ended successfully")
-print(paste("plot can be found here:", outputFile))
