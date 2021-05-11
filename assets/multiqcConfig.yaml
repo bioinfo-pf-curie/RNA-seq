@@ -135,7 +135,7 @@ custom_data:
     identito:
         file_format: 'csv'
         section_name: 'Identito Vigilance'
-        description: 'heatmap is created from a defined list of SNPs. Using those SNPs, the similarity metric is calculated as 1- the Jaccard distance between all pairs of samples. Samples from the same patient are expected to have a high similarity score.'
+        description: 'heatmap is created from a defined list of SNPs. Using those SNPs, the similarity metric is calculated as the Jaccard distance between all pairs of samples. Samples from the same patient are expected to have a high similarity score.'
         plot_type: 'heatmap'
         pconfig:
             title: 'Identito Vigilance heatmap'
