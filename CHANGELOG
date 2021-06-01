@@ -12,6 +12,7 @@ SIGNIFICANT USER-VISIBLE CHANGES
   - Duplicates are now calculed over mapped reads using all duplicate types (single, pair, optical)
 
 BUG FIXES
+  - fix the seed in preseq
   - Fix bug when --stranded is set on command line (#120)
 
 DEPRECATED

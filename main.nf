@@ -431,28 +431,16 @@ process rRNAMapping {
   file("v_bowtie.txt") into chBowtieVersion
 
   script:
-  if (params.singleEnd) {
+  inputOpts = params.singleEnd ? "${reads}" : "-1 ${reads[0]} -2 ${reads[1]}"
   """
   bowtie --version &> v_bowtie.txt
   bowtie ${params.bowtieOpts} \\
          -p ${task.cpus} \\
          --un ${prefix}_norRNA.fastq \\
          --sam ${params.rrna} \\
-         ${reads} \\
+         ${inputOpts} \\
          ${prefix}.sam  2> ${prefix}.log && \
   gzip -f ${prefix}_norRNA*.fastq 
-  """
-  } else {
-  """
-  bowtie --version &> v_bowtie.txt
-  bowtie ${params.bowtieOpts} \\
-         -p ${task.cpus} \\
-         --un ${prefix}_norRNA.fastq \\
-         --sam ${params.rrna} \\
-         -1 ${reads[0]} \\
-         -2 ${reads[1]} \\
-         ${prefix}.sam  2> ${prefix}.log && \
-  gzip -f ${prefix}_norRNA_*.fastq 
   """
   }  
 }
@@ -502,7 +490,7 @@ if (params.stranded == 'reverse' || params.stranded == 'forward' || params.stran
            return tuple(key)
     }
     .into { chStrandedResultsBigwig ; chStrandedResultsFeatureCounts; chStrandedResultsGenetype; chStrandedResultsHTseqCounts;
-            chStrandedResultsDupradar; chStrandedResultsHisat; chStrandedResultsTable }
+            chStrandedResultsDupradar; chStrandedResultsHisat; chStrandedResultsTable; chStrandedResultsQualimap }
 }else if (params.stranded == 'auto' && !params.bed12){
   log.warn "Strandness ('auto') cannot be run without GTF annotation - will be skipped !"
 }else if (params.stranded == 'auto' && params.bed12){
@@ -522,27 +510,16 @@ if (params.stranded == 'reverse' || params.stranded == 'forward' || params.stran
     file("v_bowtie2.txt") into chBowtie2Version
 
     script:
-    if (params.singleEnd) {
+    inputOpts = params.singleEnd ? "-U ${reads[0]}" : "-1 ${reads[0]} -2 ${reads[1]}
     """
     bowtie2 --version &> v_bowtie2.txt
     bowtie2 --fast --end-to-end --reorder \\
             -p ${task.cpus} \\
             -u ${params.nCheck} \\
             -x ${params.bowtie2Index} \\
-            -U ${reads} > ${prefix}_subsample.bam 
+            ${inputOpts} > ${prefix}_subsample.bam 
      """
-    } else {
-    """
-    bowtie2 --version &> v_bowtie2.txt
-    bowtie2 --fast --end-to-end --reorder \\
-            -p ${task.cpus} \\
-            -u ${params.nCheck} \\
-            -x ${params.bowtie2Index} \\
-            -1 ${reads[0]} \\
-            -2 ${reads[1]} > ${prefix}_subsample.bam
-    """
-    }
-  }
+   }
 
   process rseqc {
     tag "${prefix - '_subsample'}"
@@ -562,7 +539,7 @@ if (params.stranded == 'reverse' || params.stranded == 'forward' || params.stran
     output:
     file "${prefix}*.{txt,pdf,r,xls}" into chRseqcResults
     stdout into ( chStrandedResultsBigwig, chStrandedResultsFeatureCounts, chStrandedResultsGenetype, chStrandedResultsHTseqCounts,
-                  chStrandedResultsDupradar, chStrandedResultsHisat, chStrandedResultsTable )
+                  chStrandedResultsDupradar, chStrandedResultsHisat, chStrandedResultsTable, chStrandedResultsQualimap)
     file("v_rseqc.txt") into chRseqcVersionInferExperiment
 
     script:
@@ -708,7 +685,7 @@ if(params.aligner == 'star'){
       .filter { logs, bams -> checkStarLog(logs) }
       .map { logs, bams -> bams }
       .dump (tag:'starbams')
-      .into { chBamBigwig; chBamCount; chBamPreseq; chBamMarkduplicates; chBamFeaturecounts; 
+      .into { chBamBigwig; chBamCount; chBamPreseq; chBamMarkduplicates; chBamFeaturecounts; chBamQualimap;
               chBamGenetype; chBamHTseqCounts; chBamReadDist; chBamForSubsamp; chBamSkipSubsamp }
 }
 
@@ -779,11 +756,11 @@ if(params.aligner == 'hisat2'){
     } else if (parseRes=='reverse'){
         rnastrandness = params.singleEnd ? '--rna-strandness R' : '--rna-strandness RF'
     }
-    if (params.singleEnd) {
+    inputOpts = params.singleEnd ? "-U ${reads}" : "-1 ${reads[0]} -2 ${reads[1]}"
     """
     hisat2 --version &> v_hisat2.txt
     hisat2 -x $indexBase \\
-           -U $reads \\
+           ${inputOpts} \\
            $rnastrandness \\
            --known-splicesite-infile $alignmentSplicesites \\
            -p ${task.cpus} \\
@@ -792,23 +769,6 @@ if(params.aligner == 'hisat2'){
            --summary-file ${prefix}.hisat2_summary.txt $seqCenter \\
            | samtools view -bS -F 4 -F 256 - > ${prefix}.bam
     """
-    } else {
-    """
-    hisat2 --version &> v_hisat2.txt
-    hisat2 -x $indexBase \\
-           -1 ${reads[0]} \\
-           -2 ${reads[1]} \\
-           $rnastrandness \\
-           --known-splicesite-infile $alignmentSplicesites \\
-           --no-mixed \\
-           --no-discordant \\
-           -p ${task.cpus} \\
-           --met-stderr \\
-           --new-summary \\
-           --summary-file ${prefix}.hisat2_summary.txt $seqCenter \\
-           | samtools view -bS -F 4 -F 8 -F 256 - > ${prefix}.bam
-     """
-    }
   }
 
   process hisat2Sort {
@@ -824,7 +784,7 @@ if(params.aligner == 'hisat2'){
     output:
     file ('*sorted.{bam,bam.bai}') into chBamBigwig, chBamCount, chBamPreseq, chBamMarkduplicates, 
                                         chBamFeaturecounts, chBamGenetype, chBamHTseqCounts, 
-                                        chBamReadDist, chBamForSubsamp, chBamSkipSubsamp
+                                        chBamReadDist, chBamForSubsamp, chBamSkipSubsamp, chBamQualimap
     file "${hisat2Bam.baseName}_sorted.bam.bai"
     file("v_samtools.txt") into chSamtoolsVersionSort 
 
@@ -955,6 +915,47 @@ process genebodyCoverage {
   """
 }
 
+
+process qualimap {
+  tag "${bam.baseName}"
+  label 'qualimap'
+  label 'minCpu'
+  label 'medMem'
+
+  input:
+  file bam from chBamQualimap
+  file gtf from chGtfQualimap.collect()
+  val strand from chStrandedResultsQualimap
+
+  output:
+  file ("${bam.baseName}*") into chQualimapResults
+  
+
+  script:
+  peOpts = meta.single_end ? '' : '-pe'
+  memory     = task.memory.toGiga() + "G"
+  strandednessOpts = 'non-strand-specific'
+  if (strand == 'forward') {
+    strandednessOpts = 'strand-specific-forward'
+  } else if (strand == 'reverse') {
+    strandednessOpts = 'strand-specific-reverse'
+  }
+  """
+  mkdir tmp
+  export _JAVA_OPTIONS=-Djava.io.tmpdir=./tmp
+  qualimap \\
+    --java-mem-size=$memory \\
+    rnaseq \\
+    -bam $bam \\
+    -gtf $gtf \\
+    -p $strandedness \\
+    $peOpts \\
+    -outdir ${bam.baseName}
+  echo \$(qualimap 2>&1) | sed 's/^.*QualiMap v.//; s/Built.*\$//' > ${software}.version.txt
+  """
+}
+
+
 /*
  * Saturation Curves
  */
@@ -979,7 +980,7 @@ process preseq {
   script:
   """
   preseq &> v_preseq.txt
-  preseq lc_extrap -v -B ${bam[0]} -o ${bam[0].baseName}_extrap_ccurve.txt -e 200e+06
+  preseq lc_extrap -seed 1 -v -B ${bam[0]} -o ${bam[0].baseName}_extrap_ccurve.txt -e 200e+06
   """
 }
 
@@ -1512,6 +1513,7 @@ process multiqc {
   file ('strandness/*') from chStrandnessResults.collect().ifEmpty([])
   file ('rseqc/*') from chReadDistResults.collect().ifEmpty([])
   file ('rseqc/*') from chGenebodyCoverageResults.collect().ifEmpty([])
+  file ('qualimap/*') from chQualimapResults.collect().ifEmpty([])
   file ('preseq/*') from chPreseqResults.collect().ifEmpty([])
   file ('genesat/*') from chGenesatResults.collect().ifEmpty([])
   file ('dupradar/*') from chDupradarResults.collect().ifEmpty([])
@@ -1536,7 +1538,7 @@ process multiqc {
   splanOpts = params.samplePlan ? "--splan ${params.samplePlan}" : ""
   isPE = params.singleEnd ? 0 : 1
     
-  modulesList = "-m custom_content -m preseq -m rseqc -m bowtie1 -m hisat2 -m star -m cutadapt -m fastqc"
+  modulesList = "-m custom_content -m preseq -m rseqc -m bowtie1 -m hisat2 -m star -m cutadapt -m fastqc -m qualimap"
   modulesList = params.counts == 'featureCounts' ? "${modulesList} -m featureCounts" : "${modulesList}"  
   modulesList = params.counts == 'HTseqCounts' ? "${modulesList} -m htseq" : "${modulesList}"  
  
