@@ -186,12 +186,12 @@ if( params.gtf ){
   Channel
     .fromPath(params.gtf)
     .ifEmpty { exit 1, "GTF annotation file not found: ${params.gtf}" }
-    .into { chGtfStar; chGtfDupradar; chGtfFeatureCounts; chGtfGenetype; chGtfHTseqCounts; chGtfTable; chGtfMakeHisatSplicesites }
+    .into { chGtfStar; chGtfDupradar; chGtfFeatureCounts; chGtfGenetype; chGtfHTseqCounts; chGtfTable; chGtfMakeHisatSplicesites; chGtfQualimap }
 }else {
   log.warn "No GTF annotation specified - dupRadar, table counts - will be skipped !" 
   Channel
     .empty()
-    .into { chGtfStar; chGtfDupradar; chGtfFeatureCounts; chGtfGenetype; chGtfHTseqCounts; chGtfTable; chGtfMakeHisatSplicesites } 
+    .into { chGtfStar; chGtfDupradar; chGtfFeatureCounts; chGtfGenetype; chGtfHTseqCounts; chGtfTable; chGtfMakeHisatSplicesites; chGtfQualimap } 
 }
 
 if( params.bed12 ){
@@ -442,7 +442,6 @@ process rRNAMapping {
          ${prefix}.sam  2> ${prefix}.log && \
   gzip -f ${prefix}_norRNA*.fastq 
   """
-  }  
 }
 
 
@@ -510,7 +509,7 @@ if (params.stranded == 'reverse' || params.stranded == 'forward' || params.stran
     file("v_bowtie2.txt") into chBowtie2Version
 
     script:
-    inputOpts = params.singleEnd ? "-U ${reads[0]}" : "-1 ${reads[0]} -2 ${reads[1]}
+    inputOpts = params.singleEnd ? "-U ${reads[0]}" : "-1 ${reads[0]} -2 ${reads[1]}"
     """
     bowtie2 --version &> v_bowtie2.txt
     bowtie2 --fast --end-to-end --reorder \\
@@ -917,28 +916,29 @@ process genebodyCoverage {
 
 
 process qualimap {
-  tag "${bam.baseName}"
+  tag "${bam[0].baseName}"
   label 'qualimap'
   label 'minCpu'
   label 'medMem'
+  publishDir "${params.outDir}/qualimap/" , mode: 'copy'
 
   input:
   file bam from chBamQualimap
   file gtf from chGtfQualimap.collect()
-  val strand from chStrandedResultsQualimap
+  val stranded from chStrandedResultsQualimap
 
   output:
-  file ("${bam.baseName}*") into chQualimapResults
-  
+  file ("${bam[0].baseName}") into chQualimapResults
+  file ("v_qualimap.txt") into chQualimapVersion
 
   script:
-  peOpts = meta.single_end ? '' : '-pe'
+  peOpts = params.singleEnd ? '' : '-pe'
   memory     = task.memory.toGiga() + "G"
-  strandednessOpts = 'non-strand-specific'
-  if (strand == 'forward') {
-    strandednessOpts = 'strand-specific-forward'
-  } else if (strand == 'reverse') {
-    strandednessOpts = 'strand-specific-reverse'
+  strandnessOpts = 'non-strand-specific'
+  if (stranded == 'forward') {
+    strandnessOpts = 'strand-specific-forward'
+  } else if (stranded == 'reverse') {
+    strandnessOpts = 'strand-specific-reverse'
   }
   """
   mkdir tmp
@@ -946,12 +946,12 @@ process qualimap {
   qualimap \\
     --java-mem-size=$memory \\
     rnaseq \\
-    -bam $bam \\
+    -bam $bam[0] \\
     -gtf $gtf \\
-    -p $strandedness \\
+    -p $strandnessOpts \\
     $peOpts \\
-    -outdir ${bam.baseName}
-  echo \$(qualimap 2>&1) | sed 's/^.*QualiMap v.//; s/Built.*\$//' > ${software}.version.txt
+    -outdir ${bam[0].baseName}
+  echo \$(qualimap 2>&1) | sed 's/^.*QualiMap v.//; s/Built.*\$//' > v_qualimap.txt
   """
 }
 
@@ -1450,6 +1450,7 @@ process getSoftwareVersions{
   file 'v_deeptools.txt' from chDeeptoolsVersion.first().ifEmpty([])
   file 'v_bcftools.txt' from chBcftoolsVersion.first().ifEmpty([])
   file 'v_htseq.txt' from chHtseqVersion.first().ifEmpty([])
+  file 'v_qualimap.txt' from chQualimapVersion.first().ifEmpty([])
 
   output:
   file 'software_versions_mqc.yaml' into softwareVersionsYaml
@@ -1463,6 +1464,10 @@ process getSoftwareVersions{
 }
 
 process workflowSummaryMqc {
+  label 'unix'
+  label 'minCpu'
+  label 'minMem'
+
   when:
   !params.skipMultiQC
 
