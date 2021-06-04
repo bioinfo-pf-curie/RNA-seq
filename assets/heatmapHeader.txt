@@ -1,5 +1,5 @@
 #id: 'sample-correlation'
-#section_name: 'Sample(s) Correlation' 
+#section_name: 'Samples Correlation' 
 #description: "is generated from variance stabilized (VST) normalized counts table.
 #       Pearson correlation between normalized counts values are calculated and clustered."
 #plot_type: 'heatmap'

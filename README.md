@@ -25,9 +25,9 @@ See the [nf-core](https://nf-co.re/) project for more details.
 5. Dedicated quality controls
     - Saturation curves ([`preseq`](http://smithlabresearch.org/software/preseq/) / [`R`](https://www.r-project.org/))
     - Duplicates ([`picard`](https://broadinstitute.github.io/picard/) / [`dupRadar`](https://bioconductor.org/packages/release/bioc/html/dupRadar.html))
-    - Reads annotation ([`rseqc`](http://rseqc.sourceforge.net/) / [`R`](https://www.r-project.org/))
-    - Gene body coverage ([`rseqc`](http://rseqc.sourceforge.net/))
-6. Identito monitoring based on a list of known polymorphism
+    - Reads annotation ([`qualimap`](http://qualimap.conesalab.org/) / [`R`](https://www.r-project.org/))
+    - Gene body coverage ([`qualimap`](http://qualimap.conesalab.org/))
+6. Identito monitoring based on a list of known polymorphism ([`bcftools`](http://samtools.github.io/bcftools/bcftools.html) / [`R`](https://www.r-project.org/))
 7. Generate counts table ([`STAR`](https://github.com/alexdobin/STAR) / [`featureCounts`](http://bioinf.wehi.edu.au/featureCounts/) / [`HTSeqCounts`](https://htseq.readthedocs.io/en/release_0.11.1/count.html))
 8. Exploratory analysis ([`R`](https://www.r-project.org/))
 9. Present all QC results in a final report ([`MultiQC`](http://multiqc.info/))
@@ -42,61 +42,66 @@ rnaseq v3.2.0
 =======================================================
 
 Usage:
-nextflow run rnaseq --reads '*_R{1,2}.fastq.gz' --genome 'hg19' 
-
+nextflow run rnaseq --reads '*_R{1,2}.fastq.gz' --genome hg19 -profile conda
+nextflow run rnaseq --samplePlan sample_plan --genome hg19 -profile conda
+	 
 Mandatory arguments:
-  --reads                       Path to input data (must be surrounded with quotes)
-  --samplePlan                  Path to sample plan input file (cannot be used with --reads)
-  --genome                      Name of genome reference
-  -profile                      Configuration profile to use. test / conda / toolsPath / singularity / cluster
-
-Options:
-  --singleEnd                   Specifies that the input is single end reads
-
-Strandedness:
-  --stranded                    Library strandness ['auto', 'forward', 'reverse', 'no']. Default: 'auto'
-
+  --reads [file]                       Path to input data (must be surrounded with quotes)
+  --samplePlan [file]                  Path to sample plan input file (cannot be used with --reads)
+  --genome [str]                       Name of genome reference
+  -profile [str]                       Configuration profile to use. test / conda / toolsPath / singularity / cluster (see below)
+		   
+Inputs:
+  --singleEnd [bool]                   Specifies that the input is single end reads
+		 
+Strandness:
+  --stranded [bool]                    Library strandness ['auto', 'forward', 'reverse', 'no']. Default: 'auto'
+							   
 Mapping:
-  --aligner                     Tool for read alignments ['star', 'hisat2']. Default: 'star'
-
+  --aligner [str]                      Tool for read alignments ['star', 'hisat2']. Default: 'star'
+										 
 Counts:
-  --counts                      Tool to use to estimate the raw counts per gene ['star', 'featureCounts', 'HTseqCounts']. Default: 'star'
-
-References:                     If not specified in the configuration file or you wish to overwrite any of the references.
-  --starIndex                   Path to STAR index
-  --hisat2Index                 Path to HiSAT2 index
-  --gtf                         Path to GTF file
-  --bed12                       Path to gene bed12 file
-  --polym                       Path to polymorphism used for identito monitoring (BED format) 
-  --saveAlignedIntermediates      Save the BAM files from the Aligment step  - not done by default
-
+  --counts [str]                       Tool to use to estimate the raw counts per gene ['star', 'featureCounts', 'HTseqCounts']. Default: 'star'
+											   
+References: If not specified in the configuration file or you wish to overwrite any of the references.
+  --genomeAnnotationPath [file]        Path  to genome annotation folder
+  --fasta [file]                       Path the genome fasta file
+  --starIndex [dir]                    Path to STAR index
+  --hisat2Index [file]                 Path to HiSAT2 index
+  --gtf [file]                         Path to GTF file
+  --bed12 [file]                       Path to gene bed12 file
+  --polym [file]                       Path to BED file with polym to check
+  --saveAlignedIntermediates [bool]    Save the intermediate files from the Aligment step. Default: false
+																				 
 Other options:
-  --metadata                    Add metadata file for multiQC report
-  --outdir                      The output directory where the results will be saved
-  -w/--work-dir                 The temporary directory where intermediate data will be saved
-  -name                         Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic.
-
-QC options:
-  --skipQc                      Skip all QC steps apart from MultiQC
-  --skipRrna                    Skip rRNA mapping
-  --skipFastqc                  Skip FastQC
-  --skipGenebodyCoverage        Skip calculating genebody coverage 
-  --skipSaturation              Skip Saturation qc
-  --skipDupradar                Skip dupRadar (and Picard MarkDups)
-  --skipReaddist                Skip read distribution steps
-  --skipExpan                   Skip exploratory analysis
-  --skipMultiqc                 Skip MultiQC
-
+  --metadata [file]                    Add metadata file for multiQC report
+  --outDir [dir]                       The output directory where the results will be saved
+  -w/--work-dir [dir]                  The temporary directory where intermediate data will be saved
+  -name [str]                          Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic.
+																								   
+Skip options:
+  --skipQC [bool]                      Skip all QC steps apart from MultiQC
+  --skipRrna [bool]                    Skip rRNA mapping
+  --skipFastqc [bool]                  Skip FastQC
+  --skipSaturation [bool]              Skip Saturation qc
+  --skipDupradar [bool]                Skip dupRadar (and Picard MarkDups)
+  --skipQualimap [bool]                Skip Qualimap analysis
+  --skipExpan [bool]                   Skip exploratory analysis
+  --skipBigwig [bool]                  Skip bigwig files 
+  --skipIdentito [bool]                Skip identito checks
+  --skipMultiQC [bool]                 Skip MultiQC
+  --skipSoftVersions [bool]            Skip getSoftwareVersion
+																																				 
 =======================================================
 Available Profiles
-  -profile test                 Run the test dataset
-  -profile conda                Build a new conda environment before running the pipeline. Use `--condaCacheDir` to define the conda cache path
-  -profile multiconda           Build a new conda environment per process before running the pipeline. Use `--condaCacheDir` to define the conda cache path
-  -profile path                 Use the installation path defined for all tools. Use `--globalPath` to define the insallation path
-  -profile multipath            Use the installation paths defined for each tool. Use `--globalPath` to define the insallation path
-  -profile docker               Use the Docker images for each process
-  -profile singularity          Use the Singularity images for each process. Use `--singularityPath` to define the insallation path
-  -profile cluster              Run the workflow on the cluster, instead of locally
+  -profile test                        Run the test dataset
+  -profile conda                       Build a new conda environment before running the pipeline. Use `--condaCacheDir` to define the conda cache path
+  -profile multiconda                  Build a new conda environment per process before running the pipeline. Use `--condaCacheDir` to define the conda cache path
+  -profile path                        Use the installation path defined for all tools. Use `--globalPath` to define the insallation path
+  -profile multipath                   Use the installation paths defined for each tool. Use `--globalPath` to define the insallation path
+  -profile docker                      Use the Docker images for each process
+  -profile singularity                 Use the Singularity images for each process. Use `--singularityPath` to define the insallation path
+  -profile cluster                     Run the workflow on the cluster, instead of locally
 						  
 ```
 

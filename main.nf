@@ -75,10 +75,9 @@ def helpMessage() {
     --skipQC [bool]                      Skip all QC steps apart from MultiQC
     --skipRrna [bool]                    Skip rRNA mapping
     --skipFastqc [bool]                  Skip FastQC
-    --skipGenebodyCoverage [bool]        Skip calculating genebody coverage
     --skipSaturation [bool]              Skip Saturation qc
     --skipDupradar [bool]                Skip dupRadar (and Picard MarkDups)
-    --skipReaddist [bool]                Skip read distribution steps
+    --skipQualimap [bool]                Skip Qualimap analysis
     --skipExpan [bool]                   Skip exploratory analysis
     --skipBigwig [bool]                  Skip bigwig files 
     --skipIdentito [bool]                Skip identito checks
@@ -198,12 +197,12 @@ if( params.bed12 ){
   Channel
     .fromPath(params.bed12)
     .ifEmpty { exit 1, "BED12 annotation file not found: ${params.bed12}" }
-    .into { chBedRseqc; chBedReadDist; chBedGenebodyCoverage} 
+    .into { chBedRseqc }
 }else{
   log.warn "No BED gene annotation specified - strandness detection, gene body coverage, read distribution - will be skipped !"
   Channel
     .empty()
-    .into { chBedRseq; chBedReadDist; chBedGenebodyCoverage}
+    .into { chBedRseq }
 }
 
 if( params.rrna ){
@@ -685,7 +684,7 @@ if(params.aligner == 'star'){
       .map { logs, bams -> bams }
       .dump (tag:'starbams')
       .into { chBamBigwig; chBamCount; chBamPreseq; chBamMarkduplicates; chBamFeaturecounts; chBamQualimap;
-              chBamGenetype; chBamHTseqCounts; chBamReadDist; chBamForSubsamp; chBamSkipSubsamp }
+              chBamGenetype; chBamHTseqCounts }
 }
 
 
@@ -783,7 +782,7 @@ if(params.aligner == 'hisat2'){
     output:
     file ('*sorted.{bam,bam.bai}') into chBamBigwig, chBamCount, chBamPreseq, chBamMarkduplicates, 
                                         chBamFeaturecounts, chBamGenetype, chBamHTseqCounts, 
-                                        chBamReadDist, chBamForSubsamp, chBamSkipSubsamp, chBamQualimap
+                                        chBamQualimap
     file "${hisat2Bam.baseName}_sorted.bam.bai"
     file("v_samtools.txt") into chSamtoolsVersionSort 
 
@@ -840,80 +839,9 @@ process bigWig {
   """
 }
 
-
-/*
- * Subsample the BAM files if necessary
+/* 
+ * Qualimap
  */
-
-chBamForSubsamp
-  .filter { it.size() > params.subsampFilesizeThreshold }
-  .map { [it, params.subsampFilesizeThreshold / it.size() ] }
-  .set{ chBamForSubsampFiltered }
-chBamSkipSubsamp
-   .filter { it.size() <= params.subsampFilesizeThreshold }
-   .set{ chBamSkipSubsampFiltered }
-
-process bamSubsample {
-  tag "${bam.baseName - '.sorted'}"
-  label 'samtools'
-  label 'lowCpu'
-  label 'lowMem'
-
-  input:
-  set file(bam), val(fraction) from chBamForSubsampFiltered
-
-  output:
-  file "*_subsamp.{bam,bam.bai}" into chBamSubsampled
-  file("v_samtools.txt") into chSamtoolsVersionBamSubsample
-
-  script:
-  """
-  samtools --version &> v_samtools.txt
-  samtools view -@ ${task.cpus} -s ${fraction} -b ${bam[0]} | samtools sort -o ${bam[0].baseName}_subsamp.bam
-  samtools index ${bam[0].baseName}_subsamp.bam
-  """
-}
-
-/*
- * Rseqc genebody_coverage
- */
-
-process genebodyCoverage {
-  tag "${bam[0].baseName}"
-  label 'rseqc'
-  label 'lowCpu'
-  label 'medMem'
-  publishDir "${params.outDir}/genecov" , mode: 'copy',
-     saveAs: {filename ->
-       if (filename.indexOf("geneBodyCoverage.curves.pdf") > 0)       "geneBodyCoverage/$filename"
-       else if (filename.indexOf("geneBodyCoverage.r") > 0)           "geneBodyCoverage/rscripts/$filename"
-       else if (filename.indexOf("geneBodyCoverage.txt") > 0)         "geneBodyCoverage/data/$filename"
-       else if (filename.indexOf("log.txt") > -1) false
-       else filename
-      }
-
-  when:
-  !params.skipQC && !params.skipGenebodyCoverage
-
-  input:
-  file bam from chBamSubsampled.concat(chBamSkipSubsampFiltered)
-  file bed12 from chBedGenebodyCoverage.collect()
-
-  output:
-  file "${bam[0].baseName}*.{txt,pdf,r}" into chGenebodyCoverageResults
-  file("v_rseqc.txt") into chRseqcVersionGeneBodyCoverage
-
-  script:
-  """
-  geneBody_coverage.py --version &> v_rseqc.txt
-  geneBody_coverage.py \\
-    -i ${bam[0]} \\
-    -o ${bam[0].baseName}.rseqc \\
-    -r ${bed12}
-  mv log.txt ${bam[0].baseName}.rseqc.log.txt
-  """
-}
-
 
 process qualimap {
   tag "${bam[0].baseName}"
@@ -921,6 +849,9 @@ process qualimap {
   label 'minCpu'
   label 'medMem'
   publishDir "${params.outDir}/qualimap/" , mode: 'copy'
+
+  when:
+  !params.skipQualimap
 
   input:
   file bam from chBamQualimap
@@ -964,7 +895,7 @@ process preseq {
   tag "${bam[0]}"
   label 'preseq'
   label 'lowCpu'
-  label 'lowMem'
+  label 'medMem'
   publishDir "${params.outDir}/preseq", mode: 'copy'
 
   when:
@@ -978,9 +909,10 @@ process preseq {
   file("v_preseq.txt") into chPreseqVersion
 
   script:
+  peOpts = params.singleEnd ? '' : '-pe'
   """
   preseq &> v_preseq.txt
-  preseq lc_extrap -seed 1 -v -B ${bam[0]} -o ${bam[0].baseName}_extrap_ccurve.txt -e 200e+06
+  preseq lc_extrap -seed 1 -v -B ${bam[0]} ${peOpts} -o ${bam[0].baseName}_extrap_ccurve.txt -e 200e+06 -seg_len 100000000
   """
 }
 
@@ -1125,56 +1057,6 @@ process combinePolym {
   """
 }
 
-
-//process callPolym {
-//  label 'bcftools'
-//  label 'lowCpu'
-//  label 'lowMem'
-//  publishDir "${params.outDir}/polym", mode: 'copy'
-
-//  when:
-//  !params.skipPolym
-
-//  input:
-//  file bamMd from chBamPolym
-//  file polymBed from chPolymBedCall.collect()
-//  file fasta from chFasta.collect()
-
-//  output:
-//  file("*.vcf") into chPolymVCF
-//  file("v_bcftools.txt") into chBcftoolsVersion
-
-//  script:
-//  """
-//  bcftools --version &> v_bcftools.txt
-//  bcftools mpileup -R ${polymBed} -f ${fasta} --annotate FORMAT/DP,FORMAT/AD ${bamMd[0]} > ${bamMd[0].baseName}_polym.vcf
-//  """
-//}
-
-//process combinePolym {
-//  label 'r'
-//  label 'lowCpu'
-//  label 'lowMem'
-//  publishDir "${params.outDir}/polym", mode: 'copy'
-
-//  when:
-//  !params.skipPolym
-
-//  input:
-//  file(inputVcf) from chPolymVCF.collect()  
-//  file polymBed from chPolymBedCombine.collect()
-
-//  output:
-//  file("*.tsv") into chPolymResults
-//  file("v_R.txt") into chCombinePolymVersion
-
-//  script:
-//  """
-//  R --version &> v_R.txt
-//  echo -e ${inputVcf} | tr " " "\n" > listofpolym.txt
-//  getPolym.r listofpolym.txt combinePolym.tsv ${polymBed}
-//  """
-//}
 
 /*
  * Counts
@@ -1336,32 +1218,6 @@ process geneSaturation {
  * Reads distribution
  */
 
-process readDistribution {
-  tag "${bam[0]}"
-  label 'rseqc'
-  label 'lowCpu'
-  label 'medMem'
-  publishDir "${params.outDir}/readDistribution" , mode: 'copy'
-
-  when:
-  !params.skipReaddist
-
-  input:
-  file bam from chBamReadDist
-  file bed12 from chBedReadDist.collect()
-
-  output:
-  file "*read_distribution.txt" into chReadDistResults
-  file("v_rseqc.txt") into chRseqcVersionReadDistrib
-
-  script:
-  """
-  read_distribution.py --version &> v_rseqc.txt
-  read_distribution.py -i ${bam[0]} -r ${bed12} > ${bam[0].baseName}.read_distribution.txt
-  """
-}
-
-
 process getCountsPerGeneType {
   label 'r'
   label 'lowCpu'
@@ -1429,7 +1285,7 @@ process exploratoryAnalysis {
 process getSoftwareVersions{
   label 'python'
   label 'lowCpu'
-  label 'lowMem'
+  label 'medMem'
   publishDir path: "${params.outDir}/softwareVersions", mode: "copy"
 
   when:
@@ -1441,11 +1297,11 @@ process getSoftwareVersions{
   file 'v_hisat2.txt' from chHisat2Version.first().ifEmpty([])
   file 'v_bowtie.txt' from chBowtieVersion.first().ifEmpty([])
   file 'v_bowtie2.txt' from chBowtie2Version.first().ifEmpty([])
-  file 'v_samtools.txt' from chSamtoolsVersionBamSubsample.concat(chSamtoolsVersionSort).first().ifEmpty([])
+  file 'v_samtools.txt' from chSamtoolsVersionSort.first().ifEmpty([])
   file 'v_picard.txt' from chPicardVersion.first().ifEmpty([])
   file 'v_preseq.txt' from chPreseqVersion.first().ifEmpty([])
   file 'v_R.txt' from chMergeCountsVersion.concat(chCombinePolymVersion,chGeneSaturationVersion,chGeneTypeVersion,chAnaExpVersion).first().ifEmpty([])
-  file 'v_rseqc.txt' from chRseqcVersionInferExperiment.concat(chRseqcVersionGeneBodyCoverage,chRseqcVersionReadDistrib).first().ifEmpty([])
+  file 'v_rseqc.txt' from chRseqcVersionInferExperiment.first().ifEmpty([])
   file 'v_featurecounts.txt' from chFeaturecountsVersion.first().ifEmpty([])
   file 'v_deeptools.txt' from chDeeptoolsVersion.first().ifEmpty([])
   file 'v_bcftools.txt' from chBcftoolsVersion.first().ifEmpty([])
@@ -1516,8 +1372,6 @@ process multiqc {
   file ('rrna/*') from chRrnaLogs.collect().ifEmpty([])
   file ('alignment/*') from chAlignmentLogs.collect().ifEmpty([])
   file ('strandness/*') from chStrandnessResults.collect().ifEmpty([])
-  file ('rseqc/*') from chReadDistResults.collect().ifEmpty([])
-  file ('rseqc/*') from chGenebodyCoverageResults.collect().ifEmpty([])
   file ('qualimap/*') from chQualimapResults.collect().ifEmpty([])
   file ('preseq/*') from chPreseqResults.collect().ifEmpty([])
   file ('genesat/*') from chGenesatResults.collect().ifEmpty([])

@@ -2,11 +2,13 @@
 version-3.2.0
 
 NEW FEATURES
+  - Add saturation percent in main table (#138)
   - Add Warnings in the report
   - Generate bigwig files
   - Add polymorphism call for Human identito-vigilance
 
 SIGNIFICANT USER-VISIBLE CHANGES
+  - Add Qualimap instead of rseqc read distribution and gene body coverage (#136, #139)
   - Use new Newflow template
   - Update all tool versions
   - Duplicates are now calculed over mapped reads using all duplicate types (single, pair, optical)
