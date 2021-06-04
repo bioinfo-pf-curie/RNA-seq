@@ -94,6 +94,16 @@ params {
       gtf     = "${params.genomes_base}/Drosophila_melanogaster/dmel_r6.21_FB2018_02/gtf/dmel-all-r6.21.gtf"
     }
 
+    'dmelr6.28' {
+      fasta   = "${params.genomes_base}/Drosophila_melanogaster/dmelr6.28/genome/Drosophila_melanogaster.BDGP6.28.dna.toplevel.fa"
+      star    = "${params.genomes_base}/Drosophila_melanogaster/dmelr6.28/indexes/STAR_2.7.6a/"
+      bowtie2 = "${params.genomes_base}/Drosophila_melanogaster/dmelr6.28/indexes/bowtie2/Drosophila_melanogaster.BDGP6.28.dna.toplevel"
+      hisat2  = "${params.genomes_base}/Drosophila_melanogaster/dmelr6.28/indexes/hisat2/Drosophila_melanogaster.BDGP6.28.dna.toplevel"
+      rrna    = "${params.genomes_base}/Drosophila_melanogaster/rRNA/dmel-all-rRNA-r6.28"
+      bed12   = "${params.genomes_base}/Drosophila_melanogaster/dmelr6.28/gtf/Drosophila_melanogaster.BDGP6.28.101.bed12"
+      gtf     = "${params.genomes_base}/Drosophila_melanogaster/dmelr6.28/gtf/Drosophila_melanogaster.BDGP6.28.101.gtf"
+    }
+
     'TAIR10' {
       star    = "${params.genomes_base}/Arabidopsis_thaliana/TAIR10/indexes/STAR/"
       bowtie2 = "${params.genomes_base}/Arabidopsis_thaliana/TAIR10/indexes/bowtie2/TAIR10"
