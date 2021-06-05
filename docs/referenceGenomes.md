@@ -32,21 +32,3 @@ params {
 ```
 
 You can add as many genomes as you like as long as they have unique IDs.
-
-## illumina genomes
-To make the use of reference genomes easier, illumina has developed a centralised resource called [genomes](https://support.illumina.com/sequencing/sequencing_software/igenome.html).
-Multiple reference index types are held together with consistent structure for multiple genomes.
-
-We have put a copy of genomes up onto AWS S3 hosting and this pipeline is configured to use this by default.
-The hosting fees for AWS genomes are currently kindly funded by a grant from Amazon.
-The pipeline will automatically download the required reference files when you run the pipeline.
-For more information about the AWS genomes, see https://ewels.github.io/AWS-genomes/
-
-Downloading the files takes time and bandwidth, so we recommend making a local copy of the genomes resource.
-Once downloaded, you can customise the variable `params.genomes_base` in your custom configuration file to point to the reference location.
-
-```nextflow
-params.genomes_base = '/path/to/data/genomes/'
-```
-
-

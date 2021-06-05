@@ -149,7 +149,7 @@ params {
   genomes {
     'hg19' {
       star     = '<path to the STAR index files>'
-      bowtiee2 = '<path to the bowtie index files>'
+      bowtie2 = '<path to the bowtie index files>'
       hisat2   = '<path to the HiSat2 index files>'
       rrna     = '<path to bowtie1 mapping on rRNA reference>'
       bed12    = '<path to Bed12 annotation file>'
@@ -161,9 +161,8 @@ params {
 ```
 
 Note that these paths can be updated on command line using the following parameters:
-- `--star_index` - Path to STAR index
-- `--hisat2_index` - Path to HiSAT2 index
-- `--tophat2_index` - Path to TopHat2 index
+- `--starIndex` - Path to STAR index
+- `--hisat2Index` - Path to HiSAT2 index
 - `--gtf` - Path to GTF file
 - `--bed12` - Path to gene bed12 file
 - `--saveAlignedIntermediates` - Save the BAM files from the Aligment step  - not done by default
@@ -173,7 +172,7 @@ Note that these paths can be updated on command line using the following paramet
 ### `--aligner`
 
 The current version of the pipeline supports two different aligners;
-- [`STAR`](https://github.com/alexdobin/STAR). Default value.
+- [`STAR`](https://github.com/alexdobin/STAR)
 - [`hisat2`](http://ccb.jhu.edu/software/hisat2/index.shtml)
 
 By default, the `STAR` mapper is run. You can specify the tool to use as follows:
