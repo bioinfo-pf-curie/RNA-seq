@@ -642,7 +642,7 @@ if(params.aligner == 'star'){
          --outSAMtype BAM Unsorted  \\
          --readFilesCommand zcat \\
          --runDirPerm All_RWX \\
-         --outTmpDir /local/scratch/rnaseq_\$(date +%d%s%S%N) \\
+         --outTmpDir "${params.starTmpDi}"\\
          --outFileNamePrefix $prefix  \\
          --outSAMattrRGline ID:$prefix SM:$prefix LB:Illumina PL:Illumina  \\
          ${params.starOptions} \\
@@ -747,7 +747,6 @@ if(params.aligner == 'hisat2'){
 
     script:
     indexBase = hs2Index[0].toString() - ~/.\d.ht2/
-    seqCenter = params.seqCenter ? "--rg-id ${prefix} --rg CN:${params.seqCenter.replaceAll('\\s','_')}" : ''
     def rnastrandness = ''
     if (parseRes=='forward'){
         rnastrandness = params.singleEnd ? '--rna-strandness F' : '--rna-strandness FR'
@@ -764,7 +763,8 @@ if(params.aligner == 'hisat2'){
            -p ${task.cpus} \\
            --met-stderr \\
            --new-summary \\
-           --summary-file ${prefix}.hisat2_summary.txt $seqCenter \\
+	   --rg-id ${prefix} \\
+           --summary-file ${prefix}.hisat2_summary.txt \\
            | samtools view -bS -F 4 -F 256 - > ${prefix}.bam
     """
   }
@@ -944,10 +944,9 @@ process markDuplicates {
 
   script:
   markdupMemOption = "\"-Xms" +  (task.memory.toGiga() / 2).trunc() + "g -Xmx" + (task.memory.toGiga() - 1) + "g\""
-  log.info "[Picard MarkDuplicates] Run picard MarkDuplicates with parameter : ${markdupMemOption}"
   """
   echo \$(picard MarkDuplicates --version 2>&1) &> v_picard.txt
-  picard ${markdupMemOption} -Djava.io.tmpdir=/local/scratch MarkDuplicates \\
+  picard ${markdupMemOption} MarkDuplicates \\
       MAX_RECORDS_IN_RAM=50000 \\
       INPUT=${bam[0]} \\
       OUTPUT=${bam[0].baseName}.markDups.bam \\

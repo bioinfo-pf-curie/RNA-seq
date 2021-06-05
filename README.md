@@ -158,12 +158,10 @@ SAMPLE_ID | SAMPLE_NAME | PATH_TO_R1_FASTQ | [PATH_TO_R2_FASTQ]
 ### Full Documentation
 
 1. [Installation](docs/installation.md)
-2. [Geniac](docs/geniac.md)
-3. [Reference genomes](docs/referenceGenomes.md)
-4. [Running the pipeline](docs/usage.md)
-5. [Profiles](docs/profiles.md)
-6. [Output and how to interpret the results](docs/output.md)
-7. [Troubleshooting](docs/troubleshooting.md)
+2. [Reference genomes](docs/referenceGenomes.md)
+3. [Running the pipeline](docs/usage.md)
+4. [Output and how to interpret the results](docs/output.md)
+5. [Troubleshooting](docs/troubleshooting.md)
 
 #### Credits
 
