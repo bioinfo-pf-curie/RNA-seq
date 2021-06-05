@@ -19,6 +19,7 @@ regexes = {
     'HTseqCounts': ['v_htseq.txt', r"version (\S+)"],
     'Preseq': ['v_preseq.txt', r"Version: (\S+)"],
     'RSeQC': ['v_rseqc.txt', r"infer_experiment.py ([\d\.]+)"],
+    'Qualimap': ['v_qualimap.txt', r"(\S+)"],
     'deeptools': ['v_deeptools.txt', r"deeptools (\S+)"],
     'R': ['v_R.txt', r"R version (\S+)"]
 }

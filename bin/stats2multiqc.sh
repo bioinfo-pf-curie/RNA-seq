@@ -8,22 +8,22 @@ is_pe=$3
 ## Catch sample names
 all_samples=$(awk -F, '{print $1}' $splan)
 
-echo -e "Sample_id,Sample_name,Number_of_reads,Number_of_rRNA,Percent_of_rRNA,Strandness,Number_of_aligned_reads,Percent_of_aligned_reads,Number_of_uniquely_aligned_reads,Percent_uniquely_aligned_reads,Number_of_multiple_aligned_reads,Percent_multiple_aligned,Number_of_duplicates,Percent_duplicates" > mq.stats
+echo -e "Sample_id,Sample_name,Number_of_frag,Number_of_rRNA,Percent_of_rRNA,Strandness,Number_of_aligned,Percent_of_aligned,Number_of_uniquely_aligned,Percent_uniquely_aligned,Number_of_multiple_aligned,Percent_multiple,Number_of_duplicates,Percent_duplicates,Percent_saturation" > mq.stats
 
 for sample in $all_samples
 do
     ##id
     sname=$(awk -F, -v sname=$sample '$1==sname{print $2}' $splan)
 
-    ##n_reads
+    ##n_frag
     if [ -d "rrna" ]; then
-	n_reads=$(grep "reads processed" rrna/${sample}.log | cut -d: -f 2 | sed -e 's/ //')
+	n_frag=$(grep "reads processed" rrna/${sample}.log | cut -d: -f 2 | sed -e 's/ //')
     elif [ $aligner == "star" ]; then
-	n_reads=$(grep "Number of input reads" alignment/${sample}Log.final.out | cut -d"|" -f 2 | sed -e 's/\t//g')
+	n_frag=$(grep "Number of input reads" alignment/${sample}Log.final.out | cut -d"|" -f 2 | sed -e 's/\t//g')
     elif [[ $aligner == "hisat2" && $is_pe == "1" ]]; then
-	n_reads=$(grep "Total pairs" alignment/${sample}.hisat2_summary.txt | cut -d: -f2 | sed -e 's/ //g')
+	n_frag=$(grep "Total pairs" alignment/${sample}.hisat2_summary.txt | cut -d: -f2 | sed -e 's/ //g')
     elif [[ $aligner == "hisat2" && $is_pe == "0" ]]; then
-	n_reads=$(grep "Total reads" alignment/${sample}.hisat2_summary.txt | cut -d: -f2 | sed -e 's/ //g')
+	n_frag=$(grep "Total reads" alignment/${sample}.hisat2_summary.txt | cut -d: -f2 | sed -e 's/ //g')
     fi
 
     ##n_rRNA
@@ -35,6 +35,7 @@ do
 	p_rrna='NA'
     fi
 
+    ## All values are in pairs for paired-end data /reads for single-end data
     if [ $is_pe == "1" ]; then
 	if [ $aligner == "star" ]; then
 	    n_unique=$(grep "Uniquely mapped reads number" alignment/${sample}Log.final.out | cut -d"|" -f 2 | sed -e 's/\t//g')
@@ -67,11 +68,15 @@ do
     n_dup="NA"
     p_dup="NA"
     if [ -d "picard" ]; then
-	if ls picard/${sample}Aligned*markDups_metrics.txt  1>/dev/null 2>&1; then 
-	    n_dup_pair=$(grep -a2 "## METRICS" picard/${sample}Aligned*markDups_metrics.txt | tail -1 | awk -F"\t" '{print $7}')
-	    n_dup_single=$(grep -a2 "## METRICS" picard/${sample}Aligned*markDups_metrics.txt | tail -1 | awk -F"\t" '{print $6}')
-	    n_dup_optical=$(grep -a2 "## METRICS" picard/${sample}Aligned*markDups_metrics.txt | tail -1 | awk -F"\t" '{print $8}')
+	if ls picard/${sample}*markDups_metrics.txt  1>/dev/null 2>&1; then 
+	    n_dup_pair=$(grep -a2 "## METRICS" picard/${sample}*markDups_metrics.txt | tail -1 | awk -F"\t" '{print $7}')
+	    n_dup_single=$(grep -a2 "## METRICS" picard/${sample}*markDups_metrics.txt | tail -1 | awk -F"\t" '{print $6}')
+	    n_dup_optical=$(grep -a2 "## METRICS" picard/${sample}*markDups_metrics.txt | tail -1 | awk -F"\t" '{print $8}')
+	    ## Picard values are always in reads
 	    n_dup=$(( $n_dup_pair * 2 + $n_dup_single + $n_dup_optical ))
+	    if [ $is_pe == "1" ]; then
+		n_dup=$(( $n_dup / 2 ))
+	    fi
 	    p_dup=$(echo "${n_dup} ${n_mapped}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
 	fi
     fi
@@ -80,19 +85,25 @@ do
     strandness=$(cat strandness/${sample}_strandness.txt)
 
     ## Calculate percentage
-    p_mapped=$(echo "${n_mapped} ${n_reads}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
+    p_mapped=$(echo "${n_mapped} ${n_frag}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
     if [ $n_unique != 'NA' ]; then  
-	p_unique=$(echo "${n_unique} ${n_reads}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
+	p_unique=$(echo "${n_unique} ${n_frag}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
     else
 	p_unique='NA'
     fi
     if [ $n_multi != 'NA' ]; then  
-	p_multi=$(echo "${n_multi} ${n_reads}" | awk ' { printf "%.*f",2,$1*100/$2 } ') 
+	p_multi=$(echo "${n_multi} ${n_frag}" | awk ' { printf "%.*f",2,$1*100/$2 } ') 
     else
 	p_multi='NA'
     fi
 
 
-    echo -e ${sample},${sname},${n_reads},${n_rrna},${p_rrna},${strandness},${n_mapped},${p_mapped},${n_unique},${p_unique},${n_multi},${p_multi},${n_dup},${p_dup} >> mq.stats
+    if [ -e preseq/${sample}_sorted_extrap_ccurve.txt ]; then
+	p_sat=$(awk -v nbreads=${n_mapped} 'BEGIN{p=0} NR>1 && $1>nbreads && nbreads>p{val=$2} {p=$1; x=$2} END{printf "%.*f",2,val/x*100}' preseq/${sample}_sorted_extrap_ccurve.txt)
+    else
+	p_sat='NA'
+    fi
+
+    echo -e ${sample},${sname},${n_frag},${n_rrna},${p_rrna},${strandness},${n_mapped},${p_mapped},${n_unique},${p_unique},${n_multi},${p_multi},${n_dup},${p_dup},${p_sat} >> mq.stats
 
 done
