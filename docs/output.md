@@ -91,29 +91,30 @@ Use the `--saveAlignedIntermediates` options to save all files.
 
 ## Read Distribution
 
-This tool calculates how mapped reads are distributed over genomic features. A good result for a standard RNA seq experiments is generally to have as many exonic reads as possible (CDS_Exons). A large amount of intronic reads could be indicative of DNA contamination in your sample or some other problem.
-See the read_distribution tool from [RSeQC](http://rseqc.sourceforge.net/) for details.
+This tool calculates how mapped reads are distributed over exonic/intronic and intergenic genomic features. A good result for a standard RNA seq experiments is generally to have as many exonic reads as possible (CDS_Exons). A large amount of intronic reads could be indicative of DNA contamination in your sample or some other problem.
+See the [Qualimap](http://http://qualimap.conesalab.org/) tool for details.
 
-**Output directory: `results/read_distribution`**
+**Output directory: `results/qualimap`**
 
-* `[SAMPLE].read_distribution.txt`
+* `[SAMPLE]/rnaseq_qc_results.txt`
   * Results file with the number of reads assigned to each annotation.
+* `[SAMPLE]/qualimapReport.html`
+  * Qualimap HTML report
 
-![MultiQC - RSeQC read distribution](images/rseqc_read_distribution_plot.png)
+![MultiQC - Qualimap read distribution](images/qualimap_genomic_origin.png)
 
 ## Gene Body Coverage
 
-This script calculates the reads coverage across gene bodies. This makes it easy to identify 3' or 5' skew in libraries. A skew towards increased 3' coverage can happen in degraded samples prepared with poly-A selection, or in 3'-seq experiments.
+This script calculates the reads coverage across gene bodies. This makes it easy to identify 3' or 5' skew in libraries. A skew towards increased 3' coverage can happen in degraded samples prepared with poly-A selection, or in 3'-seq experiments. See the [Qualimap](http://http://qualimap.conesalab.org/) tool for details.
 
-> **NB:** Note that following nfcore recommandation, we subsample the BAM to 1 Million reads. This speeds up this task significantly and has no to little effect on the results.
+**Output directory: `results/qualimap`**
 
-**Output directory: `results/read_distribution`**
+* `[SAMPLE]/rnaseq_qc_results.txt`
+  * Results file with the number of reads assigned to each annotation.
+* `[SAMPLE]/qualimapReport.html`
+  * Qualimap HTML report
 
-* `[SAMPLE]_rseqc.geneBodyCoverage.curves.pdf`
-* `[SAMPLE]_rseqc.geneBodyCoverage.r`
-* `[SAMPLE]_rseqc.geneBodyCoverage.txt`
-
-![MultiQC - RSeQC gene body coverage](images/rseqc_gene_body_coverage_plot.png)
+![MultiQC - Qualimap gene body coverage](images/qualimap_gene_coverage_profile.png)
 
 ## Complexity Curves
 
