@@ -943,7 +943,7 @@ process markDuplicates {
   markdupMemOption = "\"-Xms" +  (task.memory.toGiga() / 2).trunc() + "g -Xmx" + (task.memory.toGiga() - 1) + "g\""
   """
   echo \$(picard MarkDuplicates --version 2>&1) &> v_picard.txt
-  picard ${markdupMemOption} MarkDuplicates \\
+  picard ${markdupMemOption} -Djava.io.tmpdir=${params.picardTmpDir} MarkDuplicates \\
       MAX_RECORDS_IN_RAM=50000 \\
       INPUT=${bam[0]} \\
       OUTPUT=${bam[0].baseName}.markDups.bam \\
