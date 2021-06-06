@@ -160,6 +160,9 @@ if (params.counts == 'star' && params.aligner != 'star'){
 if (params.stranded != 'auto' && params.stranded != 'reverse' && params.stranded != 'forward' && params.stranded != 'no'){
   exit 1, "Invalid stranded option: ${params.stranded}. Valid options: 'auto', 'reverse', 'forward', 'no'"
 }
+if (params.stranded == 'auto' && !params.bed12){  
+  exit 1, "Strandness detection is not possible without gene bed file. Please specify a stranded option: 'reverse', 'forward', 'no'"
+}
 
 if ((params.reads && params.samplePlan) || (params.readPaths && params.samplePlan)){
   exit 1, "Input reads must be defined using either '--reads' or '--samplePlan' parameter. Please choose one way"
@@ -197,12 +200,12 @@ if( params.bed12 ){
   Channel
     .fromPath(params.bed12)
     .ifEmpty { exit 1, "BED12 annotation file not found: ${params.bed12}" }
-    .into { chBedRseqc }
+    .set { chBedRseqc }
 }else{
   log.warn "No BED gene annotation specified - strandness detection, gene body coverage, read distribution - will be skipped !"
   Channel
     .empty()
-    .into { chBedRseq }
+    .set { chBedRseq }
 }
 
 if( params.rrna ){
@@ -408,7 +411,7 @@ process rRNAMapping {
   tag "${prefix}"
   label 'bowtie'
   label 'medCpu'
-  label 'lowMem'
+  label 'medMem'
   publishDir "${params.outDir}/rRNAmapping", mode: 'copy',
     saveAs: {filename ->
       if (filename.indexOf("fastq.gz") > 0 &&  params.saveAlignedIntermediates) filename
@@ -468,15 +471,9 @@ process saveStrandness {
   file "*.txt" into chSavedStrandness
 
   script:
-  if (params.stranded == 'auto' && !params.bed12){
-  """
-  echo "NA" > ${prefix}_strandness.txt
-  """
-  }else{
   """
   echo ${params.stranded} > ${prefix}_strandness.txt
   """
-  }
 }
 
 
@@ -489,8 +486,8 @@ if (params.stranded == 'reverse' || params.stranded == 'forward' || params.stran
     }
     .into { chStrandedResultsBigwig ; chStrandedResultsFeatureCounts; chStrandedResultsGenetype; chStrandedResultsHTseqCounts;
             chStrandedResultsDupradar; chStrandedResultsHisat; chStrandedResultsTable; chStrandedResultsQualimap }
-}else if (params.stranded == 'auto' && !params.bed12){
-  log.warn "Strandness ('auto') cannot be run without GTF annotation - will be skipped !"
+   chBowtie2Version = Channel.empty()
+   chRseqcVersionInferExperiment = Channel.empty()  
 }else if (params.stranded == 'auto' && params.bed12){
  
   // auto
@@ -642,7 +639,7 @@ if(params.aligner == 'star'){
          --outSAMtype BAM Unsorted  \\
          --readFilesCommand zcat \\
          --runDirPerm All_RWX \\
-         --outTmpDir "${params.starTmpDi}"\\
+         --outTmpDir "${params.starTmpDir}"\\
          --outFileNamePrefix $prefix  \\
          --outSAMattrRGline ID:$prefix SM:$prefix LB:Illumina PL:Illumina  \\
          ${params.starOptions} \\
