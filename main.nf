@@ -453,8 +453,8 @@ process rRNAMapping {
 
 process saveStrandness {
   label 'unix'
-  label 'lowCpu'
-  label 'lowMem'
+  label 'minCpu'
+  label 'minMem'
   publishDir "${params.outDir}/strandness" , mode: 'copy',
     saveAs: {filename ->
       if (filename.indexOf(".txt") > 0) "$filename"
@@ -699,7 +699,7 @@ if(params.aligner == 'hisat2'){
 
   process makeHisatSplicesites {
      label 'hisat2'
-     label 'lowCpu'
+     label 'minCpu'
      label 'lowMem'
      publishDir "${params.outDir}/mapping", mode: 'copy',
        saveAs: { filename ->
@@ -891,7 +891,7 @@ process qualimap {
 process preseq {
   tag "${bam[0]}"
   label 'preseq'
-  label 'lowCpu'
+  label 'minCpu'
   label 'medMem'
   publishDir "${params.outDir}/preseq", mode: 'copy'
 
@@ -920,7 +920,7 @@ process preseq {
 process markDuplicates {
   tag "${bam[0]}"
   label 'picard'
-  label 'lowCpu'
+  label 'minCpu'
   label 'medMem'
   publishDir "${params.outDir}/markDuplicates", mode: 'copy',
     saveAs: {filename -> 
@@ -959,7 +959,7 @@ process markDuplicates {
 process dupradar {
   tag "${bamMd[0]}"
   label 'dupradar'
-  label 'lowCpu'
+  label 'minCpu'
   label 'lowMem'
   publishDir "${params.outDir}/dupradar", mode: 'copy',
     saveAs: {filename ->
@@ -1001,7 +1001,7 @@ process dupradar {
  */
 
 process getPolym {
-  label 'lowCpu'
+  label 'minCpu'
   label 'medMem'
   label 'identito'
 
@@ -1029,7 +1029,7 @@ process getPolym {
 }
 
 process combinePolym {
-  label 'lowCpu'
+  label 'minCpu'
   label 'lowMem'
   label 'identito'
 
@@ -1149,7 +1149,7 @@ if( params.counts == 'featureCounts' ){
 process mergeCounts {
   publishDir "${params.outDir}/counts", mode: 'copy'
   label 'r'
-  label 'lowCpu'
+  label 'minCpu'
   label 'medMem'
 
   input:
@@ -1188,7 +1188,7 @@ if( params.counts == 'featureCounts' ){
 
 process geneSaturation {
   label 'r'
-  label 'lowCpu'
+  label 'minCpu'
   label 'medMem'
   publishDir "${params.outDir}/geneSaturation" , mode: 'copy'
 
@@ -1216,7 +1216,7 @@ process geneSaturation {
 
 process getCountsPerGeneType {
   label 'r'
-  label 'lowCpu'
+  label 'minCpu'
   label 'lowMem'
   publishDir "${params.outDir}/readDistribution", mode: 'copy'
 
@@ -1245,7 +1245,7 @@ process getCountsPerGeneType {
 
 process exploratoryAnalysis {
   label 'r'
-  label 'lowCpu'
+  label 'minCpu'
   label 'lowMem'
   publishDir "${params.outDir}/exploratoryAnalysis", mode: 'copy'
 
@@ -1280,8 +1280,8 @@ process exploratoryAnalysis {
 
 process getSoftwareVersions{
   label 'python'
-  label 'lowCpu'
-  label 'medMem'
+  label 'minCpu'
+  label 'lowMem'
   publishDir path: "${params.outDir}/softwareVersions", mode: "copy"
 
   when:
@@ -1353,7 +1353,7 @@ if (skippedPoorAlignment.size() > 0){
 
 process multiqc {
   label 'multiqc'
-  label 'lowCpu'
+  label 'minCpu'
   label 'lowMem'
   publishDir "${params.outDir}/MultiQC", mode: 'copy'
 
@@ -1414,8 +1414,8 @@ process multiqc {
 
 process outputDocumentation {
   label 'python'
-  label 'lowCpu'
-  label 'lowMem'
+  label 'minCpu'
+  label 'minMem'
   publishDir "${params.summaryDir}/", mode: 'copy'
 
   input:
