@@ -1,7 +1,0 @@
-name: unix-1.0.0
-channels:
-  - bioconda
-  - conda-forge
-  - defaults
-dependencies:
-  - conda-forge:gawk=5.1.0

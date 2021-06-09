@@ -1,8 +1,0 @@
-name: featureCounts-2.0.1
-channels:
-  - conda-forge
-  - bioconda
-  - defaults
-dependencies:
-  - bioconda::subread=2.0.1=h5bf99c6_1
-
