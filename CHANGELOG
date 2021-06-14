@@ -6,6 +6,7 @@ NEW FEATURES
   - Add Warnings in the report
   - Generate bigwig files
   - Add polymorphism call for Human identito-vigilance
+  - Update Bombyx Mori annotation
 
 SIGNIFICANT USER-VISIBLE CHANGES
   - Add Qualimap instead of rseqc read distribution and gene body coverage (#136, #139)
