@@ -1,0 +1,290 @@
+#
+# RNA-seq config for MultiQC
+#
+#################################################################
+
+skip_generalstats: true
+read_count_multiplier: 0.000001
+read_count_prefix: 'M'
+read_count_desc: 'millions'
+
+###################################
+## Custom content
+
+custom_data:
+    my_stats:
+        file_format: 'csv'
+        section_name: 'General Metrics'
+        description: ' of sequenced data. High-quality RNA-seq experiments usually present a low ribosomal RNA fraction and a majority of uniquely aligned reads on coding sequences. All presented numbers are in fragments (i.e. in pairs for paired-end data).' 
+        plot_type: 'table'
+        pconfig:
+            namespace: 'stats'
+            id: 'stats'
+            title: 'General Statistics'
+            save_file: true
+            col1_header: 'Sample ID'
+        headers:
+            Sample_name:
+              title: 'Sample Name'
+              scale: false
+              format: '{:.0f}'
+              placement: 2000
+            Number_of_frag:
+              title: 'Total Fragments'
+              scale: 'YlGnBu'
+              format: '{:,.0f}'
+              placement: 4000
+            Number_of_rRNA:
+              title: 'rRNA'
+              scale: 'RdYlGn-rev'
+              format: '{:,.0f}'
+              hidden: true
+              placement: 5000
+            Percent_of_rRNA:
+              title: 'rRNA (%)'
+              min: 0
+              max: 100
+              scale: 'RdYlGn-rev'
+              suffix: '%'
+              format: '{:,.1f}'
+              placement: 6000
+            Strandness:
+              scale: false
+              placement: 3000
+            Number_of_aligned:
+              title: 'Aligned'
+              scale: 'RdYlGn'
+              format: '{:,.0f}'
+              hidden: true
+              placement: 7000
+            Percent_of_aligned:
+              title: 'Aligned (%)'
+              min: 0
+              max: 100
+              scale: 'RdYlGn'
+              suffix: '%'
+              format: '{:,.1f}'
+              placement: 8000
+            Number_of_uniquely_aligned:
+              title: 'Aligned Unique'
+              scale: 'RdYlGn'
+              format: '{:,.0f}'
+              hidden: true
+              placement: 9000
+            Percent_uniquely_aligned:
+              title: 'Aligned Unique (%)'
+              min: 0
+              max: 100
+              scale: 'RdYlGn'
+              suffix: '%'
+              format: '{:,.1f}'
+              placement: 10000
+            Number_of_multiple_aligned:
+              title: 'Aligned Multiple'
+              scale: 'RdYlGn-rev'
+              format: '{:,.0f}'
+              hidden: true
+              placement: 11000
+            Percent_multiple_aligned:
+              title: 'Aligned Multiple (%)'
+              min: 0
+              max: 100
+              scale: 'RdYlGn-rev'
+              suffix: '%'
+              format: '{:,.1f}'
+              placement: 12000
+            Number_of_duplicates:
+              title: 'Duplicates'
+              scale: 'RdYlGn-rev'
+              format: '{:,.0f}'
+              hidden: true
+              placement: 13000
+            Percent_duplicates:
+              title: 'Duplicates (%)'
+              min: 0
+              max: 100
+              scale: 'RdYlGn-rev'
+              suffix: '%'
+              format: '{:,.1f}'
+              placement: 14000
+            Percent_saturation:
+              title: 'Saturation (%)'
+              description: 'Estimation of saturation level'
+              min: 0
+              max: 100
+              scale: 'RdYlGn-rev'
+              suffix: '%'
+              format: '{:,.1f}'
+              placement: 15000
+
+    gene_type:
+       file_format: 'csv'
+       section_name: 'Expressed Genes'
+       description: 'with a TPM value > 1 are considered. The number of expressed genes per sample was splitted into the 5 most abundant classes following the known gene annotations.'
+       plot_type: 'bargraph'
+       pconfig:
+            namespace: 'genetype'
+            id: 'genetype'
+            title: 'Expressed Genes'
+            ylab: 'Number of expressed genes (TPM>1)'
+            scale: 'Pastel1'
+
+    gene_saturation:
+       file_format: 'tsv'
+       section_name: 'Gene-based saturation'
+       description: 'plot showing the number of detected genes for a given set of subsampling values.'
+       plot_type: 'linegraph'
+       pconfig:
+            namespace: 'gene saturation'
+            id: 'genesaturation'
+            title: 'Gene-based Saturation'
+            ylab: 'Number of detected genes'
+            xlab: 'Number of reads (M)'
+
+    identito:
+        file_format: 'csv'
+        section_name: 'Identito Vigilance'
+        description: 'heatmap is created from a defined list of SNPs. Using those SNPs, the similarity metric is calculated as the Jaccard distance between all pairs of samples. Samples from the same patient are expected to have a high similarity score.'
+        plot_type: 'heatmap'
+        pconfig:
+            title: 'Identito Vigilance heatmap'
+            namescape: 'identito'
+            id: 'identito'
+
+sp:
+   my_stats:
+      fn: '*.stats'
+   gene_type:
+      fn: '*genetype.txt'
+   gene_saturation:
+      fn: '*gcurve.txt'
+   identito:
+      fn: '*_identito.csv'
+
+
+table_cond_formatting_rules:
+    Percent_of_rRNA:
+        pass:
+            - lt: 10
+        warn:
+            - gt: 10
+        fail:
+            - gt: 20
+    Percent_of_aligned_reads:
+        pass:
+            - gt: 80
+        warn:
+            - lt: 80
+        fail:
+            - lt: 50
+    Percent_duplicates:
+        pass:
+            - lt: 35
+        warn:
+            - gt: 35
+        fail:
+            - gt: 50
+
+################################
+## Clean sample names
+
+extra_fn_clean_exts:
+  - 'gcurve.txt'
+  - '_sorted.markDups_matrix.tsv'
+  - '_sorted'
+
+###############################
+## Modules 
+
+module_order:
+  - fastqc
+  - bowtie1:
+      name: 'rRNA Mapping'
+      info: 'This section reports the fraction of reads aligned on ribosomal RNAs.'
+      target: ''
+      path_filters:
+        - '*.log'
+  - star
+  - hisat2
+  - qualimap
+  - rseqc
+  - featureCounts
+  - HTSeq
+  - preseq:
+     name: 'Sequencing Complexity'
+     info: 'estimates the complexity of a library, showing how many additional unique reads are sequenced for increasing total read count. A shallow curve indicates complexity saturation. The dashed line shows a perfectly complex library where total reads = unique reads. The presented graph shows extrapolated curves up to 200M sequencing reads.'
+
+
+custom_plot_config:
+   bowtie1_alignment:
+     reads_aligned:
+       color: '#e41a1c'
+     multimapped:
+       color: '#ffffb3'
+     not_aligned:
+       color: '#1f78b4'
+
+   rseqc_read_distribution_plot:
+     cds_exons_tag_count:
+        color: '#8dd3c7'
+     5_utr_exons_tag_count:
+        color: '#ffffb3'
+     3_utr_exons_tag_count:
+        color: '#bebada'
+     introns_tag_count:
+        color: '#fb8072'
+     tss_up_1kb_tag_count:
+        color: '#80b1d3'
+     tss_up_5kb_tag_count:
+        color: '#fdb462'
+     tss_up_10kb_tag_count:
+        color: '#b3dde69'
+     tes_down_1kb_tag_count:
+        color: '#fccde5'
+     tes_down_5kb_tag_count:
+        color: '#d9d9d9'
+     tes_down_10kb_tag_count:
+        color: '#bc80bd'
+     other_intergenic_tag_count:
+        color: '#ccebc5'
+
+#############################
+## Removed plots
+remove_sections :
+  - fastqc_sequence_counts
+  - fastqc_per_sequence_quality_scores
+  - fastqc_overrepresented_sequences
+  - fastqc_status_checks
+  - plotFingerprint
+
+#############################
+## Display
+
+report_section_order:
+  stats:
+    order: 1
+  gene_saturation:
+    order: -400
+  gene_type:
+    order: -500
+  DupRadar:
+    order: -600 
+  sample-pca:
+    order: -800
+  sample-correlation:
+    order: -900
+  identito:
+    order: -1000
+  software_versions:
+    order: -2000
+  summary:
+    order: -3000
+
+table_columns_visible:
+    FastQC:
+        percent_duplicates: False
+
+preseq:
+   notrim: true
+
+plots_force_interactive: True

@@ -5,36 +5,36 @@
 * [Introduction](#general-nextflow-info)
 * [Running the pipeline](#running-the-pipeline)
 * [Main arguments](#main-arguments)
-    * [`-profile`](#-profile-single-dash)
-        * [`conda`](#conda)
-        * [`toolsPath`](#toolsPath)
-        * [`singularity`](#singularity)
-        * ['cluster'](#cluster)
-        * [`test`](#test)
     * [`--reads`](#--reads)
 	* [`--samplePlan`](#--samplePlan)
 	* [`--singleEnd`](#--singleend)
 	* [`--stranded`](#--stranded)
-	* [`--aligner`](#--aligner)
-	* [`--counts`](#--counts)
 * [Reference genomes](#reference-genomes)
     * [`--genome`](#--genome)
-* [Tools parameters](#tools-parameters)
+	* [`--genomeAnnotationPath`](#--genomeAnnotationPath)
+* [Alignment](#aligment)
+    * [`--aligner`](#--aligner)
+	* [`--bowtieOpts`](#--bowtieOpts)
+	* [`--starOpts`](#--starOpts)
+* [Counts](#counts)
+    * [`--counts`](#--counts)
+	* [`--htseqOpts`](#--htseqOpts)
+	* [`--featurecountsOpts`](#--featurecountsOpts)
+* [Profiles](#profiles)
 * [Job resources](#job-resources)
 * [Automatic resubmission](#automatic-resubmission)
 * [Custom resource requests](#custom-resource-requests)
 * [Other command line parameters](#other-command-line-parameters)
     * [`--skip*`](#--skip*)
 	* [`--metadata`](#--metadta)
-	* [`--outdir`](#--outdir)
-    * [`--email`](#--email)
+	* [`--outDir`](#--outdir)
     * [`-name`](#-name-single-dash)
     * [`-resume`](#-resume-single-dash)
     * [`-c`](#-c-single-dash)
-    * [`--max_memory`](#--max_memory)
-    * [`--max_time`](#--max_time)
-    * [`--max_cpus`](#--max_cpus)
-    * [`--multiqc_config`](#--multiqc_config)
+    * [`--maxMemory`](#--max_memory)
+    * [`--maxTime`](#--max_time)
+    * [`--maxCpus`](#--max_cpus)
+    * [`--multiqcConfig`](#--multiqc_config)
 
 ## General Nextflow info
 
@@ -66,27 +66,6 @@ results         # Finished results (configurable, see below)
 You can change the output director using the `--outdir/-w` options.
 
 ## Main arguments
-
-### `-profile`
-
-Use this parameter to choose a configuration profile. Profiles can give configuration presets for different compute environments. Note that multiple profiles can be loaded, for example: `-profile singularity` - the order of arguments is important!
-
-If `-profile` is not specified at all the pipeline will be run locally and expects all software to be installed and available on the `PATH`.
-
-* `conda`
-    * A generic configuration profile to be used with [conda](https://conda.io/docs/)
-    * Pulls most software from [Bioconda](https://bioconda.github.io/)
-* `toolsPath`
-    * A generic configuration profile to be used with [conda](https://conda.io/docs/)
-    * Use the conda images available on the cluster
-* `singularity`
-    * A generic configuration profile to be used with [Singularity](http://singularity.lbl.gov/)
-    * Use the singularity images available on the cluster
-* `cluster`
-    * Run the workflow on the computational cluster
-* `test`
-    * A profile with a complete configuration for automated testing
-    * Includes links to test data so needs no other parameters
 
 ### `--reads`
 
@@ -143,31 +122,6 @@ If you do not have the information, you can the automatic detection mode (defaul
 
 In the case, the pipeline will the run the [`rseqc`](http://rseqc.sourceforge.net/) tool to automatically detect the strandness parameter.
 
-### `--aligner`
-
-The current version of the pipeline supports three different aligners;
-- [`STAR`](https://github.com/alexdobin/STAR). Default value.
-- [`tophat2`](http://ccb.jhu.edu/software/tophat/index.shtml)
-- [`hisat2`](http://ccb.jhu.edu/software/hisat2/index.shtml)
-
-By default, the `STAR` mapper is run. You can specify the tool to use as follows:
-
-```bash
---aligner 'STAR'
-```
-
-### `--counts`
-
-The raw count table for all samples can be generated using one of the following tool:
-- [`STAR`](https://github.com/alexdobin/STAR). Require `--aligner 'STAR'`. Default value.
-- [`featureCounts`](http://bioinf.wehi.edu.au/featureCounts/)
-- [`HTSeqCounts`](https://htseq.readthedocs.io/en/release_0.11.1/count.html)
-
-You can specify one of these tools using:
-```bash
---counts 'featureCounts`
-```
-
 ## Reference genomes
 
 The pipeline config files come bundled with paths to the genomes reference files. 
@@ -195,7 +149,7 @@ params {
   genomes {
     'hg19' {
       star     = '<path to the STAR index files>'
-      bowtiee2 = '<path to the bowtie index files>'
+      bowtie2 = '<path to the bowtie index files>'
       hisat2   = '<path to the HiSat2 index files>'
       rrna     = '<path to bowtie1 mapping on rRNA reference>'
       bed12    = '<path to Bed12 annotation file>'
@@ -207,17 +161,63 @@ params {
 ```
 
 Note that these paths can be updated on command line using the following parameters:
-- `--star_index` - Path to STAR index
-- `--hisat2_index` - Path to HiSAT2 index
-- `--tophat2_index` - Path to TopHat2 index
+- `--starIndex` - Path to STAR index
+- `--hisat2Index` - Path to HiSAT2 index
 - `--gtf` - Path to GTF file
 - `--bed12` - Path to gene bed12 file
 - `--saveAlignedIntermediates` - Save the BAM files from the Aligment step  - not done by default
 
-## Tools parameters
+## Alignment
 
-The `conf/tools.conf` configuration file can be used to specify some of the tools options.
-Note that these options can also be genome dependent. So far, only the `STAR` options can be changed from an organism to another.
+### `--aligner`
+
+The current version of the pipeline supports two different aligners;
+- [`STAR`](https://github.com/alexdobin/STAR)
+- [`hisat2`](http://ccb.jhu.edu/software/hisat2/index.shtml)
+
+By default, the `STAR` mapper is run. You can specify the tool to use as follows:
+
+```bash
+--aligner 'STAR'
+```
+
+### `--bowtieOpts`
+
+Change default bowtie1 mapping options for rRNA cleaning. See the `nextflow.config` file for details.
+
+### `--starOpts`
+ 
+Change default STAR mapping options for mapping.
+Note that the STAR options can vary from an organism to another. 
+See the `nextflow.config` file for details.
+
+## Counts
+
+### `--counts`
+
+The raw count table for all samples can be generated using one of the following tool:
+- [`STAR`](https://github.com/alexdobin/STAR). Require `--aligner 'STAR'`. Default value.
+- [`featureCounts`](http://bioinf.wehi.edu.au/featureCounts/)
+- [`HTSeqCounts`](https://htseq.readthedocs.io/en/release_0.11.1/count.html)
+
+You can specify one of these tools using:
+```bash
+--counts 'featureCounts`
+```
+
+### `--htseqOpts`
+
+Change default HTSeq options. See the `nextflow.config` file for details.
+
+### `--featurecountsOpts`
+
+Change default featureCounts options. See the `nextflow.config` file for details.
+
+## Profiles
+
+Use this parameter to choose a configuration profile. Profiles can give configuration presets for different compute environments. 
+Note that multiple profiles can be loaded, for example: `-profile docker` - the order of arguments is important!
+Look at the [Profiles documentation](profiles.md) for details.
 
 ## Job resources
 
@@ -232,27 +232,26 @@ For most of the steps in the pipeline, if the job exits with an error code of `1
 
 The pipeline is made with a few *skip* options that allow to skip optional steps in the workflow.
 The following options can be used:
-- `--skip_qc` - Skip all QC steps apart from MultiQC
-- `--skip_rrna` - Skip rRNA mapping
-- `--skip_fastqc` - Skip FastQC
-- '--skip_genebody_coverage' - Skip genebody coverage step
-- `--skip_saturation` - Skip Saturation qc
-- `--skip_dupradar` - Skip dupRadar (and Picard MarkDups)
-- `--skip_readdist` - Skip read distribution steps
-- `--skip_expan` - Skip exploratory analysis
-- `--skip_multiqc` - Skip MultiQC
-				
+- `--skipQC` - Skip all QC steps apart from MultiQC
+- `--skipRrna` - Skip rRNA mapping
+- `--skipFastqc` - Skip FastQC
+- `--skipQualimap` - Skip genebody coverage step
+- `--skipSaturation` - Skip Saturation qc
+- `--skipDupradar` - Skip dupRadar (and Picard MarkDups)
+- `--skipExpan` - Skip exploratory analysis
+- `--skipBigwig` - Do not generate bigwig files
+- `--skipIdentito` - Skip identito monitoring
+- `--skipMultiqc` - Skip MultiQC
+- `--skipSoftVersions` - Skip software versions reporting
+			
+			
 ### `--metadata`
 
 Specify a two-columns (tab-delimited) metadata file to diplay in the final Multiqc report.
 
-### `--outdir`
+### `--outDir`
 
 The output directory where the results will be saved.
-
-### `--email`
-
-Set this parameter to your e-mail address to get a summary e-mail with details of the run sent to you when the workflow exits. If set in your user config file (`~/.nextflow/config`) then you don't need to specify this on the command line for every run.
 
 ### `-name`
 
@@ -277,21 +276,21 @@ Specify the path to a specific config file (this is a core NextFlow command).
 
 Note - you can use this to override pipeline defaults.
 
-### `--max_memory`
+### `--maxMemory`
 
 Use to set a top-limit for the default memory requirement for each process.
 Should be a string in the format integer-unit. eg. `--max_memory '8.GB'`
 
-### `--max_time`
+### `--maxTime`
 
 Use to set a top-limit for the default time requirement for each process.
 Should be a string in the format integer-unit. eg. `--max_time '2.h'`
 
-### `--max_cpus`
+### `--maxCpus`
 
 Use to set a top-limit for the default CPU requirement for each process.
 Should be a string in the format integer-unit. eg. `--max_cpus 1`
 
-### `--multiqc_config`
+### `--multiqcConfig`
 
 Specify a path to a custom MultiQC configuration file.

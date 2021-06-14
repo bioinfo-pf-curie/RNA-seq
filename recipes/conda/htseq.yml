@@ -1,0 +1,7 @@
+name: HTSeqCounts-0.13.5
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - bioconda::htseq=0.13.5=py37h9c5868f_1

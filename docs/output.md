@@ -3,23 +3,8 @@
 This document describes the output produced by the pipeline. Most of the plots are taken from the MultiQC report, which summarises results at the end of the pipeline.
 
 ## Pipeline overview
-The pipeline is built using [Nextflow](https://www.nextflow.io/)
-and processes data using the following steps:
-
-* [FastQC](#fastqc) - read quality control
-* [rRNA Mapping](#rrna-mapping) - Alignment on ribosomal RNAs
-* [Strandness](#strandness) - Sequencing orientation
-* [Genome Mapping](#genome-mapping) - Alignment on the reference genome
-* [Read Distribution](#read-distribution) - Distribution of sequencing reads
-* [Complexity Curves](#complexity-curves) - Complexity of the librairies
-* [Gene-based Saturation](#gene-based-saturation) - Libraries complexity based on number of detected genes
-* [Counts](#counts) - Counts reads per gene
-* [Expressed Genes Types](#expressed-genes-types) - Number of expressed genes per sample
-* [DupRadar](#dupradar) - Reads duplication level 
-* [PCA](#pca) - Principal Component Analysis
-* [Correlation](#correlation) - Sample Pearson's correlation
-* [MultiQC](#multiqc) - aggregate report, describing results of the whole pipeline
-
+The pipeline is built using [Nextflow](https://www.nextflow.io/) and processes RNA-seq from raw sequencing reads to count table for downstream analysis.
+Briefly, the overall quality of raw sequencing data is first checked using [FastQC](#fastqc). Reads are then aligned on a [ribosomal RNAs database](#rrna-mapping) and on the [reference genome](#genome-mapping). Additional controls on aligned data are performed to infer [strandness](#strandness), [complexity](#complexity-curves), [gene-based saturation](#gene-based-saturation), [read distribution](#read-distribution) or [duplication level](#dupradar). The aligned data are then used to generate a final [count matrix](#counts) with all genes and all samples. A first-level analysis is run, including the [number of expressed genes](#expressed-number), their [functional classes](#expressed-genes-types) and an exploratory analysis ([correlation](#correlation), [PCA](#pca)). The [identito monitoring](#identito) is also available for Human data.
 
 ## FastQC
 [FastQC](http://www.bioinformatics.babraham.ac.uk/projects/fastqc/) gives general quality metrics about your reads. It provides information about the quality score distribution across your reads, the per base sequence content (%T/A/G/C). You get information about adapter contamination and other overrepresented sequences.
@@ -27,13 +12,13 @@ and processes data using the following steps:
 For further reading and documentation see the [FastQC help](http://www.bioinformatics.babraham.ac.uk/projects/fastqc/Help/).
 
 > **NB:** The FastQC plots displayed in the MultiQC report shows the input reads. In theory, they should be already trimmed for adapter sequence and potentially regions with low quality. 
-For details about reads trimming, see the `raw_qc` pipeline.
+For details about reads trimming, see the [raw_qc](https://gitlab.curie.fr/data-analysis/raw-qc) pipeline.
 
 **Output directory: `results/fastqc`**
 
-* `sample_fastqc.html`
+* `[SAMPLE]_fastqc.html`
   * FastQC report, containing quality metrics for your untrimmed raw fastq files
-* `zips/sample_fastqc.zip`
+* `zips/[SAMPLE]_fastqc.zip`
   * zip file containing the FastQC report, tab-delimited data file and plot images
 
 ## rRNA Mapping
@@ -46,10 +31,12 @@ For detail about the bowtie1 mapper, see the [bowtie help](http://bowtie-bio.sou
 
 **Output directory: `results/rRNA_mapping`**
 
-* `logs/sample.log`
+* `logs/[SAMPLE].log`
   * Log file of bowtie1 mapping with the number of aligned reads on rRNA sequences
-* `sample_norRNA_R{1,2}.fastq.gz`
+* `[SAMPLE]_norRNA_R{1,2}.fastq.gz`
   * The fastq file after rRNA cleaning
+
+![MultiQC - Bowtie rRNA mapping](images/bowtie1_alignment.png)
 
 
 ## Strandness
@@ -67,19 +54,20 @@ For further detail on the infer experiment tool see the [RSeQC help page](http:/
 
 **Output directory: `results/strandness`
 
-* `sample.txt`
+* `[SAMPLE].txt`
   * RSeQC infer experiment output file
-* `sample_strandness.txt`
+* `[SAMPLE]_strandness.txt`
   * Readable Strandness information
+
+![MultiQC - RNA-seq strandness with RSeQC](images/rseqc_infer_experiment_plot.png)
 
 ## Genome Mapping
 
 Raw (or rRNA-cleaned) sequencing data are then aligned on the reference genome.
-The current version includes the following RNA reads mappers: `TopHat2`, `STAR`, `HiSat2`.
+The current version includes the following RNA reads mappers: `STAR`, `HiSat2`.
 
 For details about these mapper, see their help page:
 - [`STAR`](https://github.com/alexdobin/STAR) 
-- [`tophat2`](http://ccb.jhu.edu/software/tophat/index.shtml) 
 - [`hisat2`](http://ccb.jhu.edu/software/hisat2/index.shtml)
 
 > **NB:** Note that the TopHat2 software was included for historical reason, but is now deprecated and replaced by the HiSat2 mapper.
@@ -94,33 +82,39 @@ Use the `--saveAlignedIntermediates` options to save all files.
 
 * `logs/`
   * Log files with mapping statistics
-* `sample.bam`
+* `[SAMPLE].bam`
   * The final sorted bam file
-* `sample.bam.bai`
+* `[SAMPLE].bam.bai`
   * The index file of the sorted bam file
+
+![MultiQC - STAR genome alignment ](images/star_alignment_plot.png)
 
 ## Read Distribution
 
-This tool calculates how mapped reads are distributed over genomic features. A good result for a standard RNA seq experiments is generally to have as many exonic reads as possible (CDS_Exons). A large amount of intronic reads could be indicative of DNA contamination in your sample or some other problem.
-See the read_distribution tool from [RSeQC](http://rseqc.sourceforge.net/) for details.
+This tool calculates how mapped reads are distributed over exonic/intronic and intergenic genomic features. A good result for a standard RNA seq experiments is generally to have as many exonic reads as possible (CDS_Exons). A large amount of intronic reads could be indicative of DNA contamination in your sample or some other problem.
+See the [Qualimap](http://http://qualimap.conesalab.org/) tool for details.
 
-**Output directory: `results/read_distribution`**
+**Output directory: `results/qualimap`**
 
-* `sample.read_distribution.txt`
+* `[SAMPLE]/rnaseq_qc_results.txt`
   * Results file with the number of reads assigned to each annotation.
+* `[SAMPLE]/qualimapReport.html`
+  * Qualimap HTML report
+
+![MultiQC - Qualimap read distribution](images/qualimap_genomic_origin.png)
 
 ## Gene Body Coverage
 
-This script calculates the reads coverage across gene bodies. This makes it easy to identify 3' or 5' skew in libraries. A skew towards increased 3' coverage can happen in degraded samples prepared with poly-A selection, or in 3'-seq experiments.
+This script calculates the reads coverage across gene bodies. This makes it easy to identify 3' or 5' skew in libraries. A skew towards increased 3' coverage can happen in degraded samples prepared with poly-A selection, or in 3'-seq experiments. See the [Qualimap](http://http://qualimap.conesalab.org/) tool for details.
 
-> **NB:** Note that following nfcore recommandation, we subsample the BAM to 1 Million reads. This speeds up this task significantly and has no to little effect on the results.
+**Output directory: `results/qualimap`**
 
-**Output directory: `results/read_distribution`**
+* `[SAMPLE]/rnaseq_qc_results.txt`
+  * Results file with the number of reads assigned to each annotation.
+* `[SAMPLE]/qualimapReport.html`
+  * Qualimap HTML report
 
-* `sample_rseqc.geneBodyCoverage.curves.pdf`
-* `sample_rseqc.geneBodyCoverage.r`
-* `sample_rseqc.geneBodyCoverage.txt`
-
+![MultiQC - Qualimap gene body coverage](images/qualimap_gene_coverage_profile.png)
 
 ## Complexity Curves
 
@@ -132,9 +126,10 @@ The dashed line shows a perfectly complex library where total reads = unique rea
 
 **Output directory: `results/preseq`**
 
-* `sample.extrap_ccurve.txt`
+* `[SAMPLE].extrap_ccurve.txt`
   * Results of complexity extrapolation up to 200 millions reads
 
+![MultiQC - Complexity curves](images/preseq_plot.png)
 
 ## Gene-based Saturation
 
@@ -145,6 +140,7 @@ In addition to library complexity, we use a custom R script to infer the library
 * `counts.gcurve.txt`
   * Results of downsampling for all samples
 
+![MultiQC - Genes saturation](images/genesaturation.png)
 
 ## Counts
 
@@ -160,9 +156,9 @@ For furhter information about TPM calculation, see the [RNAseq blog page](https:
 
 **Output directory: `results/counts`**
 
-* `sample_counts.csv`
+* `[SAMPLE]_counts.csv`
   * Individual counts file per sample
-* `sample*.summary`
+* `[SAMPLE].summary`
   * Log file of each tool specifying the number of reads assigned to a feature
 * `tablecounts_raw.csv`
   * The raw counts value for all samples and all genes
@@ -180,6 +176,8 @@ Note that only expressed genes (TPM>1) are considered.
 * `counts_genetype.txt`
   * A single file showing the number of genes classes for all the samples
 
+![MultiQC - Expressed genes types](images/genetype.png) 
+
 ## DupRadar
 
 [DupRadar](https://bioconductor.org/packages/release/bioc/html/dupRadar.html) is a Bioconductor package for R. It plots the duplication rate against expression (RPKM) for every gene. A good sample with little technical duplication will only show high numbers of duplicates for highly expressed genes. Samples with technical duplication will have high duplication for all genes, irrespective of transcription level.
@@ -189,12 +187,14 @@ For details about the dupRadar results, see the [help page](https://www.biocondu
 
 **Output directory: `results/dupradar`**
 
-* `sample_markDups.bam_duprateExpDens.pdf`
-* `sample_markDups.bam_duprateExpBoxplot.pdf`
-* `sample_markDups.bam_expressionHist.pdf`
-* `sample_markDups.bam_dupMatrix.txt`
-* `sample_markDups.bam_duprateExpDensCurve.txt`
-* `sample_markDups.bam_intercept_slope.txt`
+* `[SAMPLE]_markDups.bam_duprateExpDens.pdf`
+* `[SAMPLE]_markDups.bam_duprateExpBoxplot.pdf`
+* `[SAMPLE]_markDups.bam_expressionHist.pdf`
+* `[SAMPLE]_markDups.bam_dupMatrix.txt`
+* `[SAMPLE]_markDups.bam_duprateExpDensCurve.txt`
+* `[SAMPLE]_markDups.bam_intercept_slope.txt`
+
+![MultiQC - Duplication rate over expression level (DupRadar)](images/dupradar.png) 
 
 ## PCA
 
@@ -207,6 +207,7 @@ The MultiQC report shows the reduction dimension on the two first component.
 
 * `deseq2_pca_coords_mqc.csv`
 
+![MultiQC - Principal Componenet Analysis (PCA)](images/pca.png)
 
 ## Correlation
 
@@ -217,6 +218,21 @@ The results are displayed as an heatmap of correlation values.
 
 * `vst_sample_cor_mqc.csv`
 
+![MultiQC - Correlation](images/correlation_map.png)
+
+## Identito monitoring
+
+In order to check the association between pairs of normal/tumor samples, a list of common SNPs (`--polym`) is used to cluster all the samples.  
+The results are displayed as a heatmap with a color code representing the distance (1 - Jaccard) between two samples.
+
+**Output directory: `preprocessing/metrics/identito`** 
+
+* `[SAMPLE].matrix.tsv`
+  * results of the SNPs calling for the list of SNPs
+* `clustering_plot_identito.csv`
+  * distance matrix between each sample
+	
+![MultiQC - Identito monitoring](images/identito.png)
 
 ## MultiQC
 
@@ -226,10 +242,11 @@ The pipeline has special steps which allow the software versions used to be repo
 
 **Output directory: `results/multiqc`**
 
-* `Project_multiqc_report.html`
+* `rnseq_report.html`
   * MultiQC report - a standalone HTML file that can be viewed in your web browser
-* `Project_multiqc_data/`
+* `multiqc_data/`
   * Directory containing parsed statistics from the different tools used in the pipeline
 
 For more information about how to use MultiQC reports, see http://multiqc.info.
 See the file 'test-op/multiqc_report.html' for an example on the test dataset.
+
