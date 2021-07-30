@@ -639,7 +639,7 @@ if(params.aligner == 'star'){
          --outSAMtype BAM Unsorted  \\
          --readFilesCommand zcat \\
          --runDirPerm All_RWX \\
-         --outTmpDir "${params.starTmpDir}"\\
+         --outTmpDir "${params.tmpDir}/rnaseq_\$(date +%d%s%S%N)"\\
          --outFileNamePrefix $prefix  \\
          --outSAMattrRGline ID:$prefix SM:$prefix LB:Illumina PL:Illumina  \\
          ${params.starOptions} \\
@@ -943,7 +943,7 @@ process markDuplicates {
   markdupMemOption = "\"-Xms" +  (task.memory.toGiga() / 2).trunc() + "g -Xmx" + (task.memory.toGiga() - 1) + "g\""
   """
   echo \$(picard MarkDuplicates --version 2>&1) &> v_picard.txt
-  picard ${markdupMemOption} -Djava.io.tmpdir=${params.picardTmpDir} MarkDuplicates \\
+  picard ${markdupMemOption} -Djava.io.tmpdir=${params.tmpDir} MarkDuplicates \\
       MAX_RECORDS_IN_RAM=50000 \\
       INPUT=${bam[0]} \\
       OUTPUT=${bam[0].baseName}.markDups.bam \\
