@@ -14,7 +14,7 @@ This script is based on the nf-core guidelines. See https://nf-co.re/ for more i
 
 /*
 ========================================================================================
-                         RNA-seq
+                         RNA-seq DSL2
 ========================================================================================
  RNA-seq Analysis Pipeline.
  #### Homepage / Documentation
