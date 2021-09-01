@@ -12,14 +12,15 @@ include { rseqc } from '../process/rseqc'
 workflow rseqFlow {
     // required inputs
     take:
-      reads 
+      chRawReads 
       chBedRseqc
     // workflow implementation
     main:
       // Strandness
       saveStrandness(
-        reads
+        chRawReads
       )
+      chStrandedResults = Channel.empty()
       // User defined
       if (params.stranded == 'reverse' || params.stranded == 'forward' || params.stranded == 'no'){
         chRawReadsStrandness
@@ -33,7 +34,7 @@ workflow rseqFlow {
       }else if (params.stranded == 'auto' && params.bed12){
         // auto
         prepRseqc(
-          reads
+          chRawReads
         )
         chBowtie2Version  = prepRseqc.out.bowtie2Version
         rseqc(
@@ -41,6 +42,7 @@ workflow rseqFlow {
           chBedRseqc.collect()
         )
         chRseqcVersionInferExperiment = rseqc.out.version
+        chStrandedResults = rseqc.out.strandedResults
       }
       chStrandnessResults = Channel.empty()
       if (params.stranded == 'auto' && params.bed12){
@@ -51,7 +53,7 @@ workflow rseqFlow {
       
     emit:
       chBowtie2Version
-      chStrandedResults = rseqc.out.strandedResults     // channel: [ stdout ]
+      chStrandedResults
       chRseqcVersionInferExperiment    
       chStrandnessResults
 }

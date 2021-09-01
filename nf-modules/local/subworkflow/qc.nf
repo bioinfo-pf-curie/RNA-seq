@@ -10,10 +10,10 @@ include { fastqc } from '../process/fastqc'
 workflow qcFlow {
     // required inputs
     take:
-      reads 
+      chRawReads 
     // workflow implementation
     main:
-      fastqc(reads)
+      fastqc(chRawReads)
     emit:
       chFastqcResults = fastqc.out.mqc       // channel: [ path *_fastqc.{zip,html} ]
       chFastqcVersion = fastqc.out.version   // channel: [ path v_fastqc.txt ]

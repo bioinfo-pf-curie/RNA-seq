@@ -254,13 +254,14 @@ if(params.samplePlan){
       .from(file("${params.samplePlan}"))
       .splitCsv(header: false)
       .map{ row -> [ row[0], [file(row[2])]] }
-      .into { chRawReadsFastqc; chRawReadsStar; chRawReadsHisat2; chRawReadsRnaMapping; chRawReadsPrepRseqc; chRawReadsStrandness; chSaveStrandness }
+      .set { chRawReads }
   }else{
      Channel
        .from(file("${params.samplePlan}"))
        .splitCsv(header: false)
        .map{ row -> [ row[0], [file(row[2]), file(row[3])]] }
-       .into { chRawReadsFastqc; chRawReadsStar; chRawReadsHisat2; chRawReadsRnaMapping; chRawReadsPrepRseqc; chRawReadsStrandness; chSaveStrandness }
+
+      .set { chRawReads } 
    }
    params.reads=false
 }
@@ -270,19 +271,19 @@ else if(params.readPaths){
       .from(params.readPaths)
       .map { row -> [ row[0], [file(row[1][0])]] }
       .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-      .into { chRawReadsFastqc; chRawReadsStar; chRawReadsHisat2; chRawReadsRnaMapping; chRawReadsPrepRseqc; chRawReadsStrandness; chSaveStrandness }
-  } else {
+      .set { chRawReads }
+    } else {
     Channel
       .from(params.readPaths)
       .map { row -> [ row[0], [file(row[1][0]), file(row[1][1])]] }
       .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-      .into { chRawReadsFastqc; chRawReadsStar; chRawReadsHisat2; chRawReadsRnaMapping; chRawReadsPrepRseqc; chRawReadsStrandness; chSaveStrandness }
+      .set { chRawReads } 
   }
 } else {
   Channel
     .fromFilePairs( params.reads, size: params.singleEnd ? 1 : 2 )
     .ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\nNB: Path needs to be enclosed in quotes!\nNB: Path requires at least one * wildcard!\nIf this is single-end data, please specify --singleEnd on the command line." }
-    .into { chRawReadsFastqc; chRawReadsStar; chRawReadsHisat2; chRawReadsRnaMapping; chRawReadsPrepRseqc; chRawReadsStrandness; chSaveStrandness }
+.set { chRawReads }
 }
 
 /*
@@ -372,334 +373,8 @@ summary['Config Profile'] = workflow.profile
 log.info summary.collect { k,v -> "${k.padRight(15)}: $v" }.join("\n")
 log.info "========================================="
 
-
-/*
- * rRNA mapping 
- */
-process rRNAMapping {
-  tag "${prefix}"
-  label 'bowtie'
-  label 'medCpu'
-  label 'medMem'
-  publishDir "${params.outDir}/rRNAmapping", mode: 'copy',
-    saveAs: {filename ->
-      if (filename.indexOf("fastq.gz") > 0 &&  params.saveAlignedIntermediates) filename
-      else if (filename.indexOf(".log") > 0) "logs/$filename"
-      else null
-    }
-
-  when:
-  !params.skipRrna && params.rrna
-
-  input:
-  set val(prefix), file(reads) from chRawReadsRnaMapping
-  file annot from chRrnaAnnot.collect()
-
-  output:
-  set val(prefix), file("*fastq.gz") into chRrnaMappingRes
-  set val(prefix), file("*.sam") into chRrnaSam
-  file "*.log" into chRrnaLogs
-  file("v_bowtie.txt") into chBowtieVersion
-
-  script:
-  inputOpts = params.singleEnd ? "${reads}" : "-1 ${reads[0]} -2 ${reads[1]}"
-  """
-  bowtie --version &> v_bowtie.txt
-  bowtie ${params.bowtieOpts} \\
-         -p ${task.cpus} \\
-         --un ${prefix}_norRNA.fastq \\
-         --sam ${params.rrna} \\
-         ${inputOpts} \\
-         ${prefix}.sam  2> ${prefix}.log && \
-  gzip -f ${prefix}_norRNA*.fastq 
-  """
-}
-
-
-/
   
 
-
-/*
- * Reads mapping
- */
-
-// From nf-core
-// Function that checks the alignment rate of the STAR output
-// and returns true if the alignment passed and otherwise false
-skippedPoorAlignment = []
-def checkStarLog(logs) {
-  def percentAligned = 0;
-  logs.eachLine { line ->
-    if ((matcher = line =~ /Uniquely mapped reads %\s*\|\s*([\d\.]+)%/)) {
-      percentAligned = matcher[0][1]
-    }else if ((matcher = line =~ /Uniquely mapped reads number\s*\|\s*([\d\.]+)/)) {
-      numAligned = matcher[0][1]
-    }
-  }
-  logname = logs.getBaseName() - 'Log.final'
-  if(percentAligned.toFloat() <= '2'.toFloat() || numAligned.toInteger() <= 1000.toInteger() ){
-      log.info "#################### VERY POOR ALIGNMENT RATE! IGNORING FOR FURTHER DOWNSTREAM ANALYSIS! ($logname)    >> ${percentAligned}% <<"
-      skippedPoorAlignment << logname
-      return false
-  } else {
-      log.info "          Passed alignment > star ($logname)   >> ${percentAligned}% <<"
-      return true
-  }
-}
-
-// Update input channel
-chStarRawReads = Channel.empty()
-if( params.rrna && !params.skipRrna){
-  chStarRawReads = chRrnaMappingRes
-} else {  
-  chStarRawReads = chRawReadsStar
-}
-
-
-// STAR
-if(params.aligner == 'star'){
-  chHisat2Version = Channel.empty()
-
-  process star {
-    tag "$prefix"
-    label 'star'
-    label 'highCpu'
-    label 'highMem'
-    publishDir "${params.outDir}/mapping", mode: 'copy',
-      saveAs: {filename ->
-        if (filename.indexOf(".bam") == -1) "logs/$filename"
-        else if (params.saveAlignedIntermediates) filename
-        else null
-      }
-    publishDir "${params.outDir}/counts", mode: 'copy',
-      saveAs: {filename ->
-        if (filename.indexOf("ReadsPerGene.out.tab") > 0) "$filename"
-        else null
-      }
-
-    input:
-    set val(prefix), file(reads) from chStarRawReads
-    file index from chStarIndex.collect()
-    file gtf from chGtfStar.collect().ifEmpty([])
-
-    output:
-    set val(prefix), file ("*Log.final.out"), file ('*.bam') into chStarSam
-    file "*.out" into chAlignmentLogs
-    file "*.out.tab" into chStarLogCounts
-    file "*Log.out" into chStarLog
-    file "*ReadsPerGene.out.tab" optional true into chStarCountsToMerge, chStarCountsToR
-    file("v_star.txt") into chStarVersion
-
-    script:
-    def starCountOpt = params.counts == 'star' && params.gtf ? params.starOptsCounts : ''
-    def starGtfOpt = params.gtf ? "--sjdbGTFfile $gtf" : ''
-    """
-    STAR --version &> v_star.txt
-    STAR --genomeDir $index \\
-         ${starGtfOpt} \\
-         --readFilesIn $reads  \\
-         --runThreadN ${task.cpus} \\
-         --runMode alignReads \\
-         --outSAMtype BAM Unsorted  \\
-         --readFilesCommand zcat \\
-         --runDirPerm All_RWX \\
-         --outTmpDir "${params.tmpDir}/rnaseq_\$(date +%d%s%S%N)"\\
-         --outFileNamePrefix $prefix  \\
-         --outSAMattrRGline ID:$prefix SM:$prefix LB:Illumina PL:Illumina  \\
-         ${params.starOptions} \\
-	 --limitOutSJcollapsed 5000000 \\
-	 ${starCountOpt}
-    """
-  }
-
-  process starSort {
-    tag "$prefix"
-    label 'samtools'
-    label 'medCpu'
-    label 'medMem'
-    publishDir "${params.outDir}/mapping", mode: 'copy'
- 
-    input:
-    set val(prefix), file(LogFinalOut), file (starBam) from chStarSam
-
-    output:
-    set file("${prefix}Log.final.out"), file ("*.{bam,bam.bai}") into chStarAligned
-    file "${prefix}_sorted.bam.bai"
-    file("v_samtools.txt") into chSamtoolsVersionSort
-
-    script:
-    """
-    samtools --version &> v_samtools.txt
-    samtools sort  \\
-        -@  ${task.cpus}  \\
-        -m ${params.sortMaxMemory} \\
-        -o ${prefix}_sorted.bam  \\
-        ${starBam}
-    samtools index ${prefix}_sorted.bam
-    """
-    }
-
-    // Filter removes all 'aligned' channels that fail the check
-    chStarAligned
-      .filter { logs, bams -> checkStarLog(logs) }
-      .map { logs, bams -> bams }
-      .dump (tag:'starbams')
-      .into { chBamBigwig; chBamCount; chBamPreseq; chBamMarkduplicates; chBamFeaturecounts; chBamQualimap;
-              chBamGenetype; chBamHTseqCounts }
-}
-
-
-// HiSat2
-chHisat2RawReads = Channel.empty()
-if( params.rrna && !params.skipRrna ){
-    chHisat2RawReads = chRrnaMappingRes
-}else {
-    chHisat2RawReads = chRawReadsHisat2 
-}
-
-if(params.aligner == 'hisat2'){
-  chStarLog = Channel.empty()
-  chStarVersion = Channel.empty()  
-
-  process makeHisatSplicesites {
-     label 'hisat2'
-     label 'minCpu'
-     label 'lowMem'
-     publishDir "${params.outDir}/mapping", mode: 'copy',
-       saveAs: { filename ->
-         if (params.saveAlignedIntermediates) filename
-         else null
-       }
-
-     input:
-     file gtf from chGtfMakeHisatSplicesites
-
-     output:
-     file "${gtf.baseName}.hisat2SpliceSites.txt" into chAlignmentSplicesites
-
-     script:
-     """
-     hisat2_extract_splice_sites.py $gtf > ${gtf.baseName}.hisat2SpliceSites.txt
-     """
-  }
-
-  process hisat2Align {
-    tag "$prefix"
-    label 'hisat2'
-    label 'highCpu'
-    label 'highMem'
-    publishDir "${params.outDir}/mapping", mode: 'copy',
-      saveAs: {filename ->
-        if (filename.indexOf(".hisat2_summary.txt") > 0) "logs/$filename"
-        else if (params.saveAlignedIntermediates) filename
-        else null
-      }
-
-    input:
-    set val(prefix), file(reads) from chHisat2RawReads 
-    file hs2Index from chHisat2Index.collect()
-    file alignmentSplicesites from chAlignmentSplicesites.collect()
-    val parseRes from chStrandedResultsHisat
-
-    output:
-    file "${prefix}.bam" into chHisat2Bam
-    file "${prefix}.hisat2_summary.txt" into chAlignmentLogs
-    file("v_hisat2.txt") into chHisat2Version
-
-    script:
-    indexBase = hs2Index[0].toString() - ~/.\d.ht2/
-    def rnastrandness = ''
-    if (parseRes=='forward'){
-        rnastrandness = params.singleEnd ? '--rna-strandness F' : '--rna-strandness FR'
-    } else if (parseRes=='reverse'){
-        rnastrandness = params.singleEnd ? '--rna-strandness R' : '--rna-strandness RF'
-    }
-    inputOpts = params.singleEnd ? "-U ${reads}" : "-1 ${reads[0]} -2 ${reads[1]}"
-    """
-    hisat2 --version &> v_hisat2.txt
-    hisat2 -x $indexBase \\
-           ${inputOpts} \\
-           $rnastrandness \\
-           --known-splicesite-infile $alignmentSplicesites \\
-           -p ${task.cpus} \\
-           --met-stderr \\
-           --new-summary \\
-	   --rg-id ${prefix} \\
-           --summary-file ${prefix}.hisat2_summary.txt \\
-           | samtools view -bS -F 4 -F 256 - > ${prefix}.bam
-    """
-  }
-
-  process hisat2Sort {
-    tag "${hisat2Bam.baseName}"
-    label 'samtools'
-    label 'medCpu'
-    label 'medMem'  
-    publishDir "${params.outDir}/mapping", mode: 'copy'
-
-    input:
-    file hisat2Bam from chHisat2Bam
-
-    output:
-    file ('*sorted.{bam,bam.bai}') into chBamBigwig, chBamCount, chBamPreseq, chBamMarkduplicates, 
-                                        chBamFeaturecounts, chBamGenetype, chBamHTseqCounts, 
-                                        chBamQualimap
-    file "${hisat2Bam.baseName}_sorted.bam.bai"
-    file("v_samtools.txt") into chSamtoolsVersionSort 
-
-    script:
-    def availMem = task.memory ? "-m ${task.memory.toBytes() / task.cpus}" : ''
-    """
-    samtools --version &> v_samtools.txt
-    samtools sort \\
-             ${hisat2Bam} \\
-             -@ ${task.cpus} $availMem \\
-             -m ${params.sortMaxMemory} \\
-             -o ${hisat2Bam.baseName}_sorted.bam
-    samtools index ${hisat2Bam.baseName}.sorted.bam
-    """
-  }
-}
-
-/*
- * Generate bigwig file
- */
-
-process bigWig {
-  tag "${prefix}"
-  label 'deeptools'
-  label 'medCpu'
-  label 'medMem'
-  publishDir "${params.outDir}/bigWig", mode: "copy",
-    saveAs: {filename ->
-    	     if ( filename.endsWith(".bigwig") ) "$filename"
-             else null}
-
-  when:
-  !params.skipBigwig
-
-  input:
-  file(bam) from chBamBigwig
-  val parseRes from chStrandedResultsBigwig
-
-  output:
-  file('*.bigwig') into chBigWig
-  file("v_deeptools.txt") into chDeeptoolsVersion
-
-  script:
-  prefix = bam[0].toString() - ~/(_sorted)?(.bam)?$/
-  strandOpt = parseRes == 'forward' ? '--filterRNAstrand forward' : parseRes == 'reverse' ? '--filterRNAstrand reverse' : ''
-  """
-  bamCoverage --version &> v_deeptools.txt
-  bamCoverage -b ${bam[0]} \\
-              -o ${prefix}_cpm.bigwig \\
-              -p ${task.cpus} \\
-              ${strandOpt} \\
-	      --normalizeUsing CPM \\
-	      --skipNonCoveredRegions
-  """
-}
 
 /* 
  * Qualimap
@@ -1147,6 +822,7 @@ include { getSoftwareVersions } from './nf-modules/local/process/getSoftwareVers
 include { workflowSummaryMqc } from './nf-modules/local/process/workflowSummaryMqc'
 include { multiqc } from './nf-modules/local/process/multiqc'
 include { outputDocumentation } from './nf-modules/local/process/outputDocumentation'
+include { bigWig } from './nf-modules/local/process/bigWig'
 
 workflow {
     main:
@@ -1157,37 +833,61 @@ workflow {
         chOutputDocsImages
       )
 
-      // QC : check factqc
+      // SUBWORKFLOW: QC : check factqc
       qcFlow(
         chRawReads
       )
 
-      // Strandness Rseq
+      // SUBWORKFLOW: Strandness Rseq
       rseqFlow(
         chRawReads,
         chBedRseqc
       )
 
 
-      // mapping (rRNA and Read mapping)
+      // SUBWORKFLOW: mapping (rRNA and Read mapping)
       mappingFlow(
         chRawReads,
         chRrnaAnnot,
-        ,
-        ,
+        chStarIndex,
+        chGtf,
+        chHisat2Index,
+        rseqFlow.out.chStrandnessResults
       )
 
-      /*
-      * MultiQC
-      */
+      // Generate bigwig file
+      bigWig(
+        mappingFlow.out.chBam,
+        rseqFlow.out.chStrandedResults
+      )
+
+      // Qualimap
+      qualimap(
+        mappingFlow.out.chBam,
+        chGtf.collect(),
+        rseqFlow.out.chStrandedResults
+      )
+
+      // Saturation Curves
+      preseq(
+
+      )
+      
+      // SUBWORKFLOW: Duplicates
+
+      // SUBWORKFLOW: Identito - polym
+
+      // SUBWORKFLOW: Counts
+
+      // MultiQC
 
       getSoftwareVersions(
         qcFlow.out.chFastqcVersion.first().ifEmpty([]),
-        chStarVersion.first().ifEmpty([]),
-        chHisat2Version.first().ifEmpty([]),
+        mappingFlow.out.chStarVersion.first().ifEmpty([]),
+        mappingFlow.out.chHisat2Version.first().ifEmpty([]),
         mappingFlow.out.chBowtieVersion.first().ifEmpty([]),
         rseqFlow.out.chBowtie2Version.first().ifEmpty([]),
-        chSamtoolsVersionSort.first().ifEmpty([]),
+        mappingFlow.out.chSamtoolsVersionSort.first().ifEmpty([]),
         chPicardVersion.first().ifEmpty([]),
         chPreseqVersion.first().ifEmpty([]),
         chMergeCountsVersion.concat(chCombinePolymVersion,chGeneSaturationVersion,chGeneTypeVersion,chAnaExpVersion).first().ifEmpty([]),
@@ -1196,7 +896,7 @@ workflow {
         chDeeptoolsVersion.first().ifEmpty([]),
         chBcftoolsVersion.first().ifEmpty([]),
         chHtseqVersion.first().ifEmpty([]),
-        chQualimapVersion.first().ifEmpty([]
+        qualimap.out.chQualimapVersion.first().ifEmpty([]
       )
 
       workflowSummaryMqc(
@@ -1219,9 +919,9 @@ workflow {
         chMultiqcConfig.ifEmpty([]),
         qcFlow.out.chFastqcResults.collect().ifEmpty([]),
         chRrnaLogs.collect().ifEmpty([]),
-        chAlignmentLogs.collect().ifEmpty([]),
+        mappingFlow.out.chAlignmentLogs.collect().ifEmpty([]),
         rseqFlow.out.chStrandnessResults.collect().ifEmpty([]),
-        chQualimapResults.collect().ifEmpty([]),
+        qualimap.out.chQualimapResults.collect().ifEmpty([]),
         chPreseqResults.collect().ifEmpty([]),
         chGenesatResults.collect().ifEmpty([]),
         chDupradarResults.collect().ifEmpty([]),
