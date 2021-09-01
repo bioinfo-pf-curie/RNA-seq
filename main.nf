@@ -22,6 +22,7 @@ This script is based on the nf-core guidelines. See https://nf-co.re/ for more i
 ----------------------------------------------------------------------------------------
 */
 
+nextflow.enable.dsl=2
 
 def helpMessage() {
   if ("${workflow.manifest.version}" =~ /dev/ ){
@@ -373,38 +374,6 @@ log.info "========================================="
 
 
 /*
- * FastQC
- */
-process fastqc {
-  tag "${prefix}"
-  label 'fastqc'
-  label 'medCpu'
-  label 'lowMem'
-  publishDir "${params.outDir}/fastqc", mode: 'copy',
-    saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
-
-  when:
-  !params.skipQC && !params.skipFastqc
-
-  input:
-  set val(prefix), file(reads) from chRawReadsFastqc
-
-  output:
-  file "*_fastqc.{zip,html}" into chFastqcResults
-  file("v_fastqc.txt") into chFastqcVersion
-
-  script:
-  pbase = reads[0].toString() - ~/(\.fq)?(\.fastq)?(\.gz)?$/
-  """
-  fastqc --version &> v_fastqc.txt
-  fastqc -q $reads
-  mv ${pbase}_fastqc.html ${prefix}_fastqc.html
-  mv ${pbase}_fastqc.zip ${prefix}_fastqc.zip
-  """
-}
-
-
-/*
  * rRNA mapping 
  */
 process rRNAMapping {
@@ -447,112 +416,8 @@ process rRNAMapping {
 }
 
 
-/*
- * Strandness
- */
-
-process saveStrandness {
-  label 'unix'
-  label 'minCpu'
-  label 'minMem'
-  publishDir "${params.outDir}/strandness" , mode: 'copy',
-    saveAs: {filename ->
-      if (filename.indexOf(".txt") > 0) "$filename"
-      else null
-    }
+/
   
-  when:
-  params.stranded == 'reverse' || params.stranded == 'no' || params.stranded == 'yes' || (params.stranded == 'auto' && !params.bed12)
-
-  input:
-  set val(prefix), file(reads) from chSaveStrandness
-
-  output:
-  file "*.txt" into chSavedStrandness
-
-  script:
-  """
-  echo ${params.stranded} > ${prefix}_strandness.txt
-  """
-}
-
-
-// User defined
-if (params.stranded == 'reverse' || params.stranded == 'forward' || params.stranded == 'no'){
-  chRawReadsStrandness
-    .map { file ->
-           def key = params.stranded
-           return tuple(key)
-    }
-    .into { chStrandedResultsBigwig ; chStrandedResultsFeatureCounts; chStrandedResultsGenetype; chStrandedResultsHTseqCounts;
-            chStrandedResultsDupradar; chStrandedResultsHisat; chStrandedResultsTable; chStrandedResultsQualimap }
-   chBowtie2Version = Channel.empty()
-   chRseqcVersionInferExperiment = Channel.empty()  
-}else if (params.stranded == 'auto' && params.bed12){
- 
-  // auto
-  process prepRseqc {
-    tag "${prefix}"
-    label 'bowtie2'
-    label 'medCpu'
-    label 'medMem'
-
-    input:
-    set val(prefix), file(reads) from chRawReadsPrepRseqc
-
-    output:
-    set val("${prefix}"), file("${prefix}_subsample.bam") into chBamRseqc
-    file("v_bowtie2.txt") into chBowtie2Version
-
-    script:
-    inputOpts = params.singleEnd ? "-U ${reads[0]}" : "-1 ${reads[0]} -2 ${reads[1]}"
-    """
-    bowtie2 --version &> v_bowtie2.txt
-    bowtie2 --fast --end-to-end --reorder \\
-            -p ${task.cpus} \\
-            -u ${params.nCheck} \\
-            -x ${params.bowtie2Index} \\
-            ${inputOpts} > ${prefix}_subsample.bam 
-     """
-   }
-
-  process rseqc {
-    tag "${prefix - '_subsample'}"
-    label 'rseqc'
-    label 'medCpu'
-    label 'lowMem'
-    publishDir "${params.outDir}/strandness" , mode: 'copy',
-      saveAs: {filename ->
-        if (filename.indexOf(".txt") > 0) "$filename"
-        else null
-      }
-
-    input:
-    set val(prefix), file(bamRseqc) from chBamRseqc
-    file bed12 from chBedRseqc.collect()
-
-    output:
-    file "${prefix}*.{txt,pdf,r,xls}" into chRseqcResults
-    stdout into ( chStrandedResultsBigwig, chStrandedResultsFeatureCounts, chStrandedResultsGenetype, chStrandedResultsHTseqCounts,
-                  chStrandedResultsDupradar, chStrandedResultsHisat, chStrandedResultsTable, chStrandedResultsQualimap)
-    file("v_rseqc.txt") into chRseqcVersionInferExperiment
-
-    script:
-    """
-    infer_experiment.py --version &> v_rseqc.txt    
-    infer_experiment.py -i $bamRseqc -r $bed12 > ${prefix}.txt
-    parse_rseq_output.sh ${prefix}.txt > ${prefix}_strandness.txt
-    cat ${prefix}_strandness.txt
-    """  
-  }
-}
-
-chStrandnessResults = Channel.empty()
-if (params.stranded == 'auto' && params.bed12){
-  chStrandnessResults = chRseqcResults
-}else{
-  chStrandnessResults = chSavedStrandness
-}
 
 
 /*
@@ -1274,163 +1139,102 @@ process exploratoryAnalysis {
   """
 }
 
-/*
- * MultiQC
- */
+                                                                                                                                                                                                  
+// Workflows
+include { qcFlow } from './nf-modules/local/subworkflow/qc'
+// Processes
+include { getSoftwareVersions } from './nf-modules/local/process/getSoftwareVersions'
+include { workflowSummaryMqc } from './nf-modules/local/process/workflowSummaryMqc'
+include { multiqc } from './nf-modules/local/process/multiqc'
+include { outputDocumentation } from './nf-modules/local/process/outputDocumentation'
 
-process getSoftwareVersions{
-  label 'python'
-  label 'minCpu'
-  label 'lowMem'
-  publishDir path: "${params.outDir}/softwareVersions", mode: "copy"
+workflow {
+    main:
 
-  when:
-  !params.skipSoftVersions
+      // subroutines
+      outputDocumentation(
+        chOutputDocs,
+        chOutputDocsImages
+      )
 
-  input:
-  file 'v_fastqc.txt' from chFastqcVersion.first().ifEmpty([])
-  file 'v_star.txt' from chStarVersion.first().ifEmpty([])
-  file 'v_hisat2.txt' from chHisat2Version.first().ifEmpty([])
-  file 'v_bowtie.txt' from chBowtieVersion.first().ifEmpty([])
-  file 'v_bowtie2.txt' from chBowtie2Version.first().ifEmpty([])
-  file 'v_samtools.txt' from chSamtoolsVersionSort.first().ifEmpty([])
-  file 'v_picard.txt' from chPicardVersion.first().ifEmpty([])
-  file 'v_preseq.txt' from chPreseqVersion.first().ifEmpty([])
-  file 'v_R.txt' from chMergeCountsVersion.concat(chCombinePolymVersion,chGeneSaturationVersion,chGeneTypeVersion,chAnaExpVersion).first().ifEmpty([])
-  file 'v_rseqc.txt' from chRseqcVersionInferExperiment.first().ifEmpty([])
-  file 'v_featurecounts.txt' from chFeaturecountsVersion.first().ifEmpty([])
-  file 'v_deeptools.txt' from chDeeptoolsVersion.first().ifEmpty([])
-  file 'v_bcftools.txt' from chBcftoolsVersion.first().ifEmpty([])
-  file 'v_htseq.txt' from chHtseqVersion.first().ifEmpty([])
-  file 'v_qualimap.txt' from chQualimapVersion.first().ifEmpty([])
+      // QC : check factqc
+      qcFlow(
+        chRawReads
+      )
 
-  output:
-  file 'software_versions_mqc.yaml' into softwareVersionsYaml
+      // Strandness Rseq
+      rseqFlow(
+        chRawReads,
+        chBedRseqc
+      )
 
-  script:
-  """
-  echo $workflow.manifest.version &> v_pipeline.txt
-  echo $workflow.nextflow.version &> v_nextflow.txt
-  scrape_software_versions.py &> software_versions_mqc.yaml
-  """
+
+      // mapping (rRNA and Read mapping)
+      mappingFlow(
+        chRawReads,
+        chRrnaAnnot,
+        ,
+        ,
+      )
+
+      /*
+      * MultiQC
+      */
+
+      getSoftwareVersions(
+        qcFlow.out.chFastqcVersion.first().ifEmpty([]),
+        chStarVersion.first().ifEmpty([]),
+        chHisat2Version.first().ifEmpty([]),
+        mappingFlow.out.chBowtieVersion.first().ifEmpty([]),
+        rseqFlow.out.chBowtie2Version.first().ifEmpty([]),
+        chSamtoolsVersionSort.first().ifEmpty([]),
+        chPicardVersion.first().ifEmpty([]),
+        chPreseqVersion.first().ifEmpty([]),
+        chMergeCountsVersion.concat(chCombinePolymVersion,chGeneSaturationVersion,chGeneTypeVersion,chAnaExpVersion).first().ifEmpty([]),
+        rseqFlow.out.chRseqcVersionInferExperiment.first().ifEmpty([]),
+        chFeaturecountsVersion.first().ifEmpty([]),
+        chDeeptoolsVersion.first().ifEmpty([]),
+        chBcftoolsVersion.first().ifEmpty([]),
+        chHtseqVersion.first().ifEmpty([]),
+        chQualimapVersion.first().ifEmpty([]
+      )
+
+      workflowSummaryMqc(
+        summary
+      )
+
+      if (skippedPoorAlignment.size() > 0){
+        Channel.fromList(skippedPoorAlignment)
+               .flatMap{ it -> it + ": Poor alignment rate. Sample discarded"}
+               .collectFile(name: 'warnings.txt', newLine: true)
+               .set{chWarn}
+      }else{
+         chWarn = Channel.empty()
+      }
+
+      multiqc(
+        custom_runName,
+        chSplan.collect(),
+        chMetadata.ifEmpty([]),
+        chMultiqcConfig.ifEmpty([]),
+        qcFlow.out.chFastqcResults.collect().ifEmpty([]),
+        chRrnaLogs.collect().ifEmpty([]),
+        chAlignmentLogs.collect().ifEmpty([]),
+        rseqFlow.out.chStrandnessResults.collect().ifEmpty([]),
+        chQualimapResults.collect().ifEmpty([]),
+        chPreseqResults.collect().ifEmpty([]),
+        chGenesatResults.collect().ifEmpty([]),
+        chDupradarResults.collect().ifEmpty([]),
+        chPicardResults.collect().ifEmpty([]),
+        chCountsLogs.collect().ifEmpty([]),
+        chCountsPerGenetype.collect().ifEmpty([]),
+        clustPolymResultsCh.collect().ifEmpty([]),
+        chExploratoryAnalysisResults.collect().ifEmpty([]),
+        chSoftwareVersionsYaml.collect().ifEmpty([]),
+        chWorkflowSummaryYaml.collect().ifEmpty([]),
+        chWarn.collect().ifEmpty([]) 
+      }
 }
-
-process workflowSummaryMqc {
-  label 'unix'
-  label 'minCpu'
-  label 'minMem'
-
-  when:
-  !params.skipMultiQC
-
-  output:
-  file 'workflow_summary_mqc.yaml' into workflowSummaryYaml
-
-  exec:
-  def yaml_file = task.workDir.resolve('workflow_summary_mqc.yaml')
-  yaml_file.text  = """
-  id: 'summary'
-  description: " - this information is collected when the pipeline is started."
-  section_name: 'Workflow Summary'
-  section_href: 'https://gitlab.curie.fr/data-analysis/RNA-seq'
-  plot_type: 'html'
-  data: |
-      <dl class=\"dl-horizontal\">
-${summary.collect { k,v -> "            <dt>$k</dt><dd><samp>${v ?: '<span style=\"color:#999999;\">N/A</a>'}</samp></dd>" }.join("\n")}
-      </dl>
-  """.stripIndent()
-}
-
-
-if (skippedPoorAlignment.size() > 0){
-  Channel.fromList(skippedPoorAlignment)
-         .flatMap{ it -> it + ": Poor alignment rate. Sample discarded"}
-         .collectFile(name: 'warnings.txt', newLine: true)
-         .set{chWarn}
-}else{
-  chWarn = Channel.empty()
-}
-
-process multiqc {
-  label 'multiqc'
-  label 'minCpu'
-  label 'lowMem'
-  publishDir "${params.outDir}/MultiQC", mode: 'copy'
-
-  when:
-  !params.skipMultiQC
-
-  input:
-  file splan from chSplan.collect()
-  file metadata from chMetadata.ifEmpty([])
-  file multiqcConfig from chMultiqcConfig.ifEmpty([])
-  file (fastqc:'fastqc/*') from chFastqcResults.collect().ifEmpty([])
-  file ('rrna/*') from chRrnaLogs.collect().ifEmpty([])
-  file ('alignment/*') from chAlignmentLogs.collect().ifEmpty([])
-  file ('strandness/*') from chStrandnessResults.collect().ifEmpty([])
-  file ('qualimap/*') from chQualimapResults.collect().ifEmpty([])
-  file ('preseq/*') from chPreseqResults.collect().ifEmpty([])
-  file ('genesat/*') from chGenesatResults.collect().ifEmpty([])
-  file ('dupradar/*') from chDupradarResults.collect().ifEmpty([])
-  file ('picard/*') from chPicardResults.collect().ifEmpty([])	
-  file ('counts/*') from chCountsLogs.collect().ifEmpty([])
-  file ('genetype/*') from chCountsPerGenetype.collect().ifEmpty([])
-  file ('identito/*') from clustPolymResultsCh.collect().ifEmpty([])
-  file ('exploratoryAnalysis_results/*') from chExploratoryAnalysisResults.collect().ifEmpty([]) 
-  file ('softwareVersions/*') from softwareVersionsYaml.collect().ifEmpty([])
-  file ('workflowSummary/*') from workflowSummaryYaml.collect().ifEmpty([])
-  file ('workflowSummary/*') from chWarn.collect().ifEmpty([]) 
-
-  output:
-  file splan
-  file "*report.html" into multiqcReport
-  file "*_data"
-
-  script:
-  rtitle = customRunName ? "--title \"$customRunName\"" : ''
-  rfilename = customRunName ? "--filename " + customRunName + "_rnaseq_report" : "--filename rnaseq_report"
-  metadataOpts = params.metadata ? "--metadata ${metadata}" : ""
-  splanOpts = params.samplePlan ? "--splan ${params.samplePlan}" : ""
-  isPE = params.singleEnd ? 0 : 1
-    
-  modulesList = "-m custom_content -m preseq -m rseqc -m bowtie1 -m hisat2 -m star -m cutadapt -m fastqc -m qualimap"
-  modulesList = params.counts == 'featureCounts' ? "${modulesList} -m featureCounts" : "${modulesList}"  
-  modulesList = params.counts == 'HTseqCounts' ? "${modulesList} -m htseq" : "${modulesList}"  
- 
-  warn=skippedPoorAlignment.size() > 0 ? "--warn workflowSummary/warnings.txt" : ""
-  """
-  stats2multiqc.sh ${splan} ${params.aligner} ${isPE}
-  medianReadNb="\$(sort -t, -k3,3n mq.stats | awk -F, '{a[i++]=\$3;} END{x=int((i+1)/2); if (x<(i+1)/2) printf "%.0f", (a[x-1]+a[x])/2; else printf "%.0f",a[x-1];}')"
-  mqc_header.py --name "RNA-seq" --version ${workflow.manifest.version} ${metadataOpts} ${splanOpts} --nbreads \${medianReadNb} ${warn} > multiqc-config-header.yaml
-  multiqc . -f $rtitle $rfilename -c $multiqcConfig -c multiqc-config-header.yaml $modulesList
-  """    
-}
-
-
-/*
- * Sub-routine
- */
-
-
-process outputDocumentation {
-  label 'python'
-  label 'minCpu'
-  label 'minMem'
-  publishDir "${params.summaryDir}/", mode: 'copy'
-
-  input:
-  file outputDocs from chOutputDocs
-  file images from chOutputDocsImages
-
-  output:
-  file "results_description.html"
-
-  script:
-  """
-  markdown_to_html.py $outputDocs -o results_description.html
-  """
-}                                                                                                                                                                                                           
-
 
 workflow.onComplete {
 
