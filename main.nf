@@ -870,7 +870,7 @@ workflow {
 
       // Saturation Curves
       preseq(
-
+        mappingFlow.out.chBam
       )
       
       // SUBWORKFLOW: Duplicates
@@ -889,7 +889,7 @@ workflow {
         rseqFlow.out.chBowtie2Version.first().ifEmpty([]),
         mappingFlow.out.chSamtoolsVersionSort.first().ifEmpty([]),
         chPicardVersion.first().ifEmpty([]),
-        chPreseqVersion.first().ifEmpty([]),
+        preseq.out.chPreseqVersion.first().ifEmpty([]),
         chMergeCountsVersion.concat(chCombinePolymVersion,chGeneSaturationVersion,chGeneTypeVersion,chAnaExpVersion).first().ifEmpty([]),
         rseqFlow.out.chRseqcVersionInferExperiment.first().ifEmpty([]),
         chFeaturecountsVersion.first().ifEmpty([]),
@@ -922,7 +922,7 @@ workflow {
         mappingFlow.out.chAlignmentLogs.collect().ifEmpty([]),
         rseqFlow.out.chStrandnessResults.collect().ifEmpty([]),
         qualimap.out.chQualimapResults.collect().ifEmpty([]),
-        chPreseqResults.collect().ifEmpty([]),
+        preseq.out.chPreseqResults.collect().ifEmpty([]),
         chGenesatResults.collect().ifEmpty([]),
         chDupradarResults.collect().ifEmpty([]),
         chPicardResults.collect().ifEmpty([]),
