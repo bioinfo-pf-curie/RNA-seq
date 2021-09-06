@@ -373,169 +373,6 @@ summary['Config Profile'] = workflow.profile
 log.info summary.collect { k,v -> "${k.padRight(15)}: $v" }.join("\n")
 log.info "========================================="
 
-  
-
-
-/* 
- * Qualimap
- */
-
-process qualimap {
-  tag "${bam[0].baseName}"
-  label 'qualimap'
-  label 'minCpu'
-  label 'medMem'
-  publishDir "${params.outDir}/qualimap/" , mode: 'copy'
-
-  when:
-  !params.skipQualimap
-
-  input:
-  file bam from chBamQualimap
-  file gtf from chGtfQualimap.collect()
-  val stranded from chStrandedResultsQualimap
-
-  output:
-  file ("${bam[0].baseName}") into chQualimapResults
-  file ("v_qualimap.txt") into chQualimapVersion
-
-  script:
-  peOpts = params.singleEnd ? '' : '-pe'
-  memory     = task.memory.toGiga() + "G"
-  strandnessOpts = 'non-strand-specific'
-  if (stranded == 'forward') {
-    strandnessOpts = 'strand-specific-forward'
-  } else if (stranded == 'reverse') {
-    strandnessOpts = 'strand-specific-reverse'
-  }
-  """
-  mkdir tmp
-  export _JAVA_OPTIONS=-Djava.io.tmpdir=./tmp
-  qualimap \\
-    --java-mem-size=$memory \\
-    rnaseq \\
-    -bam $bam[0] \\
-    -gtf $gtf \\
-    -p $strandnessOpts \\
-    $peOpts \\
-    -outdir ${bam[0].baseName}
-  echo \$(qualimap 2>&1) | sed 's/^.*QualiMap v.//; s/Built.*\$//' > v_qualimap.txt
-  """
-}
-
-
-/*
- * Saturation Curves
- */
-
-process preseq {
-  tag "${bam[0]}"
-  label 'preseq'
-  label 'minCpu'
-  label 'medMem'
-  publishDir "${params.outDir}/preseq", mode: 'copy'
-
-  when:
-  !params.skipQC && !params.skipSaturation
-
-  input:
-  file bam from chBamPreseq
-
-  output:
-  file "*ccurve.txt" into chPreseqResults
-  file("v_preseq.txt") into chPreseqVersion
-
-  script:
-  peOpts = params.singleEnd ? '' : '-pe'
-  """
-  preseq &> v_preseq.txt
-  preseq lc_extrap -seed 1 -v -B ${bam[0]} ${peOpts} -o ${bam[0].baseName}_extrap_ccurve.txt -e 200e+06 -seg_len 100000000
-  """
-}
-
-/*
- * Duplicates
- */
-
-process markDuplicates {
-  tag "${bam[0]}"
-  label 'picard'
-  label 'minCpu'
-  label 'medMem'
-  publishDir "${params.outDir}/markDuplicates", mode: 'copy',
-    saveAs: {filename -> 
-      if (filename.indexOf("_metrics.txt") > 0) "metrics/$filename" 
-      else if (params.saveAlignedIntermediates) filename
-    }
-
-  when:
-  !params.skipQC && !params.skipDupradar
-
-  input:
-  file bam from chBamMarkduplicates
-
-  output:
-  file('*markDups.{bam,bam.bai}') into ( chBamMd, chBamMdPolym )
-  file('*markDups_metrics.txt') into chPicardResults
-  file('v_picard.txt') into chPicardVersion
-
-  script:
-  markdupMemOption = "\"-Xms" +  (task.memory.toGiga() / 2).trunc() + "g -Xmx" + (task.memory.toGiga() - 1) + "g\""
-  """
-  echo \$(picard MarkDuplicates --version 2>&1) &> v_picard.txt
-  picard ${markdupMemOption} -Djava.io.tmpdir=${params.tmpDir} MarkDuplicates \\
-      MAX_RECORDS_IN_RAM=50000 \\
-      INPUT=${bam[0]} \\
-      OUTPUT=${bam[0].baseName}.markDups.bam \\
-      METRICS_FILE=${bam[0].baseName}.markDups_metrics.txt \\
-      REMOVE_DUPLICATES=false \\
-      ASSUME_SORTED=true \\
-      PROGRAM_RECORD_ID='null' \\
-      VALIDATION_STRINGENCY=LENIENT
-  samtools index ${bam[0].baseName}.markDups.bam
-  """
-}
-
-process dupradar {
-  tag "${bamMd[0]}"
-  label 'dupradar'
-  label 'minCpu'
-  label 'lowMem'
-  publishDir "${params.outDir}/dupradar", mode: 'copy',
-    saveAs: {filename ->
-      if (filename.indexOf("_duprateExpDens.pdf") > 0) "scatter_plots/$filename"
-      else if (filename.indexOf("_duprateExpBoxplot.pdf") > 0) "box_plots/$filename"
-      else if (filename.indexOf("_expressionHist.pdf") > 0) "histograms/$filename"
-      else if (filename.indexOf("_dupMatrix.txt") > 0) "gene_data/$filename"
-      else if (filename.indexOf("_duprateExpDensCurve.txt") > 0) "scatter_curve_data/$filename"
-      else if (filename.indexOf("_intercept_slope.txt") > 0) "intercepts_slopes/$filename"
-      else "$filename"
-    }
-
-  when:
-  !params.skipQC && !params.skipDupradar
-
-  input:
-  file bamMd from chBamMd
-  file gtf from chGtfDupradar.collect()
-  val parseRes from chStrandedResultsDupradar
-
-  output:
-  file "*.{pdf,txt}" into chDupradarResults
-
-  script: 
-  def dupradarDirection = 0
-  if (parseRes == 'forward'){
-      dupradarDirection = 1
-  } else if ((parseRes == 'reverse')){
-      dupradarDirection = 2
-  }
-  def paired = params.singleEnd ? 'single' :  'paired'
-  """
-  dupRadar.r ${bamMd[0]} ${gtf} ${dupradarDirection} ${paired} ${task.cpus}
-  """
-}
-
 /* 
  * Identito - polym
  */
@@ -817,6 +654,10 @@ process exploratoryAnalysis {
                                                                                                                                                                                                   
 // Workflows
 include { qcFlow } from './nf-modules/local/subworkflow/qc'
+include { rseqFlow } from './nf-modules/local/subworkflow/rseq'
+include { mappingFlow } from './nf-modules/local/subworkflow/mapping'
+include { markdupFlow } from './nf-modules/local/subworkflow/markdup'
+
 // Processes
 include { getSoftwareVersions } from './nf-modules/local/process/getSoftwareVersions'
 include { workflowSummaryMqc } from './nf-modules/local/process/workflowSummaryMqc'
@@ -874,6 +715,11 @@ workflow {
       )
       
       // SUBWORKFLOW: Duplicates
+      markdupFlow(
+        mappingFlow.out.chBam,
+        chGtf,
+        rseqFlow.out.chStrandedResults
+      )
 
       // SUBWORKFLOW: Identito - polym
 
