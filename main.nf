@@ -374,22 +374,6 @@ log.info summary.collect { k,v -> "${k.padRight(15)}: $v" }.join("\n")
 log.info "========================================="
 
 /*
- * Counts
- */
-
-
-
-chCountsLogs = Channel.empty()
-if( params.counts == 'featureCounts' ){
-  chCountsLogs = chFeatureCountsLogs
-} else if (params.counts == 'HTseqCounts'){
-  chCountsLogs = chHtseqCountsLogs
-}else if (params.counts == 'star'){
-  chCountsLogs = chStarLogCounts
-}
-
-
-/*
  * Gene-based saturation
  */
 
