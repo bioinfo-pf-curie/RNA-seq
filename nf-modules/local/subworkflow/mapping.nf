@@ -118,7 +118,7 @@ workflow rseqFlow {
       chAlignmentLogs
       chStarLogCounts       = star.out.starLogCounts
       chStarLog
-      chStarCountsTo        = star.out.starCountsTo
+      chStarCounts          = star.out.starCounts
       chStarVersion         
       chSamtoolsVersionSort
       chBam

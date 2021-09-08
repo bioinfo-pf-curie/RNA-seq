@@ -21,7 +21,7 @@ process bigWig {
 
   output:
   path('*.bigwig')       , emit: bigWig
-  path("v_deeptools.txt"), emit: version
+  path("v_deeptools.txt"), emit: chDeeptoolsVersion
 
   script:
   prefix = bam[0].toString() - ~/(_sorted)?(.bam)?$/

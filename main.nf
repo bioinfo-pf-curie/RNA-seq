@@ -377,119 +377,7 @@ log.info "========================================="
  * Counts
  */
 
-process featureCounts {
-  tag "${bamFeaturecounts.baseName - 'Aligned.sortedByCoord.out'}"
-  label 'featurecounts'
-  label 'medCpu'
-  label 'medMem'
-  publishDir "${params.outDir}/counts", mode: 'copy',
-    saveAs: {filename ->
-      if (filename.indexOf("_counts.csv.summary") > 0) "gene_count_summaries/$filename"
-      else if (filename.indexOf("_counts.csv") > 0) "gene_counts/$filename"
-      else "$filename"
-   }
 
-  when:
-  params.counts == 'featureCounts'
-
-  input:
-  file bam from chBamFeaturecounts
-  file gtf from chGtfFeatureCounts.collect()
-  val parseRes from chStrandedResultsFeatureCounts
-
-  output:
-  file "${bam.baseName}_counts.csv" into chFeatureCountsCountsToMerge, chFeatureCountsCountsToR
-  file "${bam.baseName}_counts.csv.summary" into chFeatureCountsLogs
-  file("v_featurecounts.txt") into chFeaturecountsVersion
-
-  script:
-  def featureCountsDirection = 0
-  if (parseRes == 'forward'){
-      featureCountsDirection = 1
-  } else if ((parseRes == 'reverse')){
-      featureCountsDirection = 2
-  }
-  """
-  featureCounts -v &> v_featurecounts.txt
-  featureCounts ${params.featurecountsOpts} -T ${task.cpus} -a ${gtf} -o ${bam[0].baseName}_counts.csv -p -s ${featureCountsDirection} ${bamFeaturecounts}
-  """
-}
-
-process HTseqCounts {
-  tag "${bamHTseqCounts}"
-  label 'htseq'
-  label 'medCpu'
-  label 'medMem'
-  publishDir "${params.outDir}/counts", mode: 'copy',
-    saveAs: {filename ->
-      if (filename.indexOf("_gene.HTseqCounts.txt.summary") > 0) "gene_count_summaries/$filename"
-      else if (filename.indexOf("_gene.HTseqCounts.txt") > 0) "gene_counts/$filename"
-      else "$filename"
-    }
-  
-  when:
-  params.counts == 'HTseqCounts'
-
-  input:
-  file bam from chBamHTseqCounts
-  file gtf from chGtfHTseqCounts.collect()
-  val parseRes from  chStrandedResultsHTseqCounts
-
-  output: 
-  file "*_counts.csv" into chHtseqCountsToMerge, chHtseqCountsToR, chHtseqCountsLogs
-  file("v_htseq.txt") into chHtseqVersion 
-
-  script:
-  def strandedOpt = '-s no' 
-  if (parseRes == 'forward'){
-      strandedOpt= '-s yes'
-  } else if ((parseRes == 'reverse')){
-      strandedOpt= '-s reverse'
-  }
-  """
-  htseq-count -h | grep version  &> v_htseq.txt
-  htseq-count ${params.htseqOpts} ${strandedOpt} ${bam[0]} $gtf > ${bam[0].baseName}_counts.csv
-  """
-}
-
-chCountsToMerge = Channel.empty()
-chCountsToR = Channel.empty()
-if( params.counts == 'featureCounts' ){
-  chCountsToMerge = chFeatureCountsCountsToMerge
-  chCountsToR = chFeatureCountsCountsToR
-} else if (params.counts == 'HTseqCounts'){
-  chCountsToMerge = chHtseqCountsToMerge
-  chCountsToR = chHtseqCountsToR	
-}else if (params.counts == 'star'){
-  chCountsToMerge = chStarCountsToMerge
-  chCountsToR = chStarCountsToR
-}
-
-process mergeCounts {
-  publishDir "${params.outDir}/counts", mode: 'copy'
-  label 'r'
-  label 'minCpu'
-  label 'medMem'
-
-  input:
-  file inputCounts from chCountsToMerge.collect()
-  file gtf from chGtfTable.collect()
-  val parseRes from chStrandedResultsTable.collect()
-
-  output:
-  file 'tablecounts_raw.csv' into chRawCounts, chCountsSaturation
-  file 'tablecounts_tpm.csv' into chTpmCounts, chTpmGenetype
-  file 'tableannot.csv' into chGenesAnnot
-  file("v_R.txt") into chMergeCountsVersion
-
-  script:
-  """
-  R --version &> v_R.txt
-  echo -e ${inputCounts} | tr " " "\n" > listofcounts.tsv
-  echo -n "${parseRes}" | sed -e "s/\\[//" -e "s/\\]//" -e "s/,//g" | tr " " "\n" > listofstrandness.tsv
-  makeCountTable.r listofcounts.tsv ${gtf} ${params.counts} listofstrandness.tsv
-  """
-}
 
 chCountsLogs = Channel.empty()
 if( params.counts == 'featureCounts' ){
@@ -672,7 +560,15 @@ workflow {
         chPolymBed,
         markdupFlow.out.chBamMd
       )
+
       // SUBWORKFLOW: Counts
+      countsFlow(
+        mappingFlow.out.chBam,
+        chGtf,
+        rseqFlow.out.chStrandedResults,
+        mappingFlow.out.chStarCounts,
+        mappingFlow.out.chStarLogCounts
+      )
 
       // MultiQC
 
@@ -683,14 +579,14 @@ workflow {
         mappingFlow.out.chBowtieVersion.first().ifEmpty([]),
         rseqFlow.out.chBowtie2Version.first().ifEmpty([]),
         mappingFlow.out.chSamtoolsVersionSort.first().ifEmpty([]),
-        chPicardVersion.first().ifEmpty([]),
+        markdupFlow.out.chPicardVersion.first().ifEmpty([]),
         preseq.out.chPreseqVersion.first().ifEmpty([]),
-        chMergeCountsVersion.concat(polymFlow.out.chCombinePolymVersion,chGeneSaturationVersion,chGeneTypeVersion,chAnaExpVersion).first().ifEmpty([]),
+        countsFlow.out.chMergeCountsVersion.concat(polymFlow.out.chCombinePolymVersion,chGeneSaturationVersion,chGeneTypeVersion,chAnaExpVersion).first().ifEmpty([]),
         rseqFlow.out.chRseqcVersionInferExperiment.first().ifEmpty([]),
-        chFeaturecountsVersion.first().ifEmpty([]),
-        chDeeptoolsVersion.first().ifEmpty([]),
+        countsFlow.out.chFeaturecountsVersion.first().ifEmpty([]),
+        bigWig.out.chDeeptoolsVersion.first().ifEmpty([]),
         polymFlow.out.chBcftoolsVersion.first().ifEmpty([]),
-        chHtseqVersion.first().ifEmpty([]),
+        countsFlow.out.chHtseqVersion.first().ifEmpty([]),
         qualimap.out.chQualimapVersion.first().ifEmpty([]
       )
 
@@ -721,7 +617,7 @@ workflow {
         chGenesatResults.collect().ifEmpty([]),
         chDupradarResults.collect().ifEmpty([]),
         chPicardResults.collect().ifEmpty([]),
-        chCountsLogs.collect().ifEmpty([]),
+        countsFlow.out.chCountsLogs.collect().ifEmpty([]),
         chCountsPerGenetype.collect().ifEmpty([]),
         polymFlow.out.chClustPolymResults.collect().ifEmpty([]),
         chExploratoryAnalysisResults.collect().ifEmpty([]),

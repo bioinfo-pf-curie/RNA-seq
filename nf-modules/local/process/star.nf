@@ -27,7 +27,7 @@
     path "*.out"                                              , emit: alignmentLogs
     path "*.out.tab"                                          , emit: starLogCounts
     path "*Log.out"                                           , emit: starLog
-    path "*ReadsPerGene.out.tab" optional true                , emit: starCountsTo
+    path "*ReadsPerGene.out.tab" optional true                , emit: starCounts
     path("v_star.txt")                                        , emit: version
 
     script:
