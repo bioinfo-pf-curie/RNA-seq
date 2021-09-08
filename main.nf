@@ -373,64 +373,6 @@ summary['Config Profile'] = workflow.profile
 log.info summary.collect { k,v -> "${k.padRight(15)}: $v" }.join("\n")
 log.info "========================================="
 
-/* 
- * Identito - polym
- */
-
-process getPolym {
-  label 'minCpu'
-  label 'medMem'
-  label 'identito'
-
-  publishDir "${params.outDir}/identito", mode: 'copy'
-
-  when:
-  !params.skipQC && !params.skipIdentito
-
-  input:
-  file(fasta) from chFasta.collect()
-  file(polyms) from chPolymBed.collect()
-  file(bam) from chBamMdPolym
-
-  output:
-  file("v_bcftools.txt") into chBcftoolsVersion
-  file("*matrix.tsv") into clustPolymCh
-
-  script:
-  """
-  bcftools --version &> v_bcftools.txt 2>&1 || true
-  bcftools mpileup -R ${polyms} -f ${fasta} -x -A -B -q 20 -I -Q 0 -d 1000 --annotate FORMAT/DP,FORMAT/AD ${bam[0]} > ${bam[0].baseName}_bcftools.vcf
-  SnpSift extractFields -e "."  -s ";" ${bam[0].baseName}_bcftools.vcf CHROM POS REF ALT GEN[*].DP GEN[*].AD > ${bam[0].baseName}_bcftools.tsv
-  computePolym.R ${bam[0].baseName}_bcftools.tsv ${bam[0].baseName}_matrix.tsv ${bam[0].baseName} ${polyms}
-  """
-}
-
-process combinePolym {
-  label 'minCpu'
-  label 'lowMem'
-  label 'identito'
-
-  publishDir "${params.outDir}/identito", mode: 'copy'
-
-  when:
-  !params.skipQC && !params.skipIdentito
-
-  input:
-  file(matrix) from clustPolymCh.collect()
-
-  output:
-  file("*.csv") into clustPolymResultsCh
-  file("v_R.txt") into chCombinePolymVersion
-
-  script:
-  """
-  R --version &> v_R.txt
-  (head -1 "${matrix[0]}"; tail -n +2 -q *matrix.tsv) > clust_mat.tsv
-  computeClust.R clust_mat.tsv ./ 10
-  """
-}
-
-
 /*
  * Counts
  */
@@ -657,6 +599,7 @@ include { qcFlow } from './nf-modules/local/subworkflow/qc'
 include { rseqFlow } from './nf-modules/local/subworkflow/rseq'
 include { mappingFlow } from './nf-modules/local/subworkflow/mapping'
 include { markdupFlow } from './nf-modules/local/subworkflow/markdup'
+include { polymFlow } from './nf-modules/local/subworkflow/polym'
 
 // Processes
 include { getSoftwareVersions } from './nf-modules/local/process/getSoftwareVersions'
@@ -664,6 +607,8 @@ include { workflowSummaryMqc } from './nf-modules/local/process/workflowSummaryM
 include { multiqc } from './nf-modules/local/process/multiqc'
 include { outputDocumentation } from './nf-modules/local/process/outputDocumentation'
 include { bigWig } from './nf-modules/local/process/bigWig'
+include { qualimap } from './nf-modules/local/process/qualimap'
+include { preseq } from './nf-modules/local/process/preseq'
 
 workflow {
     main:
@@ -722,7 +667,11 @@ workflow {
       )
 
       // SUBWORKFLOW: Identito - polym
-
+      polymFlow(
+        chFasta,
+        chPolymBed,
+        markdupFlow.out.chBamMd
+      )
       // SUBWORKFLOW: Counts
 
       // MultiQC
@@ -736,11 +685,11 @@ workflow {
         mappingFlow.out.chSamtoolsVersionSort.first().ifEmpty([]),
         chPicardVersion.first().ifEmpty([]),
         preseq.out.chPreseqVersion.first().ifEmpty([]),
-        chMergeCountsVersion.concat(chCombinePolymVersion,chGeneSaturationVersion,chGeneTypeVersion,chAnaExpVersion).first().ifEmpty([]),
+        chMergeCountsVersion.concat(polymFlow.out.chCombinePolymVersion,chGeneSaturationVersion,chGeneTypeVersion,chAnaExpVersion).first().ifEmpty([]),
         rseqFlow.out.chRseqcVersionInferExperiment.first().ifEmpty([]),
         chFeaturecountsVersion.first().ifEmpty([]),
         chDeeptoolsVersion.first().ifEmpty([]),
-        chBcftoolsVersion.first().ifEmpty([]),
+        polymFlow.out.chBcftoolsVersion.first().ifEmpty([]),
         chHtseqVersion.first().ifEmpty([]),
         qualimap.out.chQualimapVersion.first().ifEmpty([]
       )
@@ -774,7 +723,7 @@ workflow {
         chPicardResults.collect().ifEmpty([]),
         chCountsLogs.collect().ifEmpty([]),
         chCountsPerGenetype.collect().ifEmpty([]),
-        clustPolymResultsCh.collect().ifEmpty([]),
+        polymFlow.out.chClustPolymResults.collect().ifEmpty([]),
         chExploratoryAnalysisResults.collect().ifEmpty([]),
         chSoftwareVersionsYaml.collect().ifEmpty([]),
         chWorkflowSummaryYaml.collect().ifEmpty([]),

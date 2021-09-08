@@ -28,7 +28,7 @@ workflow markdupFlow {
       )
 
     emit:
-      chBamMd = chmarkDuplicates.out.BamMd
+      chBamMd = markDuplicates.out.BamMd
       chPicardResults = markDuplicates.out.PicardResults
       chPicardVersion = markDuplicates.out.PicardVersion
       chDupradarResults = dupradar.out.dupradarResults
