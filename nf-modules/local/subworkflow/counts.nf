@@ -12,7 +12,11 @@ include { geneSaturation } from '../process/geneSaturation'
 include { getCountsPerGeneType} from '../process/getCountsPerGeneType'
 include { exploratoryAnalysis } from '../process/exploratoryAnalysis'
 
-workflow countFlow {
+// Stage config files
+chPcaHeader = Channel.fromPath("$baseDir/assets/pcaHeader.txt")
+chHeatmapHeader = Channel.fromPath("$baseDir/assets/heatmapHeader.txt")
+
+workflow countsFlow {
     // required inputs
     take:
       chBam
@@ -61,22 +65,33 @@ workflow countFlow {
       }
 
       geneSaturation(
-
+        mergeCounts.out.counts.collect()
       )
 
       getCountsPerGeneType(
-
+        mergeCounts.out.tpmCounts,
+        chGtf.collect()
       )
 
       exploratoryAnalysis(
-
+        mergeCounts.out.counts.collect(),
+        mergeCounts.out.tpmCounts.collect(),
+        chCounts.count(),
+        chPcaHeader,
+        chHeatmapHeader
       )
 
     emit:
-      chFeaturecountsVersion = featureCounts.out.version
-      chHtseqCounts          = HTseqCounts.out.htseqCounts
-      chHtseqVersion         = HTseqCounts.out.version
-      chMergeCountsVersion   = mergeCounts.out.version
+      chFeaturecountsVersion       = featureCounts.out.version
+      chHtseqCounts                = HTseqCounts.out.htseqCounts
+      chHtseqVersion               = HTseqCounts.out.version
+      chMergeCountsVersion         = mergeCounts.out.version
       chCountsLogs
+      chGenesatResults             = geneSaturation.genesatResults
+      chGeneSaturationVersion      = geneSaturation.version
+      chCountsPerGenetype          = getCountsPerGeneType.out.countsPerGenetype
+      chGeneTypeVersion            = getCountsPerGeneType.out.version
+      chExploratoryAnalysisResults = exploratoryAnalysis.out.exploratoryAnalysisResults 
+      chAnaExpVersion              = exploratoryAnalysis.out.version 
 
 }

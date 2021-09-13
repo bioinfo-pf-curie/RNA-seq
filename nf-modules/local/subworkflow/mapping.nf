@@ -12,7 +12,7 @@ include { makeHisatSplicesites } from '../process/makeHisatSplicesites'
 include { hisat2Align } from '../process/hisat2Align'
 include { hisat2Sort } from '../process/hisat2Sort'
 
-workflow rseqFlow {
+workflow mappingFlow {
     // required inputs
     take:
       chRawReads 

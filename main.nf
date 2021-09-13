@@ -141,8 +141,6 @@ if( !(workflow.runName ==~ /[a-z]+_[a-z]+/) ){
 chMultiqcConfig = Channel.fromPath(params.multiqcConfig)
 chOutputDocs = Channel.fromPath("$baseDir/docs/output.md")
 chOutputDocsImages = file("$baseDir/docs/images/", checkIfExists: true)
-chPcaHeader = Channel.fromPath("$baseDir/assets/pcaHeader.txt")
-chHeatmapHeader = Channel.fromPath("$baseDir/assets/heatmapHeader.txt")
 
 /*
  * CHANNELS
@@ -189,12 +187,12 @@ if( params.gtf ){
   Channel
     .fromPath(params.gtf)
     .ifEmpty { exit 1, "GTF annotation file not found: ${params.gtf}" }
-    .into { chGtfStar; chGtfDupradar; chGtfFeatureCounts; chGtfGenetype; chGtfHTseqCounts; chGtfTable; chGtfMakeHisatSplicesites; chGtfQualimap }
+    .set { chGtf }
 }else {
   log.warn "No GTF annotation specified - dupRadar, table counts - will be skipped !" 
   Channel
     .empty()
-    .into { chGtfStar; chGtfDupradar; chGtfFeatureCounts; chGtfGenetype; chGtfHTseqCounts; chGtfTable; chGtfMakeHisatSplicesites; chGtfQualimap } 
+    .set { chGtf } 
 }
 
 if( params.bed12 ){
@@ -373,105 +371,13 @@ summary['Config Profile'] = workflow.profile
 log.info summary.collect { k,v -> "${k.padRight(15)}: $v" }.join("\n")
 log.info "========================================="
 
-/*
- * Gene-based saturation
- */
-
-process geneSaturation {
-  label 'r'
-  label 'minCpu'
-  label 'medMem'
-  publishDir "${params.outDir}/geneSaturation" , mode: 'copy'
-
-  when:
-  !params.skipQC && !params.skipSaturation
-
-  input:
-  file inputCounts from chCountsSaturation.collect()
-
-  output:
-  file "*gcurve.txt" into chGenesatResults
-  file("v_R.txt") into chGeneSaturationVersion
-
-  script:
-  """
-  R --version &> v_R.txt
-  gene_saturation.r $inputCounts counts.gcurve.txt
-  """
-}
-
-
-/*
- * Reads distribution
- */
-
-process getCountsPerGeneType {
-  label 'r'
-  label 'minCpu'
-  label 'lowMem'
-  publishDir "${params.outDir}/readDistribution", mode: 'copy'
-
-  when:
-  !params.skipReaddist
-
-  input:
-  file tpmGenetype from chTpmGenetype
-  file gtf from chGtfGenetype.collect()
- 
-  output:
-  file "*genetype.txt" into chCountsPerGenetype
-  file("v_R.txt") into chGeneTypeVersion
-
-  script:
-  """
-  R --version &> v_R.txt
-  gene_type_expression.r ${tpmGenetype} ${gtf} counts_genetype.txt 
-  """
-}
-
-
-/*
- * Exploratory analysis
- */
-
-process exploratoryAnalysis {
-  label 'r'
-  label 'minCpu'
-  label 'lowMem'
-  publishDir "${params.outDir}/exploratoryAnalysis", mode: 'copy'
-
-  when:
-  !params.skipExpan && numSample > 1
-
-  input:
-  file tableRaw from chRawCounts.collect()
-  file tableTpm from chTpmCounts.collect()
-  val numSample from chCountsToR.count()
-  file pcaHeader from chPcaHeader
-  file heatmapHeader from chHeatmapHeader
-
-  output:
-  file "*.{txt,pdf,csv}" into chExploratoryAnalysisResults
-  file("v_R.txt") into chAnaExpVersion
-
-  script:
-  """
-  R --version &> v_R.txt
-  exploratory_analysis.r ${tableRaw}
-  cat $pcaHeader deseq2_pca_coords_mqc.csv >> tmp_file
-  mv tmp_file deseq2_pca_coords_mqc.csv 
-  cat $heatmapHeader vst_sample_cor_mqc.csv >> tmp_file
-  mv tmp_file vst_sample_cor_mqc.csv
-  """
-}
-
-                                                                                                                                                                                                  
 // Workflows
 include { qcFlow } from './nf-modules/local/subworkflow/qc'
 include { rseqFlow } from './nf-modules/local/subworkflow/rseq'
 include { mappingFlow } from './nf-modules/local/subworkflow/mapping'
 include { markdupFlow } from './nf-modules/local/subworkflow/markdup'
 include { polymFlow } from './nf-modules/local/subworkflow/polym'
+include { countsFlow } from './nf-modules/local/subworkflow/counts'
 
 // Processes
 include { getSoftwareVersions } from './nf-modules/local/process/getSoftwareVersions'
@@ -501,7 +407,6 @@ workflow {
         chRawReads,
         chBedRseqc
       )
-
 
       // SUBWORKFLOW: mapping (rRNA and Read mapping)
       mappingFlow(
@@ -565,7 +470,7 @@ workflow {
         mappingFlow.out.chSamtoolsVersionSort.first().ifEmpty([]),
         markdupFlow.out.chPicardVersion.first().ifEmpty([]),
         preseq.out.chPreseqVersion.first().ifEmpty([]),
-        countsFlow.out.chMergeCountsVersion.concat(polymFlow.out.chCombinePolymVersion,chGeneSaturationVersion,chGeneTypeVersion,chAnaExpVersion).first().ifEmpty([]),
+        countsFlow.out.chMergeCountsVersion.concat(polymFlow.out.chCombinePolymVersion,countsFlow.out.chGeneSaturationVersion,countsFlow.out.chGeneTypeVersion,countsFlow.out.chAnaExpVersion).first().ifEmpty([]),
         rseqFlow.out.chRseqcVersionInferExperiment.first().ifEmpty([]),
         countsFlow.out.chFeaturecountsVersion.first().ifEmpty([]),
         bigWig.out.chDeeptoolsVersion.first().ifEmpty([]),
@@ -593,20 +498,20 @@ workflow {
         chMetadata.ifEmpty([]),
         chMultiqcConfig.ifEmpty([]),
         qcFlow.out.chFastqcResults.collect().ifEmpty([]),
-        chRrnaLogs.collect().ifEmpty([]),
+        mappingFlow.out.chRrnaLogs.collect().ifEmpty([]),
         mappingFlow.out.chAlignmentLogs.collect().ifEmpty([]),
         rseqFlow.out.chStrandnessResults.collect().ifEmpty([]),
         qualimap.out.chQualimapResults.collect().ifEmpty([]),
         preseq.out.chPreseqResults.collect().ifEmpty([]),
-        chGenesatResults.collect().ifEmpty([]),
-        chDupradarResults.collect().ifEmpty([]),
-        chPicardResults.collect().ifEmpty([]),
+        countsFlow.out.chGenesatResults.collect().ifEmpty([]),
+        markdupFlow.out.chDupradarResults.collect().ifEmpty([]),
+        markdupFlow.out.chPicardResults.collect().ifEmpty([]),
         countsFlow.out.chCountsLogs.collect().ifEmpty([]),
-        chCountsPerGenetype.collect().ifEmpty([]),
+        countsFlow.out.chCountsPerGenetype.collect().ifEmpty([]),
         polymFlow.out.chClustPolymResults.collect().ifEmpty([]),
-        chExploratoryAnalysisResults.collect().ifEmpty([]),
-        chSoftwareVersionsYaml.collect().ifEmpty([]),
-        chWorkflowSummaryYaml.collect().ifEmpty([]),
+        countsFlow.out.chExploratoryAnalysisResults.collect().ifEmpty([]),
+        getSoftwareVersions.out.chSoftwareVersionsYaml.collect().ifEmpty([]),
+        workflowSummaryMqc.out.chWorkflowSummaryYaml.collect().ifEmpty([]),
         chWarn.collect().ifEmpty([]) 
       }
 }
