@@ -5,6 +5,7 @@
 /* 
  * include requires tasks 
  */
+include { checkStarLog1 } from './functions'
 include { rRNAMapping } from '../process/rRNAMapping'
 include { star } from '../process/star'
 include { starSort } from '../process/starSort'
@@ -31,30 +32,6 @@ workflow mappingFlow {
     )
 
     // Reads mapping
-
-    // From nf-core
-    // Function that checks the alignment rate of the STAR output
-    // and returns true if the alignment passed and otherwise false
-    skippedPoorAlignment = []
-    def checkStarLog(logs) {
-     def percentAligned = 0;
-     logs.eachLine { line ->
-       if ((matcher = line =~ /Uniquely mapped reads %\s*\|\s*([\d\.]+)%/)) {
-         percentAligned = matcher[0][1]
-       }else if ((matcher = line =~ /Uniquely mapped reads number\s*\|\s*([\d\.]+)/)) {
-         numAligned = matcher[0][1]
-       }
-     }
-     logname = logs.getBaseName() - 'Log.final'
-     if(percentAligned.toFloat() <= '2'.toFloat() || numAligned.toInteger() <= 1000.toInteger() ){
-         log.info "#################### VERY POOR ALIGNMENT RATE! IGNORING FOR FURTHER DOWNSTREAM ANALYSIS! ($logname)    >> ${percentAligned}% <<"
-         skippedPoorAlignment << logname
-         return false
-     } else {
-         log.info "          Passed alignment > star ($logname)   >> ${percentAligned}% <<"
-         return true
-     }
-    }
 
     // Update input channel
     if( params.rrna && !params.skipRrna){
@@ -110,17 +87,15 @@ workflow mappingFlow {
       chSamtoolsVersionSort = hisat2Sort.out.samtoolsVersionSort
     } 
 
-
-
     emit:
       chRrnaLogs            = rRNAMapping.out.logs
       chBowtieVersion       = rRNAMapping.out.version 
-      chAlignmentLogs
       chStarLogCounts       = star.out.starLogCounts
-      chStarLog
-      chStarCounts          = star.out.starCounts
-      chStarVersion         
-      chSamtoolsVersionSort
-      chBam
+      chStarCounts          = star.out.starCounts        
       chHisat2Version       = hisat2Align.out.version
+      chBam
+      chAlignmentLogs
+      chStarLog
+      chStarVersion 
+      chSamtoolsVersionSort
 }

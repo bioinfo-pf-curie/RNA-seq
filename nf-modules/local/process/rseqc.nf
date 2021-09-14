@@ -1,3 +1,4 @@
+
 process rseqc {
     tag "${prefix - '_subsample'}"
     label 'rseqc'
@@ -6,8 +7,7 @@ process rseqc {
     publishDir "${params.outDir}/strandness" , mode: 'copy',
       saveAs: {filename ->
         if (filename.indexOf(".txt") > 0) "$filename"
-        else null
-      }
+        else null }
 
     input:
     tuple val(prefix), path(bamRseqc)
@@ -15,8 +15,8 @@ process rseqc {
 
     output:
     path "${prefix}*.{txt,pdf,r,xls}", emit: rseqcResults
-    stdout                           , emit: strandedResults
     path("v_rseqc.txt")              , emit: chRseqcVersionInferExperiment
+    stdout emit: strandedResults
 
     script:
     """

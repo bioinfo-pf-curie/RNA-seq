@@ -407,6 +407,7 @@ workflow {
         chRawReads,
         chBedRseqc
       )
+      rseqFlow.out.chStrandnessResults.view()
 
       // SUBWORKFLOW: mapping (rRNA and Read mapping)
       mappingFlow(
@@ -476,7 +477,7 @@ workflow {
         bigWig.out.chDeeptoolsVersion.first().ifEmpty([]),
         polymFlow.out.chBcftoolsVersion.first().ifEmpty([]),
         countsFlow.out.chHtseqVersion.first().ifEmpty([]),
-        qualimap.out.chQualimapVersion.first().ifEmpty([]
+        qualimap.out.chQualimapVersion.first().ifEmpty([])
       )
 
       workflowSummaryMqc(
@@ -513,7 +514,7 @@ workflow {
         getSoftwareVersions.out.chSoftwareVersionsYaml.collect().ifEmpty([]),
         workflowSummaryMqc.out.chWorkflowSummaryYaml.collect().ifEmpty([]),
         chWarn.collect().ifEmpty([]) 
-      }
+      )
 }
 
 workflow.onComplete {

@@ -32,7 +32,7 @@ workflow rseqFlow {
         chBowtie2Version = Channel.empty()
         chRseqcVersionInferExperiment = Channel.empty()  
       }else if (params.stranded == 'auto' && params.bed12){
-        // auto
+        // auto     
         prepRseqc(
           chRawReads
         )
