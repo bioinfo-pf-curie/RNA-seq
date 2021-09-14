@@ -18,8 +18,8 @@ process qualimap {
   val stranded
 
   output:
-  file ("${bam[0].baseName}"), emit: chQualimapResults
-  file ("v_qualimap.txt")    , emit: chQualimapVersion
+  path ("${bam[0].baseName}"), emit: chQualimapResults
+  path ("v_qualimap.txt")    , emit: chQualimapVersion
 
   script:
   peOpts = params.singleEnd ? '' : '-pe'

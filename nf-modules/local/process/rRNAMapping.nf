@@ -17,7 +17,7 @@ process rRNAMapping {
   !params.skipRrna && params.rrna
 
   input:
-  tuple val(prefix), file(reads)
+  tuple val(prefix), path(reads)
   path annot
 
   output:
@@ -39,4 +39,5 @@ process rRNAMapping {
   gzip -f ${prefix}_norRNA*.fastq 
   """
 }
+
 

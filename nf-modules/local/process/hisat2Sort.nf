@@ -9,9 +9,9 @@ process hisat2Sort {
     path hisat2Bam
 
     output:
-    path ('*sorted.{bam,bam.bai}')             , emit: chBam
-    file "${hisat2Bam.baseName}_sorted.bam.bai"
-    file("v_samtools.txt")                     , emit: chSamtoolsVersionSort 
+    path ('*sorted.{bam,bam.bai}')             , emit: bam
+    path("v_samtools.txt")                     , emit: version
+    path "${hisat2Bam.baseName}_sorted.bam.bai"
 
     script:
     def availMem = task.memory ? "-m ${task.memory.toBytes() / task.cpus}" : ''

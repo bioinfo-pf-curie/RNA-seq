@@ -44,3 +44,4 @@ process hisat2Align {
            | samtools view -bS -F 4 -F 256 - > ${prefix}.bam
     """
   }
+  

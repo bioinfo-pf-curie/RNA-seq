@@ -15,7 +15,7 @@ process rseqc {
 
     output:
     path "${prefix}*.{txt,pdf,r,xls}", emit: rseqcResults
-    path("v_rseqc.txt")              , emit: chRseqcVersionInferExperiment
+    path("v_rseqc.txt")              , emit: version
     stdout emit: strandedResults
 
     script:

@@ -418,7 +418,8 @@ workflow {
         chHisat2Index,
         rseqFlow.out.chStrandnessResults
       )
-
+      skippedPoorAlignment = mappingFlow.out.skippedPoorAlignment
+      
       // Generate bigwig file
       bigWig(
         mappingFlow.out.chBam,

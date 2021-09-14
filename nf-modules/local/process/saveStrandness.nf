@@ -19,10 +19,11 @@ process saveStrandness {
   tuple val(prefix), path(reads)
 
   output:
-  file "*.txt", emit: savedStrandness
+  path "*.txt", emit: savedStrandness
 
   script:
   """
   echo ${params.stranded} > ${prefix}_strandness.txt
   """
 }
+

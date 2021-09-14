@@ -19,7 +19,7 @@ process getPolym {
 
   output:
   path("v_bcftools.txt"), emit: version
-  file("*matrix.tsv")   , emit: clustPolym
+  path("*matrix.tsv")   , emit: clustPolym
 
   script:
   """

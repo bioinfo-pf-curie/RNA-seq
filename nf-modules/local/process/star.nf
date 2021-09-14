@@ -23,7 +23,7 @@
     file gtf
 
     output:
-    tuple val(prefix), file ("*Log.final.out"), file ('*.bam'), emit: chStarSam
+    tuple val(prefix), path ("*Log.final.out"), path ('*.bam'), emit: chStarSam
     path "*.out"                                              , emit: alignmentLogs
     path "*.out.tab"                                          , emit: starLogCounts
     path "*Log.out"                                           , emit: starLog

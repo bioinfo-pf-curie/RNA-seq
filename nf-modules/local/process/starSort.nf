@@ -9,9 +9,9 @@ process starSort {
     tuple val(prefix), path(LogFinalOut), path (starBam)
 
     output:
-    tuple file("${prefix}Log.final.out"), path ("*.{bam,bam.bai}"), emit: starAligned
+    tuple path("${prefix}Log.final.out"), path ("*.{bam,bam.bai}"), emit: starAligned
+    path("v_samtools.txt")                                        , emit: version
     path "${prefix}_sorted.bam.bai"
-    path("v_samtools.txt")                                        , emit: samtoolsVersionSort
 
     script:
     """
