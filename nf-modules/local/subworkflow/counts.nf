@@ -12,10 +12,6 @@ include { geneSaturation } from '../process/geneSaturation'
 include { getCountsPerGeneType} from '../process/getCountsPerGeneType'
 include { exploratoryAnalysis } from '../process/exploratoryAnalysis'
 
-// Stage config files
-chPcaHeader = Channel.fromPath("$baseDir/assets/pcaHeader.txt")
-chHeatmapHeader = Channel.fromPath("$baseDir/assets/heatmapHeader.txt")
-
 workflow countsFlow {
     // required inputs
     take:
@@ -28,25 +24,32 @@ workflow countsFlow {
     // workflow implementation
     main:
       // Counts
-      featureCounts(
-        chBam,
-        chGtf.collect(),
-        chStrandedResults
-      )
 
-      HTseqCounts (
-        chBam,
-        chGtf.collect(),
-        chStrandedResults
-      )
-
-      chCounts = Channel.empty()
+     chCounts = Channel.empty()
+     chCountsLogs = Channel.empty()
+     chFeaturecountsVersion = Channel.empty() 
+     chHtseqVersion = Channel.empty()
      if( params.counts == 'featureCounts' ){
+       featureCounts(
+         chBam,
+         chGtf.collect(),
+         chStrandedResults
+       )
        chCounts = featureCounts.out.counts
+       chCountsLogs = featureCounts.out.logs
+       chFeaturecountsVersion = featureCounts.out.version 
      } else if (params.counts == 'HTseqCounts'){
+         HTseqCounts (
+           chBam,
+           chGtf.collect(),
+           chStrandedResults
+         )
        chCounts = HTseqCounts.out.counts
-     }else if (params.counts == 'star'){
-       chCounts = chStarCounts
+       chCountsLogs = HTseqCounts.out.counts
+       chHtseqVersion = HTseqCounts.out.version
+     } else if (params.counts == 'star'){
+         chCounts = chStarCounts
+         chCountsLogs = chStarLogCounts
      }
 
       mergeCounts(
@@ -54,15 +57,6 @@ workflow countsFlow {
         chGtf.collect(),
         chStrandedResults
       )
-
-      chCountsLogs = Channel.empty()
-      if( params.counts == 'featureCounts' ){
-        chCountsLogs = featureCounts.out.logs
-      } else if (params.counts == 'HTseqCounts'){
-        chCountsLogs = HTseqCounts.out.counts
-      }else if (params.counts == 'star'){
-        chCountsLogs = chStarLogCounts
-      }
 
       geneSaturation(
         mergeCounts.out.counts.collect()
@@ -76,22 +70,18 @@ workflow countsFlow {
       exploratoryAnalysis(
         mergeCounts.out.counts.collect(),
         mergeCounts.out.tpmCounts.collect(),
-        chCounts.count(),
-        chPcaHeader,
-        chHeatmapHeader
+        chCounts.count()
       )
 
     emit:
-      chFeaturecountsVersion       = featureCounts.out.version
-      chHtseqCounts                = HTseqCounts.out.htseqCounts
-      chHtseqVersion               = HTseqCounts.out.version
       chMergeCountsVersion         = mergeCounts.out.version
-      chCountsLogs
-      chGenesatResults             = geneSaturation.genesatResults
-      chGeneSaturationVersion      = geneSaturation.version
+      chGenesatResults             = geneSaturation.out.genesatResults
+      chGeneSaturationVersion      = geneSaturation.out.version
       chCountsPerGenetype          = getCountsPerGeneType.out.countsPerGenetype
       chGeneTypeVersion            = getCountsPerGeneType.out.version
       chExploratoryAnalysisResults = exploratoryAnalysis.out.exploratoryAnalysisResults 
       chAnaExpVersion              = exploratoryAnalysis.out.version 
-
+      chCountsLogs
+      chFeaturecountsVersion
+      chHtseqVersion
 }

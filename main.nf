@@ -167,6 +167,8 @@ if ((params.reads && params.samplePlan) || (params.readPaths && params.samplePla
   exit 1, "Input reads must be defined using either '--reads' or '--samplePlan' parameter. Please choose one way"
 }
 
+chHisat2Index = Channel.empty()
+chStarIndex = Channel.empty()
 if( params.starIndex && params.aligner == 'star' ){
   Channel
     .fromPath(params.starIndex)
@@ -407,9 +409,10 @@ workflow {
         chRawReads,
         chBedRseqc
       )
-      rseqFlow.out.chStrandnessResults.view()
+      //rseqFlow.out.chStrandnessResults.view()
 
       // SUBWORKFLOW: mapping (rRNA and Read mapping)
+      skippedPoorAlignment = [] 
       mappingFlow(
         chRawReads,
         chRrnaAnnot,
@@ -418,7 +421,7 @@ workflow {
         chHisat2Index,
         rseqFlow.out.chStrandnessResults
       )
-      skippedPoorAlignment = mappingFlow.out.skippedPoorAlignment
+      // skippedPoorAlignment = mappingFlow.out.skippedPoorAlignment
       
       // Generate bigwig file
       bigWig(
@@ -495,7 +498,7 @@ workflow {
       }
 
       multiqc(
-        custom_runName,
+        customRunName,
         chSplan.collect(),
         chMetadata.ifEmpty([]),
         chMultiqcConfig.ifEmpty([]),

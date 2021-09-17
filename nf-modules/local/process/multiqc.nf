@@ -8,10 +8,11 @@ process multiqc {
   !params.skipMultiQC
 
   input:
+  val customRunName
   path splan
   path metadata
   path multiqcConfig
-  path (fastqc:'fastqc/*')
+  path ('fastqc/*')
   path ('rrna/*')
   path ('alignment/*')
   path ('strandness/*')

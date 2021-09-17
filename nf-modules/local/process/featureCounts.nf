@@ -1,9 +1,7 @@
-/*
- * Counts
- */
+// Counts
 
 process featureCounts {
-  tag "${bamFeaturecounts.baseName - 'Aligned.sortedByCoord.out'}"
+  tag "${bam.baseName}"
   label 'featurecounts'
   label 'medCpu'
   label 'medMem'
@@ -18,14 +16,14 @@ process featureCounts {
   params.counts == 'featureCounts'
 
   input:
-  path bam 
+  path bam
   path gtf
-  val parseRes 
+  val parseRes
 
   output:
   path "${bam.baseName}_counts.csv"        , emit: counts
   path "${bam.baseName}_counts.csv.summary", emit: logs
-  path"v_featurecounts.txt")               , emit: version
+  path "v_featurecounts.txt"               , emit: version
 
   script:
   def featureCountsDirection = 0
@@ -36,6 +34,7 @@ process featureCounts {
   }
   """
   featureCounts -v &> v_featurecounts.txt
-  featureCounts ${params.featurecountsOpts} -T ${task.cpus} -a ${gtf} -o ${bam[0].baseName}_counts.csv -p -s ${featureCountsDirection} ${bamFeaturecounts}
+  featureCounts ${params.featurecountsOpts} -T ${task.cpus} -a ${gtf} -o ${bam.baseName}_counts.csv -p -s ${featureCountsDirection} ${bam}
   """
 }
+

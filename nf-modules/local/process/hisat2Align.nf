@@ -17,9 +17,9 @@ process hisat2Align {
     val parseRes
 
     output:
-    path "${prefix}.bam"               , emit: hisat2Bam
-    path "${prefix}.hisat2_summary.txt", emit: alignmentLogs
-    path("v_hisat2.txt")               , emit: version
+    path "${prefix}.bam"                , emit: hisat2Bam
+    path "${prefix}.hisat2_summary.txt" , emit: alignmentLogs
+    path ("v_hisat2.txt")               , emit: version
 
     script:
     indexBase = hs2Index[0].toString() - ~/.\d.ht2/
@@ -44,4 +44,5 @@ process hisat2Align {
            | samtools view -bS -F 4 -F 256 - > ${prefix}.bam
     """
   }
+  
   

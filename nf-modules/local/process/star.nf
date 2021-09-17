@@ -20,14 +20,14 @@
     input:
     tuple val(prefix), path(reads)
     path index
-    file gtf
+    path gtf
 
     output:
     tuple val(prefix), path ("*Log.final.out"), path ('*.bam'), emit: chStarSam
     path "*.out"                                              , emit: alignmentLogs
     path "*.out.tab"                                          , emit: starLogCounts
     path "*Log.out"                                           , emit: starLog
-    path "*ReadsPerGene.out.tab" optional true                , emit: starCounts
+    path "*ReadsPerGene.out.tab"                              , emit: starCounts
     path("v_star.txt")                                        , emit: version
 
     script:

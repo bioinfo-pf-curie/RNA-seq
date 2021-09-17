@@ -23,7 +23,7 @@ workflow rseqFlow {
       chStrandedResults = Channel.empty()
       // User defined
       if (params.stranded == 'reverse' || params.stranded == 'forward' || params.stranded == 'no'){
-        chRawReadsStrandness
+        chRawReads
         .map { file ->
            def key = params.stranded
            return tuple(key)

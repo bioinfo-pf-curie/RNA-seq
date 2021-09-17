@@ -5,7 +5,7 @@
 /* 
  * include requires tasks 
  */
-// include { checkStarLog } from './functions'
+include { checkStarLog } from './functions'
 include { rRNAMapping } from '../process/rRNAMapping'
 include { star } from '../process/star'
 include { starSort } from '../process/starSort'
@@ -36,25 +36,6 @@ workflow mappingFlow {
     // Function that checks the alignment rate of the STAR output
     // and returns true if the alignment passed and otherwise false
     skippedPoorAlignment = []
-    def checkStarLog(logs) {
-      def percentAligned = 0;
-      logs.eachLine { line ->
-      if ((matcher = line =~ /Uniquely mapped reads %\s*\|\s*([\d\.]+)%/)) {
-        percentAligned = matcher[0][1]
-      }else if ((matcher = line =~ /Uniquely mapped reads number\s*\|\s*([\d\.]+)/)) {
-        numAligned = matcher[0][1]
-      }
-    }
-    logname = logs.getBaseName() - 'Log.final'
-    if(percentAligned.toFloat() <= '2'.toFloat() || numAligned.toInteger() <= 1000.toInteger() ){
-        log.info "#################### VERY POOR ALIGNMENT RATE! IGNORING FOR FURTHER DOWNSTREAM ANALYSIS! ($logname)    >> ${percentAligned}% <<"
-        skippedPoorAlignment << logname
-        return false
-    } else {
-        log.info "          Passed alignment > star ($logname)   >> ${percentAligned}% <<"
-        return true
-    }
-  }
 
     // Update input channel
     if( params.rrna && !params.skipRrna){
@@ -66,7 +47,6 @@ workflow mappingFlow {
     // STAR
     if(params.aligner == 'star'){
       chHisat2Version = Channel.empty()
-
       star(
         chRawReads,
         chStarIndex.collect(),
@@ -75,6 +55,7 @@ workflow mappingFlow {
       chAlignmentLogs = star.out.alignmentLogs
       chStarLog       = star.out.starLog
       chStarVersion   = star.out.version
+
       starSort(
         star.out.chStarSam
       )
@@ -82,27 +63,30 @@ workflow mappingFlow {
 
       // Filter removes all 'aligned' channels that fail the check
       starSort.out.starAligned
-        .filter { logs, bams -> checkStarLog(logs) }
-        .map { logs, bams -> bams }
-        .dump (tag:'starbams')
-        .set { chBam }
+       .filter { logs, bams -> checkStarLog(logs) }
+       .map { logs, bams -> bams }
+       .dump (tag:'starbams')
+       .set { chBam }
+      // chBam = starSort.out.starAligned
     }
 
-    // HiSat2
+    // HiSat2 
     if(params.aligner == 'hisat2'){
       chStarLog = Channel.empty()
       chStarVersion = Channel.empty() 
-
       makeHisatSplicesites(
         chGtf
       )
+
       hisat2Align(
         chRawReads,
         chHisat2Index.collect(),
-        makeHisatSplicesites.out.alignmentSplicesites
+        makeHisatSplicesites.out.alignmentSplicesites,
         chStrandnessResults
       )
       chAlignmentLogs = hisat2Align.out.alignmentLogs
+      chHisat2Version = hisat2Align.out.version
+
       hisat2Sort(
         hisat2Align.out.hisat2Bam
       )
@@ -112,14 +96,14 @@ workflow mappingFlow {
 
     emit:
       chRrnaLogs            = rRNAMapping.out.logs
-      chBowtieVersion       = rRNAMapping.out.version 
+      chBowtieVersion       = rRNAMapping.out.version
       chStarLogCounts       = star.out.starLogCounts
-      chStarCounts          = star.out.starCounts        
-      chHisat2Version       = hisat2Align.out.version
+      chStarCounts          = star.out.starCounts
+      chHisat2Version
       chBam
       chAlignmentLogs
       chStarLog
-      chStarVersion 
+      chStarVersion
       chSamtoolsVersionSort
-      skippedPoorAlignment
+      //skippedPoorAlignment
 }

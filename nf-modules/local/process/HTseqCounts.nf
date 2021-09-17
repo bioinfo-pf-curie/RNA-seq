@@ -3,7 +3,7 @@
  */
 
 process HTseqCounts {
-  tag "${bamHTseqCounts}"
+  tag "${bam}"
   label 'htseq'
   label 'medCpu'
   label 'medMem'

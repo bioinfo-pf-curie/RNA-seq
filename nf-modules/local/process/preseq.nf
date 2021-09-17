@@ -13,7 +13,7 @@ process preseq {
   !params.skipQC && !params.skipSaturation
 
   input:
-  path bam from
+  path bam
 
   output:
   path "*ccurve.txt"  , emit: chPreseqResults
