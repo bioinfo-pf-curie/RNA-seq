@@ -55,7 +55,7 @@ workflow countsFlow {
       mergeCounts(
         chCounts.collect(),
         chGtf.collect(),
-        chStrandedResults
+        chStrandedResults.collect()
       )
 
       geneSaturation(

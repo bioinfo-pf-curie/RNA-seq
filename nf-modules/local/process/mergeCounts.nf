@@ -22,8 +22,8 @@ process mergeCounts {
   script:
   """
   R --version &> v_R.txt
-  echo -e ${inputCounts} | tr " " "\n" > listofcounts.tsv
-  echo -n "${parseRes}" | sed -e "s/\\[//" -e "s/\\]//" -e "s/,//g" | tr " " "\n" > listofstrandness.tsv
+  echo ${inputCounts} | tr " " "\\n" > listofcounts.tsv
+  echo ${parseRes} | sed -e "s/\\[//" -e "s/\\]//" -e "s/,//g" | tr " " "\\n" > listofstrandness.tsv
   makeCountTable.r listofcounts.tsv ${gtf} ${params.counts} listofstrandness.tsv
   """
 }
