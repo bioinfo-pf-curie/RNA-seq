@@ -3,8 +3,8 @@
  */
 
 // Stage config files
-pcaHeader = Channel.fromPath("$baseDir/assets/pcaHeader.txt")
-heatmapHeader = Channel.fromPath("$baseDir/assets/heatmapHeader.txt")
+//pcaHeader = Channel.fromPath("$baseDir/assets/pcaHeader.txt")
+//heatmapHeader = Channel.fromPath("$baseDir/assets/heatmapHeader.txt")
 
 process exploratoryAnalysis {
   label 'r'
@@ -19,8 +19,8 @@ process exploratoryAnalysis {
   path tableRaw 
   path tableTpm
   val numSample
-  //path pcaHeader
-  //path heatmapHeader
+  path pcaHeader
+  path heatmapHeader
 
   output:
   path "*.{txt,pdf,csv}", emit: exploratoryAnalysisResults

@@ -20,6 +20,8 @@ workflow countsFlow {
       chStrandedResults
       chStarCounts
       chStarLogCounts
+      chPcaHeader
+      chHeatmapHeader
 
     // workflow implementation
     main:
@@ -70,7 +72,9 @@ workflow countsFlow {
       exploratoryAnalysis(
         mergeCounts.out.counts.collect(),
         mergeCounts.out.tpmCounts.collect(),
-        chCounts.count()
+        chCounts.count(),
+        chPcaHeader,
+        chHeatmapHeader 
       )
 
     emit:

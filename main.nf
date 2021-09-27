@@ -141,6 +141,8 @@ if( !(workflow.runName ==~ /[a-z]+_[a-z]+/) ){
 chMultiqcConfig = Channel.fromPath(params.multiqcConfig)
 chOutputDocs = Channel.fromPath("$baseDir/docs/output.md")
 chOutputDocsImages = file("$baseDir/docs/images/", checkIfExists: true)
+chPcaHeader = Channel.fromPath("$baseDir/assets/pcaHeader.txt")
+chHeatmapHeader = Channel.fromPath("$baseDir/assets/heatmapHeader.txt")
 
 /*
  * CHANNELS
@@ -461,7 +463,9 @@ workflow {
         chGtf,
         rseqFlow.out.chStrandedResults,
         mappingFlow.out.chStarCounts,
-        mappingFlow.out.chStarLogCounts
+        mappingFlow.out.chStarLogCounts,
+        chPcaHeader,
+        chHeatmapHeader
       )
 
       // MultiQC
