@@ -414,7 +414,7 @@ workflow {
       //rseqFlow.out.chStrandnessResults.view()
 
       // SUBWORKFLOW: mapping (rRNA and Read mapping)
-      skippedPoorAlignment = [] 
+      //skippedPoorAlignment = [] 
       mappingFlow(
         chRawReads,
         chRrnaAnnot,
@@ -423,7 +423,8 @@ workflow {
         chHisat2Index,
         rseqFlow.out.chStrandnessResults
       )
-      // skippedPoorAlignment = mappingFlow.out.skippedPoorAlignment
+      //skippedPoorAlignment = mappingFlow.out.skippedPoorAlignment
+      skippedPoorAlignment = Channel.empty() 
       
       // Generate bigwig file
       bigWig(
@@ -492,14 +493,15 @@ workflow {
         summary
       )
 
-      if (skippedPoorAlignment.size() > 0){
-        Channel.fromList(skippedPoorAlignment)
-               .flatMap{ it -> it + ": Poor alignment rate. Sample discarded"}
-               .collectFile(name: 'warnings.txt', newLine: true)
-               .set{chWarn}
-      }else{
-         chWarn = Channel.empty()
-      }
+      //if (skippedPoorAlignment.size() > 0){
+       // Channel.fromList(skippedPoorAlignment)
+        //       .flatMap{ it -> it + ": Poor alignment rate. Sample discarded"}
+         //      .collectFile(name: 'warnings.txt', newLine: true)
+          //     .set{chWarn}
+      //}else{
+      //   chWarn = Channel.empty()
+      //}
+      chWarn = Channel.empty()
 
       multiqc(
         customRunName,

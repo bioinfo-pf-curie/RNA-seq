@@ -105,5 +105,5 @@ workflow mappingFlow {
       chStarLog
       chStarVersion
       chSamtoolsVersionSort
-      //skippedPoorAlignment
+      skippedPoorAlignment
 }
