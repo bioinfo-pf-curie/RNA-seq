@@ -22,6 +22,7 @@ workflow mappingFlow {
       chGtf
       chHisat2Index
       chStrandnessResults
+      skippedPoorAlignment
 
     // workflow implementation
     main:
@@ -32,10 +33,6 @@ workflow mappingFlow {
     )
 
     // Reads mapping
-    // From nf-core
-    // Function that checks the alignment rate of the STAR output
-    // and returns true if the alignment passed and otherwise false
-    skippedPoorAlignment = []
 
     // Update input channel
     if( params.rrna && !params.skipRrna){
@@ -63,11 +60,10 @@ workflow mappingFlow {
 
       // Filter removes all 'aligned' channels that fail the check
       starSort.out.starAligned
-       .filter { logs, bams -> checkStarLog(logs) }
-       .map { logs, bams -> bams }
-       .dump (tag:'starbams')
-       .set { chBam }
-      // chBam = starSort.out.starAligned
+      .filter { logs, bams -> checkStarLog(logs) }
+      .map { logs, bams -> bams }
+      .dump (tag:'starbams')
+      .set { chBam }
     }
 
     // HiSat2 
@@ -99,11 +95,10 @@ workflow mappingFlow {
       chBowtieVersion       = rRNAMapping.out.version
       chStarLogCounts       = star.out.starLogCounts
       chStarCounts          = star.out.starCounts
-      chHisat2Version
       chBam
+      chHisat2Version
       chAlignmentLogs
       chStarLog
       chStarVersion
       chSamtoolsVersionSort
-      skippedPoorAlignment
 }

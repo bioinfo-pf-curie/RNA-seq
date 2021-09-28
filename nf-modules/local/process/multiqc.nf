@@ -28,6 +28,7 @@ process multiqc {
   path ('softwareVersions/*')
   path ('workflowSummary/*')
   path ('workflowSummary/*')
+  val skippedPoorAlignment
 
   output:
   path splan

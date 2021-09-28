@@ -144,6 +144,8 @@ chOutputDocsImages = file("$baseDir/docs/images/", checkIfExists: true)
 chPcaHeader = Channel.fromPath("$baseDir/assets/pcaHeader.txt")
 chHeatmapHeader = Channel.fromPath("$baseDir/assets/heatmapHeader.txt")
 
+//skippedPoorAlignment = [] 
+
 /*
  * CHANNELS
  */
@@ -392,6 +394,8 @@ include { bigWig } from './nf-modules/local/process/bigWig'
 include { qualimap } from './nf-modules/local/process/qualimap'
 include { preseq } from './nf-modules/local/process/preseq'
 
+skippedPoorAlignment = []
+
 workflow {
     main:
 
@@ -411,20 +415,17 @@ workflow {
         chRawReads,
         chBedRseqc
       )
-      //rseqFlow.out.chStrandnessResults.view()
 
       // SUBWORKFLOW: mapping (rRNA and Read mapping)
-      //skippedPoorAlignment = [] 
       mappingFlow(
         chRawReads,
         chRrnaAnnot,
         chStarIndex,
         chGtf,
         chHisat2Index,
-        rseqFlow.out.chStrandnessResults
+        rseqFlow.out.chStrandnessResults,
+        skippedPoorAlignment
       )
-      //skippedPoorAlignment = mappingFlow.out.skippedPoorAlignment
-      skippedPoorAlignment = Channel.empty() 
       
       // Generate bigwig file
       bigWig(
@@ -480,7 +481,11 @@ workflow {
         mappingFlow.out.chSamtoolsVersionSort.first().ifEmpty([]),
         markdupFlow.out.chPicardVersion.first().ifEmpty([]),
         preseq.out.chPreseqVersion.first().ifEmpty([]),
-        countsFlow.out.chMergeCountsVersion.concat(polymFlow.out.chCombinePolymVersion,countsFlow.out.chGeneSaturationVersion,countsFlow.out.chGeneTypeVersion,countsFlow.out.chAnaExpVersion).first().ifEmpty([]),
+        countsFlow.out.chMergeCountsVersion.concat(
+          polymFlow.out.chCombinePolymVersion,
+          countsFlow.out.chGeneSaturationVersion,
+          countsFlow.out.chGeneTypeVersion,
+          countsFlow.out.chAnaExpVersion).first().ifEmpty([]),
         rseqFlow.out.chRseqcVersionInferExperiment.first().ifEmpty([]),
         countsFlow.out.chFeaturecountsVersion.first().ifEmpty([]),
         bigWig.out.chDeeptoolsVersion.first().ifEmpty([]),
@@ -493,15 +498,15 @@ workflow {
         summary
       )
 
-      //if (skippedPoorAlignment.size() > 0){
-       // Channel.fromList(skippedPoorAlignment)
-        //       .flatMap{ it -> it + ": Poor alignment rate. Sample discarded"}
-         //      .collectFile(name: 'warnings.txt', newLine: true)
-          //     .set{chWarn}
-      //}else{
-      //   chWarn = Channel.empty()
-      //}
-      chWarn = Channel.empty()
+      if (skippedPoorAlignment.size() > 0){
+        Channel.fromList(skippedPoorAlignment)
+               .flatMap{ it -> it + ": Poor alignment rate. Sample discarded"}
+               .collectFile(name: 'warnings.txt', newLine: true)
+               .set{chWarn}
+      }else{
+         chWarn = Channel.empty()
+      }
+    
 
       multiqc(
         customRunName,
@@ -523,7 +528,8 @@ workflow {
         countsFlow.out.chExploratoryAnalysisResults.collect().ifEmpty([]),
         getSoftwareVersions.out.chSoftwareVersionsYaml.collect().ifEmpty([]),
         workflowSummaryMqc.out.chWorkflowSummaryYaml.collect().ifEmpty([]),
-        chWarn.collect().ifEmpty([]) 
+        chWarn.collect().ifEmpty([]),
+        skippedPoorAlignment
       )
 }
 

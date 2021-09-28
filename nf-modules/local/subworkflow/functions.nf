@@ -1,7 +1,7 @@
 // From nf-core
 // Function that checks the alignment rate of the STAR output
 // and returns true if the alignment passed and otherwise false
-skippedPoorAlignment = []
+
 def checkStarLog(logs) {
      def percentAligned = 0;
      logs.eachLine { line ->
