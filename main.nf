@@ -440,9 +440,10 @@ process rRNAMapping {
          -p ${task.cpus} \\
          --un ${prefix}_norRNA.fastq \\
          --sam ${params.rrna} \\
-         ${inputOpts} | samtools view -bS - > ${prefix}.bam  2> ${prefix}.log &&
-  gzip -f ${prefix}_norRNA*.fastq
-  rm -f ${prefix}.bam
+         ${inputOpts} \\
+         ${prefix}.sam  2> ${prefix}.log && \
+  gzip -f ${prefix}_norRNA*.fastq 
+  rm -f ${prefix}.sam
   """
 }
 
