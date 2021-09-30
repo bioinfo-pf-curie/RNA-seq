@@ -22,7 +22,7 @@ process rRNAMapping {
 
   output:
   tuple val(prefix), path("*fastq.gz"), emit: chRrnaMappingRes
-  tuple val(prefix), path("*.sam")    , emit: rnaSam
+  // tuple val(prefix), path("*.sam")    , emit: rnaSam
   path "*.log"                        , emit: logs
   path("v_bowtie.txt")                , emit: version
 
@@ -37,6 +37,7 @@ process rRNAMapping {
          ${inputOpts} \\
          ${prefix}.sam  2> ${prefix}.log && \
   gzip -f ${prefix}_norRNA*.fastq 
+  rm -f ${prefix}.sam
   """
 }
 
