@@ -428,7 +428,7 @@ process rRNAMapping {
 
   output:
   set val(prefix), file("*fastq.gz") into chRrnaMappingRes
-  set val(prefix), file("*.sam") into chRrnaSam
+  //set val(prefix), file("*.sam") into chRrnaSam
   file "*.log" into chRrnaLogs
   file("v_bowtie.txt") into chBowtieVersion
 
@@ -440,9 +440,9 @@ process rRNAMapping {
          -p ${task.cpus} \\
          --un ${prefix}_norRNA.fastq \\
          --sam ${params.rrna} \\
-         ${inputOpts} \\
-         ${prefix}.sam  2> ${prefix}.log && \
-  gzip -f ${prefix}_norRNA*.fastq 
+         ${inputOpts} | samtools view -bS - > ${prefix}.bam  2> ${prefix}.log &&
+  gzip -f ${prefix}_norRNA*.fastq
+  rm -f ${prefix}.bam
   """
 }
 
