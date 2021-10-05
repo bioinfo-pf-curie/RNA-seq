@@ -6,7 +6,7 @@ process combineIndentito {
   label 'lowMem'
   label 'identito'
 
-  publishDir "${params.outDir}/preprocessing/metrics/identito", mode: params.publishDirMode
+  publishDir "${params.outDir}/preprocessing/metrics/identito", mode: 'copy'
 
   when:
   !params.skipIdentito && !params.skipQC
@@ -17,7 +17,7 @@ process combineIndentito {
 
   output:
   path("*.{tsv,csv,png}"), emit: clustPolymResults
-  path("*.png")          , emit: optional true lustPolymPlot
+  path("*.png")          , emit: clustPolymPlot
   //file("*.png") optional true emit : clustPolymPlot
 
   script:

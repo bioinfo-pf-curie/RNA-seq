@@ -13,23 +13,22 @@ workflow identitoFlow {
     take:
       chFasta
       chFastaFai
-      polymsCh
-      mdBamPolymCh
-      //ou 
-      //chPolymBed
-      //chBamMd
+      chPolymBed
+      chBamMd
+      chSplan
     // workflow implementation
     main:
       // Identito
       identito(
         chFasta,
         chFastaFai,
-        chPolymBed.collect(),
+        chPolymBed,
         chBamMd
       )
 
       combineIndentito(
-        identito.out.clustPolym.collect()
+        identito.out.clustPolym.collect(),
+        chSplan.collect()
       )
 
     emit:

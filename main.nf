@@ -49,6 +49,7 @@ params.rrna = params.genome ? params.genomes[ params.genome ].rrna ?: false : fa
 params.gtf = params.genome ? params.genomes[ params.genome ].gtf ?: false : false
 params.bed12 = params.genome ? params.genomes[ params.genome ].bed12 ?: false : false
 params.fasta = params.genome ? params.genomes[ params.genome ].fasta ?: false : false
+params.fastaFai = params.genome ? params.genomes[ params.genome ].fastaFai ?: false : false
 params.polym = params.genome ? params.genomes[ params.genome ].polym ?: false : false
 
 // Tools option configuration
@@ -163,6 +164,15 @@ if ( params.fasta ){
     .set { chFasta }
 }else {
   chFasta = Channel.empty()
+}
+
+if ( params.fastaFai ){
+  Channel
+    .fromPath( params.fastaFai )
+    .ifEmpty { exit 1, "Genome fastaFai file not found: ${params.fastaFai}" }
+    .set { chFastaFai }
+}else {
+  chFastaFai = Channel.empty()
 }
 
 if ( params.polym ){
@@ -310,6 +320,7 @@ include { mappingFlow } from './nf-modules/local/subworkflow/mapping'
 include { markdupFlow } from './nf-modules/local/subworkflow/markdup'
 include { polymFlow } from './nf-modules/local/subworkflow/polym'
 include { countsFlow } from './nf-modules/local/subworkflow/counts'
+include { identitoFlow } from './nf-modules/local/subworkflow/ident'
 
 // Processes
 include { getSoftwareVersions } from './nf-modules/local/process/getSoftwareVersions'
@@ -382,6 +393,14 @@ workflow {
         chFasta,
         chPolymBed,
         markdupFlow.out.chBamMd
+      )
+      // SUBWORKFLOW: Identito - Monitoring
+      identitoFlow(
+        chFasta,
+        chFastaFai,
+        chPolymBed,
+        markdupFlow.out.chBamMd,
+        chSplan
       )
 
       // SUBWORKFLOW: Counts
