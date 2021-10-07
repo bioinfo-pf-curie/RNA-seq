@@ -471,6 +471,7 @@ workflow {
         countsFlow.out.chExploratoryAnalysisResults.collect().ifEmpty([]),
         getSoftwareVersions.out.chSoftwareVersionsYaml.collect().ifEmpty([]),
         workflowSummaryMqc.out.chWorkflowSummaryYaml.collect().ifEmpty([]),
+        identitoFlow.out.chClustPolymResults.collect().ifEmpty([]),
         chWarn.collect().ifEmpty([]),
         skippedPoorAlignment
       )

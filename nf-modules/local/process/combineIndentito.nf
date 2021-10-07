@@ -17,8 +17,7 @@ process combineIndentito {
 
   output:
   path("*.{tsv,csv,png}"), emit: clustPolymResults
-  path("*.png")          , emit: clustPolymPlot
-  //file("*.png") optional true emit : clustPolymPlot
+  path("*.png")          , optional:true, emit: clustPolymPlot
 
   script:
   """

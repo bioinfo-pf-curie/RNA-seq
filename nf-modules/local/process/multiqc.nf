@@ -27,6 +27,7 @@ process multiqc {
   path ('exploratoryAnalysis_results/*')
   path ('softwareVersions/*')
   path ('workflowSummary/*')
+  path ('Identito/*')
   path ('workflowSummary/*')
   val skippedPoorAlignment
 

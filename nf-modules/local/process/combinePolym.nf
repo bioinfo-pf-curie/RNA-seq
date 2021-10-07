@@ -5,7 +5,7 @@
 process combinePolym {
   label 'minCpu'
   label 'lowMem'
-  label 'identito'
+  label 'identito_polym'
 
   publishDir "${params.outDir}/identito", mode: 'copy'
 
