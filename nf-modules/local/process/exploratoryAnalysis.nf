@@ -2,10 +2,6 @@
  * Exploratory analysis
  */
 
-// Stage config files
-//pcaHeader = Channel.fromPath("$baseDir/assets/pcaHeader.txt")
-//heatmapHeader = Channel.fromPath("$baseDir/assets/heatmapHeader.txt")
-
 process exploratoryAnalysis {
   label 'r'
   label 'minCpu'
