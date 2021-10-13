@@ -318,9 +318,8 @@ include { qcFlow } from './nf-modules/local/subworkflow/qc'
 include { rseqFlow } from './nf-modules/local/subworkflow/rseq'
 include { mappingFlow } from './nf-modules/local/subworkflow/mapping'
 include { markdupFlow } from './nf-modules/local/subworkflow/markdup'
-include { polymFlow } from './nf-modules/local/subworkflow/polym'
+include { polymIdentitoFlow } from './nf-modules/local/subworkflow/polymIdent'
 include { countsFlow } from './nf-modules/local/subworkflow/counts'
-include { identitoFlow } from './nf-modules/local/subworkflow/ident'
 
 // Processes
 include { getSoftwareVersions } from './nf-modules/local/process/getSoftwareVersions'
@@ -388,19 +387,12 @@ workflow {
         rseqFlow.out.chStrandedResults
       )
 
-      // SUBWORKFLOW: Identito - polym
-      polymFlow(
-        chFasta,
-        chPolymBed,
-        markdupFlow.out.chBamMd
-      )
-      // SUBWORKFLOW: Identito - Monitoring
-      identitoFlow(
+      // SUBWORKFLOW: Identito - polym and Monitoring
+      polymIdentitoFlow(
         chFasta,
         chFastaFai,
         chPolymBed,
-        markdupFlow.out.chBamMd,
-        chSplan
+        markdupFlow.out.chBamMd
       )
 
       // SUBWORKFLOW: Counts
@@ -426,14 +418,14 @@ workflow {
         markdupFlow.out.chPicardVersion.first().ifEmpty([]),
         preseq.out.chPreseqVersion.first().ifEmpty([]),
         countsFlow.out.chMergeCountsVersion.concat(
-          polymFlow.out.chCombinePolymVersion,
+          polymIdentitoFlow.out.chCombinePolymVersion,
           countsFlow.out.chGeneSaturationVersion,
           countsFlow.out.chGeneTypeVersion,
           countsFlow.out.chAnaExpVersion).first().ifEmpty([]),
         rseqFlow.out.chRseqcVersionInferExperiment.first().ifEmpty([]),
         countsFlow.out.chFeaturecountsVersion.first().ifEmpty([]),
         bigWig.out.chDeeptoolsVersion.first().ifEmpty([]),
-        polymFlow.out.chBcftoolsVersion.first().ifEmpty([]),
+        polymIdentitoFlow.out.chBcftoolsVersion.first().ifEmpty([]),
         countsFlow.out.chHtseqVersion.first().ifEmpty([]),
         qualimap.out.chQualimapVersion.first().ifEmpty([])
       )
@@ -467,11 +459,11 @@ workflow {
         markdupFlow.out.chPicardResults.collect().ifEmpty([]),
         countsFlow.out.chCountsLogs.collect().ifEmpty([]),
         countsFlow.out.chCountsPerGenetype.collect().ifEmpty([]),
-        polymFlow.out.chClustPolymResults.collect().ifEmpty([]),
+        polymIdentitoFlow.out.chClustPolymResults.collect().ifEmpty([]),
         countsFlow.out.chExploratoryAnalysisResults.collect().ifEmpty([]),
         getSoftwareVersions.out.chSoftwareVersionsYaml.collect().ifEmpty([]),
         workflowSummaryMqc.out.chWorkflowSummaryYaml.collect().ifEmpty([]),
-        identitoFlow.out.chClustPolymResults.collect().ifEmpty([]),
+        polymIdentitoFlow.out.chClustIdentitoResults.collect().ifEmpty([]),
         chWarn.collect().ifEmpty([]),
         skippedPoorAlignment
       )
