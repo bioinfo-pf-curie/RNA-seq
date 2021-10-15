@@ -37,7 +37,7 @@ workflow polymIdentitoFlow {
         chBamMd
       )
       combineIndentito(
-        identito.out.identitoClustPolym.collect()
+        identito.out.clustPolym.collect()
       )
 
     emit:

@@ -13,10 +13,9 @@ process combineIndentito {
 
   input:
   path(matrix)
-  path(splan)
 
   output:
-  path("*.{tsv,csv,png}"), emit: clustPolymResults
+  path("*.{tsv,csv,png}"), emit: clustIdentitoResults
   path("*.png")          , optional:true, emit: clustPolymPlot
 
   script:
