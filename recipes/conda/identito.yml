@@ -11,4 +11,4 @@ dependencies:
   - conda-forge::r-proxy=0.4_25=r40hcfec24a_0
   - conda-forge::r-pheatmap=1.0.12=r40h6115d3f_2
   - conda-forge::r-rcolorbrewer=1.1_2=r40h6115d3f_1003
-
+  - conda-forge::r-dendextend=1.15.1

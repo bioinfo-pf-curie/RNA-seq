@@ -33,6 +33,7 @@ dependencies:
   - conda-forge::r-gplots=3.1.1=r40hc72bb7e_0
   - conda-forge::r-matrix=1.3_2=r40he454529_0
   - conda-forge::r-proxy=0.4_25=r40hcfec24a_0
+  - conda-forge::r-dendextend=1.15.1=r40hc72bb7e_0
   - conda-forge::r-pheatmap=1.0.12=r40h6115d3f_2
   - conda-forge::r-rcolorbrewer=1.1_2=r40h6115d3f_1003
   - bioconda::bioconductor-dupradar=1.20.0=r40hdfd78af_1
@@ -41,5 +42,4 @@ dependencies:
   - bioconda::bioconductor-edger=3.32.1=r40h399db7b_0
   - bioconda::bioconductor-deseq2=1.30.1=r40h399db7b_0
   - bioconda::bioconductor-tximport=1.18.0=r40hdfd78af_1
-
 
