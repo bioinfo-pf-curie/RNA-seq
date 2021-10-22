@@ -6,30 +6,38 @@
  * include requires tasks 
  */
 include { markDuplicates } from '../process/markDuplicates'
+include { samtoolsIndex } from '../process/samtoolsIndex'
 include { dupradar } from '../process/dupradar'
 
 workflow markdupFlow {
-    // required inputs
-    take:
-      chBam
-      chGtf
-      chStrandedResults
-    // workflow implementation
-    main:
-      // Duplicates
-      markDuplicates(
-        chBam
-      )
+  // required inputs
+  take:
+  bam
+  gtf
+  strandness
 
-      dupradar (
-        markDuplicates.out.BamMd,
-        chGtf.collect(),
-        chStrandedResults
-      )
+  // workflow implementation
+  main:
+  // Duplicates
+  markDuplicates(
+    bam
+  )
 
-    emit:
-      chBamMd = markDuplicates.out.BamMd
-      chPicardResults = markDuplicates.out.PicardResults
-      chPicardVersion = markDuplicates.out.PicardVersion
-      chDupradarResults = dupradar.out.dupradarResults
+  samtoolsIndex(
+    markDuplicates.out.bam
+  )
+
+  if (!params.skipDupradar){
+    dupradar (
+      markDuplicates.out.bam,
+      gtf.collect(),
+      strandness
+    )
+  }
+
+  emit:
+  bam = markDuplicates.out.bam
+  bai = samtoolsIndex.out.bai
+  metrics = markDuplicates.out.metrics
+  chPicardVersion = markDuplicates.out.version
 }

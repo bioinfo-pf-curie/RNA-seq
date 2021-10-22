@@ -1,6 +1,6 @@
   // STAR
 
-  process star {
+  process starAlign {
     tag "$prefix"
     label 'star'
     label 'highCpu'
@@ -23,12 +23,11 @@
     path gtf
 
     output:
-    tuple val(prefix), path ("*Log.final.out"), path ('*.bam'), emit: chStarSam
-    path "*.out"                                              , emit: alignmentLogs
-    path "*.out.tab"                                          , emit: starLogCounts
-    path "*Log.out"                                           , emit: starLog
-    path "*ReadsPerGene.out.tab"                              , emit: starCounts
-    path("v_star.txt")                                        , emit: version
+    tuple val(prefix), path ('*.bam'), emit: bam
+    path ("*out.tab"), emit: countsLogs
+    path ("*out"), emit: logs
+    path ("*ReadsPerGene.out.tab"), emit: counts
+    path ("v_star.txt"), emit: version
 
     script:
     def starCountOpt = params.counts == 'star' && params.gtf ? params.starOptsCounts : ''

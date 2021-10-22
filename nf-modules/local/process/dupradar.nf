@@ -1,5 +1,5 @@
 process dupradar {
-  tag "${bamMd[0]}"
+  tag "${prefix}"
   label 'dupradar'
   label 'minCpu'
   label 'lowMem'
@@ -14,26 +14,23 @@ process dupradar {
       else "$filename"
     }
 
-  when:
-  !params.skipQC && !params.skipDupradar
-
   input:
-  path bamMd
+  tuple val(prefix), path(bam)
   path gtf
-  val parseRes
+  val strandness
 
   output:
   path "*.{pdf,txt}", emit : dupradarResults
 
   script: 
   def dupradarDirection = 0
-  if (parseRes == 'forward'){
+  if (strandness == 'forward'){
       dupradarDirection = 1
-  } else if ((parseRes == 'reverse')){
+  } else if ((strandness == 'reverse')){
       dupradarDirection = 2
   }
-  def paired = params.singleEnd ? 'single' :  'paired'
+  def paired = params.singleEnd ? 'single' : 'paired'
   """
-  dupRadar.r ${bamMd[0]} ${gtf} ${dupradarDirection} ${paired} ${task.cpus}
+  dupRadar.r ${bam} ${gtf} ${dupradarDirection} ${paired} ${task.cpus}
   """
 }

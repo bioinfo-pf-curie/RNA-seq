@@ -6,9 +6,6 @@ process fastqc {
   publishDir "${params.outDir}/fastqc", mode: 'copy',
     saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
 
-  when:
-  !params.skipQC && !params.skipFastqc
-
   input:
   tuple val(prefix), path(reads)
 

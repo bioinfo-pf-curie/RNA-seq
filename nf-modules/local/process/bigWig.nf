@@ -12,26 +12,22 @@ process bigWig {
     	     if ( filename.endsWith(".bigwig") ) "$filename"
              else null}
 
-  when:
-  !params.skipBigwig
-
   input:
-  path(bam)
-  val parseRes
+  tuple val(prefix), path(bam), path(bai)
+  val strandness
 
   output:
-  path('*.bigwig')       , emit: bigWig
-  path("v_deeptools.txt"), emit: chDeeptoolsVersion
+  path('*.bigwig') , emit: bigWig
+  path("v_deeptools.txt"), emit: version
 
   script:
-  prefix = bam[0].toString() - ~/(_sorted)?(.bam)?$/
-  strandOpt = parseRes == 'forward' ? '--filterRNAstrand forward' : parseRes == 'reverse' ? '--filterRNAstrand reverse' : ''
+  strandOpts = strandness == 'forward' ? '--filterRNAstrand forward' : strandness == 'reverse' ? '--filterRNAstrand reverse' : ''
   """
   bamCoverage --version &> v_deeptools.txt
-  bamCoverage -b ${bam[0]} \\
+  bamCoverage -b ${bam} \\
               -o ${prefix}_cpm.bigwig \\
               -p ${task.cpus} \\
-              ${strandOpt} \\
+              ${strandOpts} \\
 	      --normalizeUsing CPM \\
 	      --skipNonCoveredRegions
   """

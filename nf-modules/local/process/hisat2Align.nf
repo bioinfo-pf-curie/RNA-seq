@@ -14,27 +14,27 @@ process hisat2Align {
     tuple val(prefix), path(reads)
     path hs2Index
     path alignmentSplicesites
-    val parseRes
+    val strandness
 
     output:
-    path "${prefix}.bam"                , emit: hisat2Bam
-    path "${prefix}.hisat2_summary.txt" , emit: alignmentLogs
+    path "${prefix}.bam"                , emit: bam
+    path "${prefix}.hisat2_summary.txt" , emit: logs
     path ("v_hisat2.txt")               , emit: version
 
     script:
     indexBase = hs2Index[0].toString() - ~/.\d.ht2/
-    def rnastrandness = ''
-    if (parseRes=='forward'){
-        rnastrandness = params.singleEnd ? '--rna-strandness F' : '--rna-strandness FR'
-    } else if (parseRes=='reverse'){
-        rnastrandness = params.singleEnd ? '--rna-strandness R' : '--rna-strandness RF'
+    def strandOpts = ''
+    if (strandness=='forward'){
+      strandOpts = params.singleEnd ? '--rna-strandness F' : '--rna-strandness FR'
+    } else if (strandness=='reverse'){
+      strandOpts = params.singleEnd ? '--rna-strandness R' : '--rna-strandness RF'
     }
     inputOpts = params.singleEnd ? "-U ${reads}" : "-1 ${reads[0]} -2 ${reads[1]}"
     """
     hisat2 --version &> v_hisat2.txt
     hisat2 -x $indexBase \\
            ${inputOpts} \\
-           $rnastrandness \\
+           ${strandOpts} \\
            --known-splicesite-infile $alignmentSplicesites \\
            -p ${task.cpus} \\
            --met-stderr \\

@@ -1,5 +1,5 @@
 
-process prepRseqc {
+process rseqcPrep {
   tag "${prefix}"
   label 'bowtie2'
   label 'medCpu'

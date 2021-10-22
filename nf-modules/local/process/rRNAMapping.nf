@@ -13,16 +13,12 @@ process rRNAMapping {
       else null
     }
 
-  when:
-  !params.skipRrna && params.rrna
-
   input:
   tuple val(prefix), path(reads)
   path annot
 
   output:
-  tuple val(prefix), path("*fastq.gz"), emit: chRrnaMappingRes
-  // tuple val(prefix), path("*.sam")    , emit: rnaSam
+  tuple val(prefix), path("*fastq.gz"), emit: filteredReads
   path "*.log"                        , emit: logs
   path("v_bowtie.txt")                , emit: version
 

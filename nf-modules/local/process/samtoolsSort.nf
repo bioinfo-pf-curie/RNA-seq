@@ -1,4 +1,4 @@
-process starSort {
+process samtoolsSort {
     tag "$prefix"
     label 'samtools'
     label 'medCpu'
@@ -6,12 +6,11 @@ process starSort {
     publishDir "${params.outDir}/mapping", mode: 'copy'
  
     input:
-    tuple val(prefix), path(LogFinalOut), path (starBam)
+    tuple val(prefix), path (bam)
 
     output:
-    tuple path("${prefix}Log.final.out"), path ("*.{bam,bam.bai}"), emit: starAligned
-    path("v_samtools.txt")                                        , emit: version
-    path "${prefix}_sorted.bam.bai"
+    tuple val(prefix), path ("*_sorted.bam"), emit: bam
+    path("v_samtools.txt") , emit: version
 
     script:
     """
@@ -20,8 +19,7 @@ process starSort {
         -@  ${task.cpus}  \\
         -m ${params.sortMaxMemory} \\
         -o ${prefix}_sorted.bam  \\
-        ${starBam}
-    samtools index ${prefix}_sorted.bam
+        ${bam}
     """
-    }
+}
     

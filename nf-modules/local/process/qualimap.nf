@@ -9,17 +9,14 @@ process qualimap {
   label 'medMem'
   publishDir "${params.outDir}/qualimap/" , mode: 'copy'
 
-  when:
-  !params.skipQualimap
-
   input:
-  path bam
+  tuple val(prefix), path(bam), path(bai)
   path gtf
   val stranded
 
   output:
-  path ("${bam[0].baseName}"), emit: chQualimapResults
-  path ("v_qualimap.txt")    , emit: chQualimapVersion
+  path ("${bam[0].baseName}"), emit: results
+  path ("v_qualimap.txt")    , emit: version
 
   script:
   peOpts = params.singleEnd ? '' : '-pe'
@@ -36,7 +33,7 @@ process qualimap {
   qualimap \\
     --java-mem-size=$memory \\
     rnaseq \\
-    -bam $bam[0] \\
+    -bam $bam \\
     -gtf $gtf \\
     -p $strandnessOpts \\
     $peOpts \\

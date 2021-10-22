@@ -14,9 +14,9 @@ process rseqc {
     path bed12 
 
     output:
-    path "${prefix}*.{txt,pdf,r,xls}", emit: rseqcResults
+    path "${prefix}*.{txt,pdf,r,xls}", emit: rseqcOutputs
     path("v_rseqc.txt")              , emit: version
-    stdout emit: strandnessResults
+    stdout emit: stranded
 
     script:
     """

@@ -13,11 +13,11 @@ process preseq {
   !params.skipQC && !params.skipSaturation
 
   input:
-  path bam
+  tuple val(prefix), path(bam), path(bai)
 
   output:
-  path "*ccurve.txt"  , emit: chPreseqResults
-  path("v_preseq.txt"), emit: chPreseqVersion
+  path "*ccurve.txt"  , emit: results
+  path("v_preseq.txt"), emit: version
 
   script:
   peOpts = params.singleEnd ? '' : '-pe'
