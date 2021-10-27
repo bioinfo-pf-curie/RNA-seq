@@ -24,16 +24,16 @@
 
     output:
     tuple val(prefix), path ('*.bam'), emit: bam
-    path ("*out.tab"), emit: countsLogs
+    path ("*out.tab"), optional: true, emit: countsLogs
     path ("*out"), emit: logs
-    path ("*ReadsPerGene.out.tab"), emit: counts
-    path ("v_star.txt"), emit: version
+    path ("*ReadsPerGene.out.tab"), optional: true, emit: counts
+    path ("versions.txt"), emit: versions
 
     script:
     def starCountOpt = params.counts == 'star' && params.gtf ? params.starOptsCounts : ''
     def starGtfOpt = params.gtf ? "--sjdbGTFfile $gtf" : ''
     """
-    STAR --version &> v_star.txt
+    echo \$(STAR --version 2>&1) > versions.txt
     STAR --genomeDir $index \\
          ${starGtfOpt} \\
          --readFilesIn $reads  \\
@@ -45,6 +45,7 @@
          --outTmpDir "${params.tmpDir}/rnaseq_\$(date +%d%s%S%N)"\\
          --outFileNamePrefix $prefix  \\
          --outSAMattrRGline ID:$prefix SM:$prefix LB:Illumina PL:Illumina  \\
+         --outSAMunmapped Within \\
          ${params.starOptions} \\
 	 --limitOutSJcollapsed 5000000 \\
 	 ${starCountOpt}

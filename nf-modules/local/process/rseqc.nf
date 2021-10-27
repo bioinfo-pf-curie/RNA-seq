@@ -15,12 +15,12 @@ process rseqc {
 
     output:
     path "${prefix}*.{txt,pdf,r,xls}", emit: rseqcResults
-    path("v_rseqc.txt")              , emit: version
+    path("versions.txt")             , emit: versions
     stdout emit: strandnessResults
 
     script:
     """
-    infer_experiment.py --version &> v_rseqc.txt    
+    echo \$(infer_experiment.py --version | awk '{print "rseqc "\$2}') > versions.txt    
     infer_experiment.py -i $bamRseqc -r $bed12 > ${prefix}.txt
     parse_rseq_output.sh ${prefix}.txt > ${prefix}_strandness.txt
     cat ${prefix}_strandness.txt

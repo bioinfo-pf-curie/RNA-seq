@@ -1,7 +1,9 @@
-// Counts
+/* 
+ * FeatureCounts
+ */
 
 process featureCounts {
-  tag "${bam.baseName}"
+  tag "${prefix}"
   label 'featurecounts'
   label 'medCpu'
   label 'medMem'
@@ -12,29 +14,26 @@ process featureCounts {
       else "$filename"
    }
 
-  when:
-  params.counts == 'featureCounts'
-
   input:
-  path bam
+  tuple val(prefix), path(bam), path(bai) // Channel [prefix, bam, bai]
   path gtf
-  val parseRes
+  val strandness
 
   output:
-  path "${bam.baseName}_counts.csv"        , emit: counts
-  path "${bam.baseName}_counts.csv.summary", emit: logs
-  path "v_featurecounts.txt"               , emit: version
+  path "${prefix}_counts.csv"        , emit: counts
+  path "${prefix}_counts.csv.summary", emit: logs
+  path "versions.txt"                , emit: versions
 
   script:
   def featureCountsDirection = 0
-  if (parseRes == 'forward'){
+  if (strandness == 'forward'){
       featureCountsDirection = 1
-  } else if ((parseRes == 'reverse')){
+  } else if ((strandness == 'reverse')){
       featureCountsDirection = 2
   }
   """
-  featureCounts -v &> v_featurecounts.txt
-  featureCounts ${params.featurecountsOpts} -T ${task.cpus} -a ${gtf} -o ${bam.baseName}_counts.csv -p -s ${featureCountsDirection} ${bam}
+  echo \$(featureCounts -v 2>&1 | sed '/^\$/d') > versions.txt
+  featureCounts ${params.featurecountsOpts} -T ${task.cpus} -a ${gtf} -o ${prefix}_counts.csv -p -s ${featureCountsDirection} ${bam}
   """
 }
 

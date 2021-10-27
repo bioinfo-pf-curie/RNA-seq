@@ -20,12 +20,12 @@ process rRNAMapping {
   output:
   tuple val(prefix), path("*fastq.gz"), emit: filteredReads
   path "*.log"                        , emit: logs
-  path("v_bowtie.txt")                , emit: version
+  path("versions.txt")                , emit: versions
 
   script:
   inputOpts = params.singleEnd ? "${reads}" : "-1 ${reads[0]} -2 ${reads[1]}"
   """
-  bowtie --version &> v_bowtie.txt
+  echo \$(bowtie --version | awk 'NR==1{print "bowtie "\$3}') > versions.txt
   bowtie ${params.bowtieOpts} \\
          -p ${task.cpus} \\
          --un ${prefix}_norRNA.fastq \\

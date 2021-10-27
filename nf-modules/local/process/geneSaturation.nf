@@ -15,12 +15,12 @@ process geneSaturation {
   path inputCounts
 
   output:
-  path "*gcurve.txt", emit: genesatResults
-  path("v_R.txt")   , emit: version
+  path "*gcurve.txt", emit: results
+  path("versions.txt"), emit: versions
 
   script:
   """
-  R --version &> v_R.txt
+  echo \$(R --version | awk 'NR==1{print \$1,\$3}') > versions.txt
   gene_saturation.r $inputCounts counts.gcurve.txt
   """
 }

@@ -18,12 +18,12 @@ process bigWig {
 
   output:
   path('*.bigwig') , emit: bigWig
-  path("v_deeptools.txt"), emit: version
+  path("versions.txt"), emit: versions
 
   script:
   strandOpts = strandness == 'forward' ? '--filterRNAstrand forward' : strandness == 'reverse' ? '--filterRNAstrand reverse' : ''
   """
-  bamCoverage --version &> v_deeptools.txt
+  echo \$(bamCoverage --version) > versions.txt
   bamCoverage -b ${bam} \\
               -o ${prefix}_cpm.bigwig \\
               -p ${task.cpus} \\

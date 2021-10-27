@@ -18,18 +18,18 @@ process markDuplicates {
 
   output:
   tuple val(prefix), path('*markDups.bam'), emit: bam
-  path('*markDups_metrics.txt')  , emit: metrics
-  path('v_picard.txt')           , emit: version
+  path('*markDups_metrics.txt'), emit: metrics
+  path('versions.txt'), emit: versions
 
   script:
   markdupMemOption = "\"-Xms" +  (task.memory.toGiga() / 2).trunc() + "g -Xmx" + (task.memory.toGiga() - 1) + "g\""
   """
-  echo \$(picard MarkDuplicates --version 2>&1) &> v_picard.txt
+  echo \$(picard MarkDuplicates --version 2>&1 | sed -e 's/Version:/picard /') > versions.txt
   picard ${markdupMemOption} -Djava.io.tmpdir=${params.tmpDir} MarkDuplicates \\
       MAX_RECORDS_IN_RAM=50000 \\
       INPUT=${bam} \\
-      OUTPUT=${bam.baseName}.markDups.bam \\
-      METRICS_FILE=${bam[0].baseName}.markDups_metrics.txt \\
+      OUTPUT=${prefix}.markDups.bam \\
+      METRICS_FILE=${prefix}.markDups_metrics.txt \\
       REMOVE_DUPLICATES=false \\
       ASSUME_SORTED=true \\
       PROGRAM_RECORD_ID='null' \\

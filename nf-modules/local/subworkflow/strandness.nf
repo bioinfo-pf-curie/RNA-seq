@@ -1,22 +1,21 @@
 /* 
- * define the data analysis workflow 
+ * Strandness workflow
  */
 
-/* 
- * include requires tasks 
- */
 include { saveStrandness } from '../process/saveStrandness'
 include { rseqcPrep } from '../process/rseqcPrep'
 include { rseqc } from '../process/rseqc'
 
 workflow strandnessFlow {
-  // required inputs
-  take:
-  reads
-  bed12
 
-  // workflow implementation
+  take:
+  reads // Channel [prefix, [reads]]
+  bed12 // Channel path(bed12)
+
+
   main:
+  chVersions = Channel.empty()
+
   // if --stranded option is specified by the user
   if (params.stranded == 'reverse' || params.stranded == 'no' || params.stranded == 'yes'){
 
@@ -32,26 +31,21 @@ workflow strandnessFlow {
          return tuple(key)
       }
       .set { strandnessResults }
-
-    bowtie2Version = Channel.empty()
-    rseqcVersionInferExperiment = Channel.empty()
     strandnessOutputFiles = saveStrandness.out.savedStrandness
   }
 
   // auto detection of strandness status
   if (params.stranded == 'auto' && params.bed12){
-
     rseqcPrep(
       reads
     )
+    chVersions = chVersions.mix(rseqcPrep.out.versions)
 
     rseqc(
       rseqcPrep.out.bamRseqc,
       bed12.collect()
     )
-
-    bowtie2Version  = rseqcPrep.out.bowtie2Version 
-    rseqcVersionInferExperiment = rseqc.out.version
+    chVersions = chVersions.mix(rseqc.out.versions)
     strandnessResults = rseqc.out.strandnessResults
     strandnessOutputFiles = rseqc.out.rseqcResults
   } else {
@@ -61,6 +55,5 @@ workflow strandnessFlow {
   emit:
   strandnessResults
   strandnessOutputFiles
-  bowtie2Version
-  rseqcVersionInferExperiment    
+  versions = chVersions
 }

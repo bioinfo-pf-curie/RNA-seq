@@ -1,9 +1,9 @@
 /*
- * Counts
+ * HTSeqCounts
  */
 
-process HTseqCounts {
-  tag "${bam}"
+process htseqCounts {
+  tag "${prefix}"
   label 'htseq'
   label 'medCpu'
   label 'medMem'
@@ -14,27 +14,25 @@ process HTseqCounts {
       else "$filename"
     }
   
-  when:
-  params.counts == 'HTseqCounts'
-
   input:
-  path bam
+  tuple val(prefix), path(bam), path(bai)
   path gtf
-  val parseRes
+  val strandness
 
   output: 
-  path "*_counts.csv", emit: counts
-  path("v_htseq.txt"), emit: version 
+  path("${prefix}_counts.csv"), emit: counts
+  path("${prefix}_counts.csv"), emit: logs
+  path("versions.txt"), emit: versions 
 
   script:
   def strandedOpt = '-s no' 
-  if (parseRes == 'forward'){
+  if (strandness == 'forward'){
       strandedOpt= '-s yes'
-  } else if ((parseRes == 'reverse')){
+  } else if ((strandness == 'reverse')){
       strandedOpt= '-s reverse'
   }
   """
-  htseq-count -h | grep version  &> v_htseq.txt
-  htseq-count ${params.htseqOpts} ${strandedOpt} ${bam[0]} $gtf > ${bam[0].baseName}_counts.csv
+  echo \$(htseq-count --version | awk '{print "HTSeq "\$1}') > versions.txt
+  htseq-count ${params.htseqOpts} ${strandedOpt} ${bam} $gtf > ${prefix}_counts.csv
   """
 }

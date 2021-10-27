@@ -10,11 +10,11 @@ process samtoolsIndex {
 
   output:
   tuple val(prefix), path("*bam.bai"), emit: bai
-  path("v_samtools.txt") , emit: version
+  path("versions.txt") , emit: versions
 
   script:
   """
-  samtools --version &> v_samtools.txt
+  echo \$(samtools --version | head -1) > versions.txt
   samtools index ${bam}
   """
 }

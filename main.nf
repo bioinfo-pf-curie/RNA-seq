@@ -7,8 +7,6 @@ You can use, modify and/ or redistribute the software under the terms of license
 The software is distributed in the hope that it will be useful, but "AS IS" WITHOUT ANY WARRANTY OF ANY KIND.
 Users are therefore encouraged to test the software's suitability as regards their requirements in conditions enabling the security of their systems and/or data.
 The fact that you are presently reading this means that you have had knowledge of the license and that you accept its terms.
-
-This script is based on the nf-core guidelines. See https://nf-co.re/ for more information
 */
 
 
@@ -25,7 +23,7 @@ This script is based on the nf-core guidelines. See https://nf-co.re/ for more i
 nextflow.enable.dsl=2
 
 include { helpMessage; checkAlignmentPercent } from './lib/functions'
-// Show help emssage
+// Show help message
 if (params.help){
   helpMessage()
   exit 0
@@ -268,8 +266,8 @@ if (params.samplePlan){
 
 // Header log info
 if ("${workflow.manifest.version}" =~ /dev/ ){
-   devMess = file("$baseDir/assets/devMessage.txt")
-   log.info devMess.text
+  devMess = file("$baseDir/assets/devMessage.txt")
+  log.info devMess.text
 }
 
 log.info """=======================================================
@@ -312,13 +310,20 @@ summary['Config Profile'] = workflow.profile
 log.info summary.collect { k,v -> "${k.padRight(15)}: $v" }.join("\n")
 log.info "========================================="
 
+/*
+ * INCLUDE
+ */ 
+
 // Workflows
 include { strandnessFlow } from './nf-modules/local/subworkflow/strandness'
 include { mappingStarFlow } from './nf-modules/local/subworkflow/mappingStar'
 include { mappingHisat2Flow } from './nf-modules/local/subworkflow/mappingHisat2'
 include { markdupFlow } from './nf-modules/local/subworkflow/markdup'
-include { polymIdentitoFlow } from './nf-modules/local/subworkflow/polymIdent'
-include { countsFlow } from './nf-modules/local/subworkflow/counts'
+include { identitoFlow } from './nf-modules/local/subworkflow/identito'
+include { featureCountsFlow } from './nf-modules/local/subworkflow/featureCounts'
+include { htseqCountsFlow } from './nf-modules/local/subworkflow/htseqCounts'
+include { starCountsFlow } from './nf-modules/local/subworkflow/starCounts'
+include { geneCountsAnalysisFlow } from './nf-modules/local/subworkflow/geneCountsAnalysis'
 
 // Processes
 include { getSoftwareVersions } from './nf-modules/local/process/getSoftwareVersions'
@@ -331,8 +336,13 @@ include { preseq } from './nf-modules/local/process/preseq'
 include { fastqc } from './nf-modules/local/process/fastqc'
 include { rRNAMapping } from './nf-modules/local/process/rRNAMapping'
 
-// WORKFLOW principal
+/*
+ * WORKFLOW 
+ */
+
 workflow {
+  chVersions = Channel.empty()
+
   main:
 
     // subroutines
@@ -346,13 +356,15 @@ workflow {
       fastqc(
         chRawReads
       )
+      chVersions = chVersions.mix(fastqc.out.versions)
     }
 
-    // SUBWORKFLOW: Strandness Rseq
+    // SUBWORKFLOW: Strandness rseqc
     strandnessFlow(
       chRawReads,
       chBedRseqc
     )
+    chVersions = chVersions.mix(strandnessFlow.out.versions)
 
     // PROCESS: rRNA mapping 
     if (!params.skipRrna && params.rrna){
@@ -361,6 +373,7 @@ workflow {
         chRrnaAnnot.collect()
       )
       chFilteredReads = rRNAMapping.out.filteredReads
+      chVersions = chVersions.mix(rRNAMapping.out.versions)
     }else{
       chFilteredReads = chRawReads
     }
@@ -374,7 +387,9 @@ workflow {
       )
       chAlignedBam = mappingStarFlow.out.bam
       chAlignedBai = mappingStarFlow.out.bai
+      chAlignedLogs = mappingStarFlow.out.logs
       chAlignedFlagstat = mappingStarFlow.out.flagstat
+      chVersions = chVersions.mix(mappingStarFlow.out.versions)
     }
 
     // SUBWORKFLOW: HISAT2 mapping      
@@ -383,11 +398,13 @@ workflow {
         chFilteredReads,
         chHisat2Index,
         chGtf,
-        rseqFlow.out.strandnessResults
+        strandnessFlow.out.strandnessResults
       )
       chAlignedBam = mappingHisat2Flow.out.bam
       chAlignedBai = mappingHisat2Flow.out.bai
+      chAlignedLogs = mappingHisat2Flow.out.logs
       chAlignedFlagstat = mappingHisat2Flow.out.flagstat
+      chVersions = chVersions.mix(mappingHisat2Flow.out.versions)
     }
 
     // Filter removes all 'aligned' channels that fail the check
@@ -402,6 +419,7 @@ workflow {
         chBamPassed,
         strandnessFlow.out.strandnessResults
       )
+      chVersions = chVersions.mix(bigWig.out.versions)
     }
 
     // PROCESS : Qualimap
@@ -411,6 +429,7 @@ workflow {
         chGtf.collect(),
         strandnessFlow.out.strandnessResults
       )
+      chVersions = chVersions.mix(qualimap.out.versions)
     }
 
     // PROCESS : Saturation curves
@@ -418,6 +437,7 @@ workflow {
       preseq(
         chBamPassed
       )
+      chVersions = chVersions.mix(preseq.out.versions)
     }
       
     // SUBWORKFLOW: Duplicates
@@ -425,88 +445,110 @@ workflow {
         chBamPassed,
         chGtf,
         strandnessFlow.out.strandnessResults
-     )
+    )
+    chVersions = chVersions.mix(markdupFlow.out.versions)
 
-      // SUBWORKFLOW: Identito - polym and Monitoring
-      //polymIdentitoFlow(
-      //  chFasta,
-      //  chFastaFai,
-      //  chPolymBed,
-      //  markdupFlow.out.chBamMd
-      //)
+    // SUBWORKFLOW: Identito - polym and Monitoring
+    if (!params.skipIdentito){
+      identitoFlow(
+          markdupFlow.out.bam,
+          chFasta,
+          chFastaFai,
+          chPolymBed
+      )
+      chVersions = chVersions.mix(identitoFlow.out.versions)
+    }
 
-      // SUBWORKFLOW: Counts
-      //countsFlow(
-      //  mappingFlow.out.chBam,
-      //  chGtf,
-      //  rseqFlow.out.chStrandedResults,
-      //  mappingFlow.out.chStarCounts,
-      //  mappingFlow.out.chStarLogCounts,
-      //  chPcaHeader,
-      //  chHeatmapHeader
-      //)
+    // SUBWORKFLOW: Counts
+    if(params.counts == 'featureCounts'){
+      featureCountsFlow(
+        chBamPassed,
+        chGtf.collect(),
+        strandnessFlow.out.strandnessResults
+      )
+      chCounts = featureCountsFlow.out.counts
+      chCountsTpm = featureCountsFlow.out.tpm
+      chCountsLogs = featureCountsFlow.out.logs
+      chVersions = chVersions.mix(featureCountsFlow.out.versions)
+    } else if (params.counts == 'HTseqCounts'){
+      htseqCountsFlow (
+        chBamPassed,
+        chGtf.collect(),
+        strandnessFlow.out.strandnessResults
+      )
+      chCounts = htseqCountsFlow.out.counts
+      chCountsTpm = htseqCountsFlow.out.tpm
+      chCountsLogs = htseqCountsFlow.out.logs
+      chVersions = chVersions.mix(htseqCountsFlow.out.versions)
+     } else if (params.counts == 'star'){
+       starCountsFlow (
+         mappingStarFlow.out.counts,
+         mappingStarFlow.out.logs,
+         chGtf.collect(),
+         strandnessFlow.out.strandnessResults
+       )
+      chCounts = starCountsFlow.out.counts
+      chCountsTpm = starCountsFlow.out.tpm
+      chCountsLogs = starCountsFlow.out.logs
+      chVersions = chVersions.mix(starCountsFlow.out.versions)
+     }
 
-      // MultiQC
+    // SUBWORKFLOW: gene counts qc
+    geneCountsAnalysisFlow(
+      chCounts,
+      chCountsTpm,
+      chGtf,
+      chPcaHeader,
+      chHeatmapHeader
+    )
+    chVersions = chVersions.mix(geneCountsAnalysisFlow.out.versions)
 
-      //getSoftwareVersions(
-      //  qcFlow.out.chFastqcVersion.first().ifEmpty([]),
-      //  mappingFlow.out.chStarVersion.first().ifEmpty([]),
-      //  mappingFlow.out.chHisat2Version.first().ifEmpty([]),
-      //  mappingFlow.out.chBowtieVersion.first().ifEmpty([]),
-      //  rseqFlow.out.chBowtie2Version.first().ifEmpty([]),
-      //  mappingFlow.out.chSamtoolsVersionSort.first().ifEmpty([]),
-      //  markdupFlow.out.chPicardVersion.first().ifEmpty([]),
-      //  preseq.out.chPreseqVersion.first().ifEmpty([]),
-      //  countsFlow.out.chMergeCountsVersion.concat(
-      //    polymIdentitoFlow.out.chCombinePolymVersion,
-      //    countsFlow.out.chGeneSaturationVersion,
-      //    countsFlow.out.chGeneTypeVersion,
-      //    countsFlow.out.chAnaExpVersion).first().ifEmpty([]),
-      //  rseqFlow.out.chRseqcVersionInferExperiment.first().ifEmpty([]),
-      //  countsFlow.out.chFeaturecountsVersion.first().ifEmpty([]),
-      //  bigWig.out.chDeeptoolsVersion.first().ifEmpty([]),
-      //  polymIdentitoFlow.out.chBcftoolsVersion.first().ifEmpty([]),
-      //  countsFlow.out.chHtseqVersion.first().ifEmpty([]),
-      //  qualimap.out.chQualimapVersion.first().ifEmpty([])
-      //)
+    // MultiQC
+    if (!params.skipMultiQC){
 
-      //workflowSummaryMqc(
-      //  summary
-      //)
+      if (!params.skipSoftVersions){
+        getSoftwareVersions(
+          chVersions.unique().collectFile()
+        )
+      }
 
-      //if (skippedPoorAlignment.size() > 0){
-      //  Channel.fromList(skippedPoorAlignment)
-      //         .flatMap{ it -> it + ": Poor alignment rate. Sample discarded"}
-      //         .collectFile(name: 'warnings.txt', newLine: true)
-      //         .set{chWarn}
-      //}else{
-      //   chWarn = Channel.empty()
-      //}
+      workflowSummaryMqc(
+        summary
+      )
+
+    if (skippedPoorAlignment.size() > 0){
+      Channel.fromList(skippedPoorAlignment)
+             .flatMap{ it -> it + ": Poor alignment rate. Sample discarded"}
+             .collectFile(name: 'warnings.txt', newLine: true)
+             .set{chWarn}
+    }else{
+       chWarn = Channel.empty()
+    }
     
-      //multiqc(
-      //  customRunName,
-      //  chSplan.collect(),
-      //  chMetadata.ifEmpty([]),
-      //  chMultiqcConfig.ifEmpty([]),
-      //  qcFlow.out.chFastqcResults.collect().ifEmpty([]),
-      //  mappingFlow.out.chRrnaLogs.collect().ifEmpty([]),
-      //  mappingFlow.out.chAlignmentLogs.collect().ifEmpty([]),
-      //  rseqFlow.out.chStrandnessResults.collect().ifEmpty([]),
-      //  qualimap.out.chQualimapResults.collect().ifEmpty([]),
-      //  preseq.out.chPreseqResults.collect().ifEmpty([]),
-      //  countsFlow.out.chGenesatResults.collect().ifEmpty([]),
-      //  markdupFlow.out.chDupradarResults.collect().ifEmpty([]),
-      //  markdupFlow.out.chPicardResults.collect().ifEmpty([]),
-      //  countsFlow.out.chCountsLogs.collect().ifEmpty([]),
-      //  countsFlow.out.chCountsPerGenetype.collect().ifEmpty([]),
-      //  polymIdentitoFlow.out.chClustPolymResults.collect().ifEmpty([]),
-      //  countsFlow.out.chExploratoryAnalysisResults.collect().ifEmpty([]),
-      //  getSoftwareVersions.out.chSoftwareVersionsYaml.collect().ifEmpty([]),
-      //  workflowSummaryMqc.out.chWorkflowSummaryYaml.collect().ifEmpty([]),
-      //  polymIdentitoFlow.out.chClustIdentitoResults.collect().ifEmpty([]),
-      //  chWarn.collect().ifEmpty([]),
-      //  skippedPoorAlignment
-      //)
+    multiqc(
+      customRunName,
+      chSplan.collect(),
+      chMetadata.ifEmpty([]),
+      chMultiqcConfig.ifEmpty([]),
+      fastqc.out.results.collect().ifEmpty([]),
+      rRNAMapping.out.logs.collect().ifEmpty([]),
+      chAlignedLogs.collect().ifEmpty([]),
+      strandnessFlow.out.strandnessOutputFiles.collect().ifEmpty([]),
+      qualimap.out.results.collect().ifEmpty([]),
+      preseq.out.results.collect().ifEmpty([]),
+      identitoFlow.out.results.collect().ifEmpty([]),
+      markdupFlow.out.picardMetrics.collect().ifEmpty([]),
+      markdupFlow.out.dupradarResults.collect().ifEmpty([]),
+      chCountsLogs.collect().ifEmpty([]),
+      geneCountsAnalysisFlow.out.geneSaturationResults.collect().ifEmpty([]),
+      geneCountsAnalysisFlow.out.countsPerGenetype.collect().ifEmpty([]),
+      geneCountsAnalysisFlow.out.expAnalysisResults.collect().ifEmpty([]),
+      getSoftwareVersions.out.versionsYaml.collect().ifEmpty([]),
+      workflowSummaryMqc.out.chWorkflowSummaryYaml.collect().ifEmpty([]),
+      chWarn.collect().ifEmpty([])
+      //skippedPoorAlignment
+    )
+  }
 
   //workflow.onComplete {}
 }

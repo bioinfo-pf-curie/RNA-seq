@@ -16,12 +16,12 @@ process getCountsPerGeneType {
   path gtf
 
   output:
-  path "*genetype.txt", emit: countsPerGenetype
-  path("v_R.txt")     , emit: version
+  path "*genetype.txt", emit: results
+  path("versions.txt"), emit: versions
 
   script:
   """
-  R --version &> v_R.txt
+  echo \$(R --version | awk 'NR==1{print \$1,\$3}') > versions.txt
   gene_type_expression.r ${tpmGenetype} ${gtf} counts_genetype.txt
   """
 }

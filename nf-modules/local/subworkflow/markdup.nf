@@ -1,31 +1,30 @@
 /* 
- * define the data analysis workflow 
+ * MarkDuplicates
  */
 
-/* 
- * include requires tasks 
- */
 include { markDuplicates } from '../process/markDuplicates'
 include { samtoolsIndex } from '../process/samtoolsIndex'
 include { dupradar } from '../process/dupradar'
 
 workflow markdupFlow {
-  // required inputs
+
   take:
   bam
   gtf
   strandness
 
-  // workflow implementation
   main:
-  // Duplicates
+  chVersions = Channel.empty()
+
   markDuplicates(
     bam
   )
+  chVersions = chVersions.mix(markDuplicates.out.versions)
 
   samtoolsIndex(
     markDuplicates.out.bam
   )
+  chVersions = chVersions.mix(samtoolsIndex.out.versions)
 
   if (!params.skipDupradar){
     dupradar (
@@ -33,11 +32,15 @@ workflow markdupFlow {
       gtf.collect(),
       strandness
     )
+    chDupradarResults = dupradar.out.results
+    chVersions = chVersions.mix(dupradar.out.versions)
+  }else{
+    chDupradarResults = Channel.empty()
   }
 
   emit:
-  bam = markDuplicates.out.bam
-  bai = samtoolsIndex.out.bai
-  metrics = markDuplicates.out.metrics
-  chPicardVersion = markDuplicates.out.version
+  bam = markDuplicates.out.bam.join(samtoolsIndex.out.bai)
+  picardMetrics = markDuplicates.out.metrics
+  dupradarResults = chDupradarResults
+  versions = chVersions
 }

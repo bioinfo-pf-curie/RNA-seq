@@ -20,7 +20,8 @@ process dupradar {
   val strandness
 
   output:
-  path "*.{pdf,txt}", emit : dupradarResults
+  path "${prefix}*.{pdf,txt}", emit : results
+  path("versions.txt"), emit: versions
 
   script: 
   def dupradarDirection = 0
@@ -31,6 +32,7 @@ process dupradar {
   }
   def paired = params.singleEnd ? 'single' : 'paired'
   """
+  echo \$(R --version | awk 'NR==1{print \$1,\$3}') > versions.txt
   dupRadar.r ${bam} ${gtf} ${dupradarDirection} ${paired} ${task.cpus}
   """
 }

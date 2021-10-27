@@ -10,11 +10,11 @@ process samtoolsFlagstat {
 
   output:
   tuple val(prefix), path("*flagstats"), emit: stats
-  path("v_samtools.txt") , emit: version
+  path("versions.txt") , emit: versions
 
   script:
   """
-  samtools --version &> v_samtools.txt
+  echo \$(samtools --version | head -1) > versions.txt
   samtools flagstat ${bam} > ${prefix}.flagstats
   """
 }

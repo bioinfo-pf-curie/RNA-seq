@@ -1,25 +1,23 @@
 /*
  * IDENTITO MONITORING
  */
-process combineIndentito {
+process identitoCombine {
   label 'lowCpu'
   label 'lowMem'
   label 'identito'
 
-  publishDir "${params.outDir}/preprocessing/metrics/identito", mode: 'copy'
-
-  when:
-  !params.skipIdentito && !params.skipQC
+  publishDir "${params.outDir}/identito", mode: 'copy'
 
   input:
   path(matrix)
 
   output:
-  path("*.{tsv,csv,png}"), emit: clustIdentitoResults
-  path("*.png")          , optional:true, emit: clustPolymPlot
+  path("*.{tsv,csv,png}"), emit: results
+  path("versions.txt"), emit: versions
 
   script:
   """
+  echo \$(R --version | awk 'NR==1{print \$1,\$3}') > versions.txt
   (head -1 "${matrix[0]}"; tail -n +2 -q *matrix.tsv) > identito_polym.tsv
   apComputeClust.R --input identito_polym.tsv --dist ejaccard
   """

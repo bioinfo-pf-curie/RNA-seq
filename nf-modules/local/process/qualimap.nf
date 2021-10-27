@@ -15,8 +15,8 @@ process qualimap {
   val stranded
 
   output:
-  path ("${bam[0].baseName}"), emit: results
-  path ("v_qualimap.txt")    , emit: version
+  path ("${prefix}"), emit: results
+  path ("versions.txt")      , emit: versions
 
   script:
   peOpts = params.singleEnd ? '' : '-pe'
@@ -37,7 +37,7 @@ process qualimap {
     -gtf $gtf \\
     -p $strandnessOpts \\
     $peOpts \\
-    -outdir ${bam[0].baseName}
-  echo \$(qualimap 2>&1) | sed 's/^.*QualiMap v.//; s/Built.*\$//' > v_qualimap.txt
+    -outdir ${prefix}
+  echo \$(qualimap -h 2>&1 |  grep "QualiMap" | sed -e 's/v.//') > versions.txt
   """
 }

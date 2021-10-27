@@ -1,3 +1,7 @@
+/*
+ * MultiQC for RNA-seq report
+ */
+
 process multiqc {
   label 'multiqc'
   label 'minCpu'
@@ -18,18 +22,17 @@ process multiqc {
   path ('strandness/*')
   path ('qualimap/*')
   path ('preseq/*')
-  path ('genesat/*')
-  path ('dupradar/*')
-  path ('picard/*')
-  path ('counts/*')
-  path ('genetype/*')
   path ('identito/*')
-  path ('exploratoryAnalysis_results/*')
+  path ('picard/*')
+  path ('dupradar/*')
+  path ('counts/*')
+  path ('genesat/*')
+  path ('genetype/*')
+  path ('exploratoryAnalysis/*')
   path ('softwareVersions/*')
   path ('workflowSummary/*')
-  path ('Identito/*')
-  path ('workflowSummary/*')
-  val skippedPoorAlignment
+  path warnings
+  //val skippedPoorAlignment
 
   output:
   path splan
@@ -47,7 +50,8 @@ process multiqc {
   modulesList = params.counts == 'featureCounts' ? "${modulesList} -m featureCounts" : "${modulesList}"  
   modulesList = params.counts == 'HTseqCounts' ? "${modulesList} -m htseq" : "${modulesList}"  
  
-  warn=skippedPoorAlignment.size() > 0 ? "--warn workflowSummary/warnings.txt" : ""
+  //warn=skippedPoorAlignment.size() > 0 ? "--warn workflowSummary/warnings.txt" : ""
+  warn = warnings.name == 'warnings.txt' ? "--warn workflowSummary/warnings.txt" : ""
   """
   stats2multiqc.sh ${splan} ${params.aligner} ${isPE}
   medianReadNb="\$(sort -t, -k3,3n mq.stats | awk -F, '{a[i++]=\$3;} END{x=int((i+1)/2); if (x<(i+1)/2) printf "%.0f", (a[x-1]+a[x])/2; else printf "%.0f",a[x-1];}')"

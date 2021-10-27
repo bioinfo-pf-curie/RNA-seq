@@ -17,9 +17,9 @@ process hisat2Align {
     val strandness
 
     output:
-    path "${prefix}.bam"                , emit: bam
-    path "${prefix}.hisat2_summary.txt" , emit: logs
-    path ("v_hisat2.txt")               , emit: version
+    tuple val(prefix), path("${prefix}.bam"), emit: bam
+    path "${prefix}.hisat2_summary.txt"     , emit: logs
+    path ("versions.txt")                   , emit: versions
 
     script:
     indexBase = hs2Index[0].toString() - ~/.\d.ht2/
@@ -31,7 +31,7 @@ process hisat2Align {
     }
     inputOpts = params.singleEnd ? "-U ${reads}" : "-1 ${reads[0]} -2 ${reads[1]}"
     """
-    hisat2 --version &> v_hisat2.txt
+    echo \$(hisat2 --version | awk 'NR==1{print "hisat2 "\$3}') > versions.txt
     hisat2 -x $indexBase \\
            ${inputOpts} \\
            ${strandOpts} \\
@@ -39,7 +39,7 @@ process hisat2Align {
            -p ${task.cpus} \\
            --met-stderr \\
            --new-summary \\
-	   --rg-id ${prefix} \\
+	   --rg-id ${prefix} --rg SM:${prefix} --rg PL:ILLUMINA \\
            --summary-file ${prefix}.hisat2_summary.txt \\
            | samtools view -bS -F 4 -F 256 - > ${prefix}.bam
     """

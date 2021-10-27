@@ -1,11 +1,7 @@
 /* 
- * define the data analysis workflow 
+ * STAR Workflow
  */
 
-/* 
- * include requires tasks 
- */
-include { checkStarLog } from './functions'
 include { starAlign } from '../process/starAlign'
 include { samtoolsSort } from '../process/samtoolsSort'
 include { samtoolsIndex } from '../process/samtoolsIndex'
@@ -13,32 +9,36 @@ include { samtoolsFlagstat } from '../process/samtoolsFlagstat'
 
 workflow mappingStarFlow {
 
-  // required inputs
   take:
-  reads
-  index
-  gtf
+  reads // Channel [val(prefix), [reads]]
+  index // Channel path(index)
+  gtf // Channel path(gtf)
 
-  // workflow implementation
   main:
+  
+  chVersions = Channel.empty()
 
   starAlign(
     reads,
     index.collect(),
     gtf.collect().ifEmpty([])
   )
+  chVersions = chVersions.mix(starAlign.out.versions)
 
   samtoolsSort(
     starAlign.out.bam
   )
+  chVersions = chVersions.mix(samtoolsSort.out.versions)
 
   samtoolsIndex(
     samtoolsSort.out.bam
   )
+  chVersions = chVersions.mix(samtoolsIndex.out.versions)
 
   samtoolsFlagstat(
     samtoolsSort.out.bam
   )
+  chVersions = chVersions.mix(samtoolsFlagstat.out.versions)
 
   emit:
   bam = samtoolsSort.out.bam
@@ -47,6 +47,5 @@ workflow mappingStarFlow {
   logs = starAlign.out.logs
   counts = starAlign.out.counts
   countsLogs = starAlign.out.countsLogs
-  chStarVersion = starAlign.out.version
-  chSamtoolsVersionSort = samtoolsSort.out.version
+  versions = chVersions
 }

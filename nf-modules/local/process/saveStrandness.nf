@@ -12,9 +12,6 @@ process saveStrandness {
       else null
     }
   
-  when:
-  params.stranded == 'reverse' || params.stranded == 'no' || params.stranded == 'yes' || (params.stranded == 'auto' && !params.bed12)
-
   input:
   tuple val(prefix), path(reads)
 

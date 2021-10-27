@@ -16,14 +16,14 @@ process preseq {
   tuple val(prefix), path(bam), path(bai)
 
   output:
-  path "*ccurve.txt"  , emit: results
-  path("v_preseq.txt"), emit: version
+  path("*ccurve.txt"), emit: results
+  path("versions.txt"), emit: versions
 
   script:
   peOpts = params.singleEnd ? '' : '-pe'
   """
-  preseq &> v_preseq.txt
-  preseq lc_extrap -seed 1 -v -B ${bam[0]} ${peOpts} -o ${bam[0].baseName}_extrap_ccurve.txt -e 200e+06 -seg_len 100000000
+  echo \$(preseq 2>&1 | awk '\$0~"Version"{print "Preseq",\$2}') > versions.txt
+  preseq lc_extrap -seed 1 -v -B ${bam} ${peOpts} -o ${prefix}_extrap_ccurve.txt -e 200e+06 -seg_len 100000000
   """
 }
 

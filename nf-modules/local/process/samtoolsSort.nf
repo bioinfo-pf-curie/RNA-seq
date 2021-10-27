@@ -10,11 +10,11 @@ process samtoolsSort {
 
     output:
     tuple val(prefix), path ("*_sorted.bam"), emit: bam
-    path("v_samtools.txt") , emit: version
+    path("versions.txt") , emit: versions
 
     script:
     """
-    samtools --version &> v_samtools.txt
+    echo \$(samtools --version | head -1 ) > versions.txt
     samtools sort  \\
         -@  ${task.cpus}  \\
         -m ${params.sortMaxMemory} \\

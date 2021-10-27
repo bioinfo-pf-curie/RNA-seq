@@ -2,29 +2,27 @@
  * IDENTITO MONITORING
  */
 
-process identito {
+process identitoPolym {
   label 'lowCpu'
   label 'medMem'
   label 'identito'
 
-  when:
-  !params.skipIdentito && !params.skipQC && params.polym
-
   input:
+  tuple val(prefix), path(bam), path(bai)
   path(fasta)
   path(fastaFai)
   path(polyms)
-  path(bam)
-  //tuple val(sampleId), val(sampleName), path("${sampleId}.md.bam"), path("${sampleId}.md.bam.bai")
 
   output:
-  path("${prefix}_matrix.tsv"), emit: clustPolym
-  path("v_bcftools.txt")      , emit: version 
+  path("${prefix}_matrix.tsv"), emit: polyms
+  path("versions.txt"), emit: versions 
 
   script:
-  prefix = bam[0].toString() - ~/(_sorted)?(.markDups)?(.bam)?$/
   """
-  bcftools --version &> v_bcftools.txt 2>&1 || true
+  echo \$(bcftools --version | head -1) > versions.txt
+  echo \$(SnpSift 2>&1| awk 'NR==1{print \$1,\$3}') >> versions.txt
+  echo \$(R --version | awk 'NR==1{print \$1,\$3}') >> versions.txt
+
   bcftools mpileup -R ${polyms} -f ${fasta} -x -A -B -q 20 -I -Q 0 -d 1000 --annotate FORMAT/DP,FORMAT/AD ${bam[0]} > ${prefix}_bcftools.vcf
   SnpSift extractFields -e "."  -s ";" ${prefix}_bcftools.vcf CHROM POS REF ALT GEN[*].DP GEN[*].AD > ${prefix}_bcftools.tsv
   apComputePolym.R ${prefix}_bcftools.tsv ${prefix}_matrix.tsv ${prefix} ${polyms}

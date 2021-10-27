@@ -1,55 +1,56 @@
 /* 
- * define the data analysis workflow 
+ * HiSat2 Worflow
  */
 
-/* 
- * include requires tasks 
- */
 include { makeHisatSplicesites } from '../process/makeHisatSplicesites'
 include { hisat2Align } from '../process/hisat2Align'
 include { samtoolsSort } from '../process/samtoolsSort'
 include { samtoolsIndex } from '../process/samtoolsIndex'
+include { samtoolsFlagstat } from '../process/samtoolsFlagstat'
 
 workflow mappingHisat2Flow {
 
-  // required inputs
   take:
   reads
   index
   gtf
   strandness
 
-  // workflow implementation
   main:
+  chVersions = Channel.empty()
 
   makeHisatSplicesites(
     gtf
   )
+  chVersions = chVersions.mix(makeHisatSplicesites.out.versions)
 
   hisat2Align(
     reads,
     index.collect(),
-    makeHisatSplicesites.out.alignmentSplicesites,
+    makeHisatSplicesites.out.alignmentSplicesites.collect(),
     strandness
   )
+  chVersions = chVersions.mix(hisat2Align.out.versions)
 
   samtoolsSort(
     hisat2Align.out.bam
   )
+  chVersions = chVersions.mix(samtoolsSort.out.versions)
 
   samtoolsIndex(
     samtoolsSort.out.bam
   )
+  chVersions = chVersions.mix(samtoolsIndex.out.versions)
 
   samtoolsFlagstat(
    samtoolsSort.out.bam
   )
+  chVersions = chVersions.mix(samtoolsFlagstat.out.versions)
 
   emit:
   bam = samtoolsSort.out.bam
   bai = samtoolsIndex.out.bai
   logs = hisat2Align.out.logs
   flagstat = samtoolsFlagstat.out.stats
-  chHisat2Version = hisat2Align.out.version
-  chSamtoolsVersionSort = samtoolsSort.out.version
+  versions = chVersions
 }

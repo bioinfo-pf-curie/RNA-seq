@@ -19,12 +19,12 @@ process exploratoryAnalysis {
   path heatmapHeader
 
   output:
-  path "*.{txt,pdf,csv}", emit: exploratoryAnalysisResults
-  path("v_R.txt")       , emit: version
+  path "*.{txt,pdf,csv}", emit: results
+  path("versions.txt"), emit: versions
 
   script:
   """
-  R --version &> v_R.txt
+  echo \$(R --version | awk 'NR==1{print \$1,\$3}') > versions.txt
   exploratory_analysis.r ${tableRaw}
   cat $pcaHeader deseq2_pca_coords_mqc.csv >> tmp_file
   mv tmp_file deseq2_pca_coords_mqc.csv
