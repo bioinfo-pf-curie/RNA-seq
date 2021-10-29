@@ -1,12 +1,11 @@
 #!/usr/bin/env nextflow
 
 /*
-Copyright Institut Curie 2019-2020
+Copyright Institut Curie 2019-2021
 This software is a computer program whose purpose is to analyze high-throughput sequencing data.
 You can use, modify and/ or redistribute the software under the terms of license (see the LICENSE file for more details).
 The software is distributed in the hope that it will be useful, but "AS IS" WITHOUT ANY WARRANTY OF ANY KIND.
-Users are therefore encouraged to test the software's suitability as regards their requirements in conditions enabling the security of their systems and/or data.
-The fact that you are presently reading this means that you have had knowledge of the license and that you accept its terms.
+Users are therefore encouraged to test the software's suitability as regards their requirements in conditions enabling the security of their systems and/or data. The fact that you are presently reading this means that you have had knowledge of the license and that you accept its terms.
 */
 
 
@@ -15,52 +14,43 @@ The fact that you are presently reading this means that you have had knowledge o
                          RNA-seq DSL2
 ========================================================================================
  RNA-seq Analysis Pipeline.
- #### Homepage / Documentation
- https://gitlab.curie.fr/data-analysis/rnaseq
+  https://gitlab.curie.fr/data-analysis/rnaseq
 ----------------------------------------------------------------------------------------
 */
 
 nextflow.enable.dsl=2
 
-include { helpMessage; checkAlignmentPercent } from './lib/functions'
-// Show help message
-if (params.help){
-  helpMessage()
-  exit 0
-}
+// Initialize lintedParams and paramsWithUsage
+NFTools.welcome(workflow, params)
+
+// Use lintedParams as default params object
+paramsWithUsage = NFTools.readParamsFromJsonSettings("${projectDir}/parameters.settings.json")
+params.putAll(NFTools.lint(params, paramsWithUsage))
+
+// Run name
+customRunName = NFTools.checkRunName(workflow.runName, params.name)
+
+// Custom functions
+skippedPoorAlignment = []
+include {checkAlignmentPercent } from './lib/functions'
 
 /*
- * SET UP CONFIGURATION VARIABLES
- */
+===================================
+  SET UP CONFIGURATION VARIABLES
+===================================
+*/
 
-// Configurable reference genomes
-if (params.genomes && params.genome && !params.genomes.containsKey(params.genome)) {
-  exit 1, "The provided genome '${params.genome}' is not available in the genomes file. Currently the available genomes are ${params.genomes.keySet().join(", ")}"
-}
-
-// Reference index path configuration
-// Define these here - after the profiles are loaded with the genomes paths
-params.starIndex = params.genome ? params.genomes[ params.genome ].star ?: false : false
-params.bowtie2Index = params.genome ? params.genomes[ params.genome ].bowtie2 ?: false : false
-params.hisat2Index = params.genome ? params.genomes[ params.genome ].hisat2 ?: false : false
-params.rrna = params.genome ? params.genomes[ params.genome ].rrna ?: false : false
-params.gtf = params.genome ? params.genomes[ params.genome ].gtf ?: false : false
-params.bed12 = params.genome ? params.genomes[ params.genome ].bed12 ?: false : false
-params.fasta = params.genome ? params.genomes[ params.genome ].fasta ?: false : false
-params.fastaFai = params.genome ? params.genomes[ params.genome ].fastaFai ?: false : false
-params.polym = params.genome ? params.genomes[ params.genome ].polym ?: false : false
-
-// Tools option configuration
-// Add here the list of options that can change from a reference genome to another
-if (params.genome){
-  params.starOptions = params.genomes[ params.genome ].starOpts ?: params.starOpts
-}
-// Has the run name been specified by the user?
-// this has the bonus effect of catching both -name and --name
-customRunName = params.name
-if( !(workflow.runName ==~ /[a-z]+_[a-z]+/) ){
-  customRunName = workflow.runName
-}
+// Genome-based variables
+params.bowtie2Index = NFTools.getGenomeAttribute(params, 'bowtie2')
+params.starIndex = NFTools.getGenomeAttribute(params, 'star')
+params.hisat2Index = NFTools.getGenomeAttribute(params, 'hisat2')
+params.rrna = NFTools.getGenomeAttribute(params, 'rrna')
+params.gtf = NFTools.getGenomeAttribute(params, 'gtf')
+params.bed12 = NFTools.getGenomeAttribute(params, 'bed12')
+params.fasta = NFTools.getGenomeAttribute(params, 'fasta')
+params.fastaFai = NFTools.getGenomeAttribute(params, 'fastafai')
+params.polym = NFTools.getGenomeAttribute(params, 'polym')
+params.starOptions = NFTools.getGenomeAttribute(params, 'starOpts')
 
 // Stage config files
 chMultiqcConfig = Channel.fromPath(params.multiqcConfig)
@@ -69,24 +59,44 @@ chOutputDocsImages = file("$baseDir/docs/images/", checkIfExists: true)
 chPcaHeader = Channel.fromPath("$baseDir/assets/pcaHeader.txt")
 chHeatmapHeader = Channel.fromPath("$baseDir/assets/heatmapHeader.txt")
 
-skippedPoorAlignment = [] 
+/*
+===========================
+   SUMMARY
+===========================
+*/
+
+summary = [
+  'Pipeline Release': workflow.revision ?: null,
+  'Run Name': customRunName,
+  'Inputs' : params.samplePlan ?: params.reads ?: null,
+  'Genome' : params.genome,
+  'GTF Annotation' : params.gtf ?: null,
+  'BED Annotation' : params.bed12 ?: null,
+  'Identito' : params.polym ?: null,
+  'Strandedness' : params.stranded,
+  'Aligner' : params.aligner,
+  'Counts' : params.counts,
+  'Max Resources': "${params.maxMemory} memory, ${params.maxCpus} cpus, ${params.maxTime} time per job",
+  'Container': workflow.containerEngine && workflow.container ? "${workflow.containerEngine} - ${workflow.container}" : null,
+  'Profile' : workflow.profile,
+  'OutDir' : params.outDir,
+  'WorkDir': workflow.workDir
+].findAll{ it.value != null }
+
+workflowSummaryCh = NFTools.summarize(summary, workflow, params)
 
 /*
- * CHANNELS
- */
+==========================
+ VALIDATE INPUTS
+==========================
+*/
 
-// Validate inputs
-if (params.aligner != 'star' && params.aligner != 'hisat2'){
-  exit 1, "Invalid aligner option: ${params.aligner}. Valid options: 'star', 'hisat2'"
+if (params.genomes && params.genome && !params.genomes.containsKey(params.genome)) {
+  exit 1, "The provided genome '${params.genome}' is not available in the genomes file. Currently the available genomes are ${params.genomes.keySet().join(", ")}"
 }
-if (params.counts != 'star' && params.counts != 'featureCounts' && params.counts != 'HTseqCounts'){
-  exit 1, "Invalid counts option: ${params.counts}. Valid options: 'star', 'featureCounts', 'HTseqCounts'"
-}
+
 if (params.counts == 'star' && params.aligner != 'star'){
   exit 1, "Cannot run STAR counts without STAR aligner. Please check the '--aligner' and '--counts' parameters."
-}
-if (params.stranded != 'auto' && params.stranded != 'reverse' && params.stranded != 'forward' && params.stranded != 'no'){
-  exit 1, "Invalid stranded option: ${params.stranded}. Valid options: 'auto', 'reverse', 'forward', 'no'"
 }
 if (params.stranded == 'auto' && !params.bed12){  
   exit 1, "Strandness detection is not possible without gene bed file. Please specify a stranded option: 'reverse', 'forward', 'no'"
@@ -110,7 +120,7 @@ else if ( params.hisat2Index && params.aligner == 'hisat2' ){
   chStarIndex = Channel.empty()
 }
 else {
-    exit 1, "No reference genome specified!"
+    exit 1, "No genome index specified!"
 }
 
 if( params.gtf ){
@@ -178,50 +188,54 @@ if ( params.polym ){
     .ifEmpty { exit 1, "Polym BED file not found: ${params.polym}" }
     .set { chPolymBed }
 }else{
+  log.warn "No polymorphisms available - identito monitoring will be skipped !"
   chPolymBed = Channel.empty()
 }
 
 /*
- * Create a channel for input read files
- */
+==============================
+  LOAD INPUT DATA
+==============================
+*/
 
-if(params.samplePlan){
-  if(params.singleEnd){
-    Channel
-      .from(file("${params.samplePlan}"))
-      .splitCsv(header: false)
-      .map{ row -> [ row[0], [file(row[2])]] }
-      .set { chRawReads }
-  }else{
-     Channel
-       .from(file("${params.samplePlan}"))
-       .splitCsv(header: false)
-       .map{ row -> [ row[0], [file(row[2]), file(row[3])]] }
+chRawReads = NFTools.getInputData(params.samplePlan, params.reads, params.readPaths, params.singleEnd, params)
 
-      .set { chRawReads } 
-   }
-   params.reads=false
-}
-else if(params.readPaths){
-  if(params.singleEnd){
-    Channel
-      .from(params.readPaths)
-      .map { row -> [ row[0], [file(row[1][0])]] }
-      .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-      .set { chRawReads }
-    } else {
-    Channel
-      .from(params.readPaths)
-      .map { row -> [ row[0], [file(row[1][0]), file(row[1][1])]] }
-      .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-      .set { chRawReads } 
-  }
-} else {
-  Channel
-    .fromFilePairs( params.reads, size: params.singleEnd ? 1 : 2 )
-    .ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\nNB: Path needs to be enclosed in quotes!\nNB: Path requires at least one * wildcard!\nIf this is single-end data, please specify --singleEnd on the command line." }
-.set { chRawReads }
-}
+//if(params.samplePlan){
+//  if(params.singleEnd){
+//    Channel
+//      .from(file("${params.samplePlan}"))
+//      .splitCsv(header: false)
+//      .map{ row -> [ row[0], [file(row[2])]] }
+//      .set { chRawReads }
+//  }else{
+//     Channel
+//       .from(file("${params.samplePlan}"))
+//       .splitCsv(header: false)
+//       .map{ row -> [ row[0], [file(row[2]), file(row[3])]] }
+//      .set { chRawReads } 
+//   }
+//   params.reads=false
+//}
+//else if(params.readPaths){
+//  if(params.singleEnd){
+//    Channel
+//      .from(params.readPaths)
+//      .map { row -> [ row[0], [file(row[1][0])]] }
+//      .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
+//      .set { chRawReads }
+//    } else {
+//    Channel
+//      .from(params.readPaths)
+//      .map { row -> [ row[0], [file(row[1][0]), file(row[1][1])]] }
+//      .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
+//      .set { chRawReads } 
+//  }
+//} else {
+//  Channel
+//    .fromFilePairs( params.reads, size: params.singleEnd ? 1 : 2 )
+//    .ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\nNB: Path needs to be enclosed in quotes!\nNB: Path requires at least one * wildcard!\nIf this is single-end data, please specify //--singleEnd on the command line." }
+//.set { chRawReads }
+//}
 
 /*
  * Make sample plan if not available
@@ -264,55 +278,11 @@ if (params.samplePlan){
 }
 
 
-// Header log info
-if ("${workflow.manifest.version}" =~ /dev/ ){
-  devMess = file("$baseDir/assets/devMessage.txt")
-  log.info devMess.text
-}
-
-log.info """=======================================================
-
- rnaseq : RNA-Seq workflow v${workflow.manifest.version}
-======================================================="""
-def summary = [:]
-summary['Run Name']     = customRunName ?: workflow.runName
-summary['Command Line'] = workflow.commandLine
-summary['Metadata']	= params.metadata
-if (params.samplePlan) {
-   summary['SamplePlan']   = params.samplePlan
-}else{
-   summary['Reads']        = params.reads
-}
-summary['Data Type']    = params.singleEnd ? 'Single-End' : 'Paired-End'
-summary['Genome']       = params.genome
-summary['Strandedness'] = params.stranded
-if(params.aligner == 'star'){
-  summary['Aligner'] = "star"
-  if(params.starIndex) summary['STAR Index'] = params.starIndex
-} else if(params.aligner == 'hisat2') {
-  summary['Aligner'] = "HISAT2"
-  if(params.hisat2Index) summary['HISAT2 Index'] = params.hisat2Index
-}
-summary['Counts'] = params.counts
-if(params.gtf)  summary['GTF Annotation']  = params.gtf
-if(params.bed12) summary['BED Annotation']  = params.bed12
-if(params.polym) summary['BED Polym']  = params.polym
-summary['Save Intermeds'] = params.saveAlignedIntermediates ? 'Yes' : 'No'
-summary['Max Memory']     = params.maxMemory
-summary['Max CPUs']       = params.maxCpus
-summary['Max Time']       = params.maxTime
-summary['Current home']   = "$HOME"
-summary['Current user']   = "$USER"
-summary['Current path']   = "$PWD"
-summary['Working dir']    = workflow.workDir
-summary['Output dir']     = params.outDir
-summary['Config Profile'] = workflow.profile
-log.info summary.collect { k,v -> "${k.padRight(15)}: $v" }.join("\n")
-log.info "========================================="
-
 /*
- * INCLUDE
- */ 
+==================================
+           INCLUDE
+==================================
+*/ 
 
 // Workflows
 include { strandnessFlow } from './nf-modules/local/subworkflow/strandness'
@@ -337,8 +307,10 @@ include { fastqc } from './nf-modules/local/process/fastqc'
 include { rRNAMapping } from './nf-modules/local/process/rRNAMapping'
 
 /*
- * WORKFLOW 
- */
+=====================================
+            WORKFLOW 
+=====================================
+*/
 
 workflow {
   chVersions = Channel.empty()
@@ -452,9 +424,9 @@ workflow {
     if (!params.skipIdentito){
       identitoFlow(
           markdupFlow.out.bam,
-          chFasta,
-          chFastaFai,
-          chPolymBed
+          chFasta.collect(),
+          chFastaFai.collect(),
+          chPolymBed.collect()
       )
       chVersions = chVersions.mix(identitoFlow.out.versions)
     }
@@ -494,61 +466,68 @@ workflow {
      }
 
     // SUBWORKFLOW: gene counts qc
-    geneCountsAnalysisFlow(
-      chCounts,
-      chCountsTpm,
-      chGtf,
-      chPcaHeader,
-      chHeatmapHeader
-    )
-    chVersions = chVersions.mix(geneCountsAnalysisFlow.out.versions)
+    if (!params.skipGeneCountsAnalysis){
+      geneCountsAnalysisFlow(
+        chCounts,
+        chCountsTpm,
+        chGtf,
+        chPcaHeader,
+        chHeatmapHeader
+      )
+      chGeneSatResults=geneCountsAnalysisFlow.out.geneSaturationResults
+      chGeneTypeResults=geneCountsAnalysisFlow.out.countsPerGenetype
+      chGeneExpAnResults=geneCountsAnalysisFlow.out.expAnalysisResults
+      chVersions = chVersions.mix(geneCountsAnalysisFlow.out.versions)
+    }else{
+      chGeneSatResults=Channel.empty()
+      chGeneTypeResults=Channel.empty()
+      chGeneExpAnResults=Channel.empty()
+    }
 
     // MultiQC
     if (!params.skipMultiQC){
 
-      if (!params.skipSoftVersions){
-        getSoftwareVersions(
-          chVersions.unique().collectFile()
-        )
-      }
-
-      workflowSummaryMqc(
-        summary
+      getSoftwareVersions(
+        chVersions.unique().collectFile()
       )
 
-    if (skippedPoorAlignment.size() > 0){
-      Channel.fromList(skippedPoorAlignment)
+      if (skippedPoorAlignment.size() > 0){
+        Channel.fromList(skippedPoorAlignment)
              .flatMap{ it -> it + ": Poor alignment rate. Sample discarded"}
              .collectFile(name: 'warnings.txt', newLine: true)
              .set{chWarn}
-    }else{
-       chWarn = Channel.empty()
-    }
+      }else{
+        chWarn = Channel.empty()
+      }
     
-    multiqc(
-      customRunName,
-      chSplan.collect(),
-      chMetadata.ifEmpty([]),
-      chMultiqcConfig.ifEmpty([]),
-      fastqc.out.results.collect().ifEmpty([]),
-      rRNAMapping.out.logs.collect().ifEmpty([]),
-      chAlignedLogs.collect().ifEmpty([]),
-      strandnessFlow.out.strandnessOutputFiles.collect().ifEmpty([]),
-      qualimap.out.results.collect().ifEmpty([]),
-      preseq.out.results.collect().ifEmpty([]),
-      identitoFlow.out.results.collect().ifEmpty([]),
-      markdupFlow.out.picardMetrics.collect().ifEmpty([]),
-      markdupFlow.out.dupradarResults.collect().ifEmpty([]),
-      chCountsLogs.collect().ifEmpty([]),
-      geneCountsAnalysisFlow.out.geneSaturationResults.collect().ifEmpty([]),
-      geneCountsAnalysisFlow.out.countsPerGenetype.collect().ifEmpty([]),
-      geneCountsAnalysisFlow.out.expAnalysisResults.collect().ifEmpty([]),
-      getSoftwareVersions.out.versionsYaml.collect().ifEmpty([]),
-      workflowSummaryMqc.out.chWorkflowSummaryYaml.collect().ifEmpty([]),
-      chWarn.collect().ifEmpty([])
-      //skippedPoorAlignment
-    )
-  }
+      multiqc(
+        customRunName,
+        chSplan.collect(),
+        chMetadata.ifEmpty([]),
+        chMultiqcConfig.ifEmpty([]),
+        fastqc.out.results.collect().ifEmpty([]),
+        rRNAMapping.out.logs.collect().ifEmpty([]),
+        chAlignedLogs.collect().ifEmpty([]),
+        strandnessFlow.out.strandnessOutputFiles.collect().ifEmpty([]),
+        qualimap.out.results.collect().ifEmpty([]),
+        preseq.out.results.collect().ifEmpty([]),
+        identitoFlow.out.results.collect().ifEmpty([]),
+        markdupFlow.out.picardMetrics.collect().ifEmpty([]),
+        markdupFlow.out.dupradarResults.collect().ifEmpty([]),
+        chCountsLogs.collect().ifEmpty([]),
+        chGeneSatResults.collect().ifEmpty([]),
+        chGeneTypeResults.collect().ifEmpty([]),
+        chGeneExpAnResults.collect().ifEmpty([]),
+        getSoftwareVersions.out.versionsYaml.collect().ifEmpty([]),
+        workflowSummaryCh.collectFile(name: "workflow_summary_mqc.yaml"),
+        chWarn.collect().ifEmpty([])
+      )
+      mqcReport = multiqc.out.report.toList()
+    }else{
+      mqcReport = []
+    }
+}
 
-  //workflow.onComplete {}
+workflow.onComplete {
+  NFTools.makeReports(workflow, params, summary, customRunName, mqcReport)
 }

@@ -35,9 +35,9 @@ process multiqc {
   //val skippedPoorAlignment
 
   output:
-  path splan
-  path "*report.html"
-  path "*_data"
+  path splan, emit: splan
+  path "*report.html", emit: report
+  path "*_data", emit: data
 
   script:
   rtitle = customRunName ? "--title \"$customRunName\"" : ''

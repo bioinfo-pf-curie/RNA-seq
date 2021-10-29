@@ -19,7 +19,6 @@ process identitoCombine {
   """
   echo \$(R --version | awk 'NR==1{print \$1,\$3}') > versions.txt
   (head -1 "${matrix[0]}"; tail -n +2 -q *matrix.tsv) > identito_polym.tsv
-  apComputeClust.R --input identito_polym.tsv --dist ejaccard
   """
 }
 

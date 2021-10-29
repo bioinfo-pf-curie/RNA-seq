@@ -98,8 +98,8 @@ do
     fi
 
 
-    if [ -e preseq/${sample}_sorted_extrap_ccurve.txt ]; then
-	p_sat=$(awk -v nbreads=${n_mapped} 'BEGIN{p=0} NR>1 && $1>nbreads && nbreads>p{val=$2} {p=$1; x=$2} END{printf "%.*f",2,val/x*100}' preseq/${sample}_sorted_extrap_ccurve.txt)
+    if [ -e preseq/${sample}_extrap_ccurve.txt ]; then
+	p_sat=$(awk -v nbreads=${n_mapped} 'BEGIN{p=0} NR>1 && $1>nbreads && nbreads>p{val=$2} {p=$1; x=$2} END{printf "%.*f",2,val/x*100}' preseq/${sample}_extrap_ccurve.txt)
     else
 	p_sat='NA'
     fi

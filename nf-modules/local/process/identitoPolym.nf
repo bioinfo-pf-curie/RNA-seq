@@ -3,6 +3,7 @@
  */
 
 process identitoPolym {
+  tag "${prefix}"
   label 'lowCpu'
   label 'medMem'
   label 'identito'

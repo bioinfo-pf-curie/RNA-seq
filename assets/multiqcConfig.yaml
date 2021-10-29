@@ -141,15 +141,17 @@ custom_data:
             ylab: 'Number of detected genes'
             xlab: 'Number of reads (M)'
 
-    identito:
-        file_format: 'csv'
-        section_name: 'Identito Vigilance'
-        description: 'heatmap is created from a defined list of SNPs. Using those SNPs, the similarity metric is calculated as the Jaccard distance between all pairs of samples. Samples from the same patient are expected to have a high similarity score.'
-        plot_type: 'heatmap'
-        pconfig:
-            title: 'Identito Vigilance heatmap'
-            namescape: 'identito'
-            id: 'identito'
+    identitoPolym:
+       file_format: 'tsv'
+       section_name: 'Identito Monitoring'
+       description: ' from a list of know polymorphisms.'
+       plot_type: 'table'
+       pconfig:
+            title: 'Polymorphisms'
+            id: 'polym'
+            scale: 'RdYlBu'
+            format: '{:,.2f}'
+            save_file: true
 
 sp:
    my_stats:
@@ -158,9 +160,8 @@ sp:
       fn: '*genetype.txt'
    gene_saturation:
       fn: '*gcurve.txt'
-   identito:
-      fn: '*_identito.csv'
-
+   identitoPolym:
+      fn: '*_polym.tsv'
 
 table_cond_formatting_rules:
     Percent_of_rRNA:
@@ -269,12 +270,12 @@ report_section_order:
     order: -500
   DupRadar:
     order: -600 
+  identitoPolym:
+    order: -700
   sample-pca:
     order: -800
   sample-correlation:
     order: -900
-  identito:
-    order: -1000
   software_versions:
     order: -2000
   summary:

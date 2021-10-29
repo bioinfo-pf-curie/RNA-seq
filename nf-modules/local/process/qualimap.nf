@@ -3,7 +3,7 @@
  */
 
 process qualimap {
-  tag "${bam[0].baseName}"
+  tag "${prefix}"
   label 'qualimap'
   label 'minCpu'
   label 'medMem'

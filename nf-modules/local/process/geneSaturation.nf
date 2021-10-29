@@ -8,9 +8,6 @@ process geneSaturation {
   label 'medMem'
   publishDir "${params.outDir}/geneSaturation" , mode: 'copy'
 
-  when:
-  !params.skipQC && !params.skipSaturation
-
   input:
   path inputCounts
 

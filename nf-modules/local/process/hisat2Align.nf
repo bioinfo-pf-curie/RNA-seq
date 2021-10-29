@@ -41,7 +41,7 @@ process hisat2Align {
            --new-summary \\
 	   --rg-id ${prefix} --rg SM:${prefix} --rg PL:ILLUMINA \\
            --summary-file ${prefix}.hisat2_summary.txt \\
-           | samtools view -bS -F 4 -F 256 - > ${prefix}.bam
+           | samtools view -bS -F 256 - > ${prefix}.bam
     """
   }
   

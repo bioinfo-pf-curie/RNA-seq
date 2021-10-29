@@ -8,9 +8,6 @@ process getCountsPerGeneType {
   label 'lowMem'
   publishDir "${params.outDir}/readDistribution", mode: 'copy'
 
-  when:
-  !params.skipReaddist
-
   input:
   path tpmGenetype
   path gtf

@@ -19,6 +19,7 @@ workflow geneCountsAnalysisFlow {
   main:
   chVersions = Channel.empty()
 
+
   geneSaturation(
     counts.collect()
   )
@@ -33,7 +34,6 @@ workflow geneCountsAnalysisFlow {
   exploratoryAnalysis(
     counts.collect(),
     tpm.collect(),
-    counts.count(),
     pcaHeader,
     heatmapHeader 
   )
@@ -42,6 +42,6 @@ workflow geneCountsAnalysisFlow {
   emit:
   geneSaturationResults = geneSaturation.out.results
   countsPerGenetype = getCountsPerGeneType.out.results
-  expAnalysisResults = exploratoryAnalysis.out.results 
+  expAnalysisResults = exploratoryAnalysis.out.results
   versions = chVersions
 }

@@ -33,7 +33,7 @@
     def starCountOpt = params.counts == 'star' && params.gtf ? params.starOptsCounts : ''
     def starGtfOpt = params.gtf ? "--sjdbGTFfile $gtf" : ''
     """
-    echo \$(STAR --version 2>&1) > versions.txt
+    echo "STAR "\$(STAR --version 2>&1) > versions.txt
     STAR --genomeDir $index \\
          ${starGtfOpt} \\
          --readFilesIn $reads  \\
