@@ -15,12 +15,11 @@ process htseqCounts {
     }
   
   input:
-  tuple val(prefix), path(bam), path(bai)
+  tuple val(prefix), path(bam), path(bai), val(strandness)
   path gtf
-  val strandness
 
   output: 
-  path("${prefix}_counts.csv"), emit: counts
+  tuple val(prefix), path("${prefix}_counts.csv"), emit: counts
   path("${prefix}_counts.csv"), emit: logs
   path("versions.txt"), emit: versions 
 

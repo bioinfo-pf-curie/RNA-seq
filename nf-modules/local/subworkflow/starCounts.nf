@@ -9,17 +9,25 @@ workflow starCountsFlow {
   take:
   starCounts // Channel path(starCounts)
   starCountsLogs // Channel path(starCountsLogs)
+  strandness // Channel val(strandness)
   gtf // Channel path(gtf)
-  strandness
 
   main:
   tool = Channel.value("star")
   chVersions = Channel.empty()
 
+  // Merge and order counts
+  starCounts
+    .join(strandness)
+    .multiMap { it ->
+      counts: it[1]
+      strand: it[2]
+   }.set{chCountsAndStrand}
+
   mergeCounts(
-    starCounts.collect(),
+    chCountsAndStrand.counts.collect(),
+    chCountsAndStrand.strand.collect(),
     gtf.collect(),
-    strandness.collect(),
     tool
   )
   chVersions = chVersions.mix(mergeCounts.out.versions)

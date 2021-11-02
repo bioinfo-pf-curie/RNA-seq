@@ -15,9 +15,8 @@ process dupradar {
     }
 
   input:
-  tuple val(prefix), path(bam)
+  tuple val(prefix), path(bam), val(strandness)
   path gtf
-  val strandness
 
   output:
   path "${prefix}*.{pdf,txt}", emit : results

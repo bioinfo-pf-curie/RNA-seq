@@ -10,8 +10,8 @@ workflow markdupFlow {
 
   take:
   bam
-  gtf
   strandness
+  gtf
 
   main:
   chVersions = Channel.empty()
@@ -28,9 +28,8 @@ workflow markdupFlow {
 
   if (!params.skipDupradar){
     dupradar (
-      markDuplicates.out.bam,
+      markDuplicates.out.bam.join(strandness),
       gtf.collect(),
-      strandness
     )
     chDupradarResults = dupradar.out.results
     chVersions = chVersions.mix(dupradar.out.versions)

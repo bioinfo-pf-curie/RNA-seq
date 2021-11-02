@@ -10,9 +10,8 @@ process qualimap {
   publishDir "${params.outDir}/qualimap/" , mode: 'copy'
 
   input:
-  tuple val(prefix), path(bam), path(bai)
+  tuple val(prefix), path(bam), path(bai), val(stranded)
   path gtf
-  val stranded
 
   output:
   path ("${prefix}"), emit: results

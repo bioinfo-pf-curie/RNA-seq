@@ -12,9 +12,9 @@ workflow mappingHisat2Flow {
 
   take:
   reads
+  strandness
   index
   gtf
-  strandness
 
   main:
   chVersions = Channel.empty()
@@ -25,10 +25,9 @@ workflow mappingHisat2Flow {
   chVersions = chVersions.mix(makeHisatSplicesites.out.versions)
 
   hisat2Align(
-    reads,
+    reads.join(strandness),
     index.collect(),
     makeHisatSplicesites.out.alignmentSplicesites.collect(),
-    strandness
   )
   chVersions = chVersions.mix(hisat2Align.out.versions)
 

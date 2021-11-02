@@ -155,7 +155,7 @@
       "usage": "Tool to use to estimate the raw counts per gene",
       "type": "string",
       "nargs": "1",
-      "choices": ["star", "featureCounts", "HTseqCounts"],
+      "choices": ["star", "featureCounts", "HTseqCounts", "salmon"],
       "default_value": "star",
       "pattern": ".*",
       "render": "textfield",

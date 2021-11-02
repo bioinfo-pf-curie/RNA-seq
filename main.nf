@@ -30,7 +30,8 @@ params.putAll(NFTools.lint(params, paramsWithUsage))
 // Run name
 customRunName = NFTools.checkRunName(workflow.runName, params.name)
 
-// Custom functions
+// Custom functions/variables
+mqcReport = []
 skippedPoorAlignment = []
 include {checkAlignmentPercent } from './lib/functions'
 
@@ -46,11 +47,14 @@ params.starIndex = NFTools.getGenomeAttribute(params, 'star')
 params.hisat2Index = NFTools.getGenomeAttribute(params, 'hisat2')
 params.rrna = NFTools.getGenomeAttribute(params, 'rrna')
 params.gtf = NFTools.getGenomeAttribute(params, 'gtf')
+params.transcriptsFasta = NFTools.getGenomeAttribute(params, 'transcriptsFasta') 
 params.bed12 = NFTools.getGenomeAttribute(params, 'bed12')
 params.fasta = NFTools.getGenomeAttribute(params, 'fasta')
 params.fastaFai = NFTools.getGenomeAttribute(params, 'fastafai')
 params.polym = NFTools.getGenomeAttribute(params, 'polym')
-params.starOptions = NFTools.getGenomeAttribute(params, 'starOpts')
+params.starOptions = params.genomes[ params.genome ].starPpts ? NFTools.getGenomeAttribute(params, 'starOpts') : params.starOpts
+params.salmonQuantOptions = NFTools.getGenomeAttribute(params, 'salmonQuantOpts')
+params.gencode = NFTools.getGenomeAttribute(params, 'gencode')
 
 // Stage config files
 chMultiqcConfig = Channel.fromPath(params.multiqcConfig)
@@ -71,6 +75,7 @@ summary = [
   'Inputs' : params.samplePlan ?: params.reads ?: null,
   'Genome' : params.genome,
   'GTF Annotation' : params.gtf ?: null,
+  'Gencode' : params.gencode,
   'BED Annotation' : params.bed12 ?: null,
   'Identito' : params.polym ?: null,
   'Strandedness' : params.stranded,
@@ -133,6 +138,15 @@ if( params.gtf ){
   Channel
     .empty()
     .set { chGtf } 
+}
+
+if( params.transcriptsFasta ){
+  Channel
+    .fromPath(params.transcriptsFasta)
+    .ifEmpty { exit 1, "Transcripts fasta file not found: ${params.transcriptsFasta}" }
+    .set { chTranscriptsFasta }
+}else {
+  chTranscriptsFasta = Channel.empty()
 }
 
 if( params.bed12 ){
@@ -198,85 +212,11 @@ if ( params.polym ){
 ==============================
 */
 
+// Load raw reads
 chRawReads = NFTools.getInputData(params.samplePlan, params.reads, params.readPaths, params.singleEnd, params)
 
-//if(params.samplePlan){
-//  if(params.singleEnd){
-//    Channel
-//      .from(file("${params.samplePlan}"))
-//      .splitCsv(header: false)
-//      .map{ row -> [ row[0], [file(row[2])]] }
-//      .set { chRawReads }
-//  }else{
-//     Channel
-//       .from(file("${params.samplePlan}"))
-//       .splitCsv(header: false)
-//       .map{ row -> [ row[0], [file(row[2]), file(row[3])]] }
-//      .set { chRawReads } 
-//   }
-//   params.reads=false
-//}
-//else if(params.readPaths){
-//  if(params.singleEnd){
-//    Channel
-//      .from(params.readPaths)
-//      .map { row -> [ row[0], [file(row[1][0])]] }
-//      .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-//      .set { chRawReads }
-//    } else {
-//    Channel
-//      .from(params.readPaths)
-//      .map { row -> [ row[0], [file(row[1][0]), file(row[1][1])]] }
-//      .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-//      .set { chRawReads } 
-//  }
-//} else {
-//  Channel
-//    .fromFilePairs( params.reads, size: params.singleEnd ? 1 : 2 )
-//    .ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\nNB: Path needs to be enclosed in quotes!\nNB: Path requires at least one * wildcard!\nIf this is single-end data, please specify //--singleEnd on the command line." }
-//.set { chRawReads }
-//}
-
-/*
- * Make sample plan if not available
- */
-
-if (params.samplePlan){
-  chSplan = Channel.fromPath(params.samplePlan)
-}else if(params.readPaths){
-  if (params.singleEnd){
-    Channel
-      .from(params.readPaths)
-      .collectFile() {
-        item -> ["sample_plan.csv", item[0] + ',' + item[0] + ',' + item[1][0] + '\n']
-       }
-      .set{ chSplan }
-  }else{
-     Channel
-       .from(params.readPaths)
-       .collectFile() {
-         item -> ["sample_plan.csv", item[0] + ',' + item[0] + ',' + item[1][0] + ',' + item[1][1] + '\n']
-        }
-       .set{ chSplan }
-  }
-}else{
-  if (params.singleEnd){
-    Channel
-      .fromFilePairs( params.reads, size: 1 )
-      .collectFile() {
-         item -> ["sample_plan.csv", item[0] + ',' + item[0] + ',' + item[1][0] + '\n']
-      }     
-      .set { chSplan }
-  }else{
-    Channel
-      .fromFilePairs( params.reads, size: 2 )
-      .collectFile() {
-         item -> ["sample_plan.csv", item[0] + ',' + item[0] + ',' + item[1][0] + ',' + item[1][1] + '\n']
-      }     
-      .set { chSplan }
-  }
-}
-
+// Make samplePlan if not available
+chSplan = NFTools.getSamplePlan(params.samplePlan, params.reads, params.readPaths, params.singleEnd)
 
 /*
 ==================================
@@ -293,11 +233,11 @@ include { identitoFlow } from './nf-modules/local/subworkflow/identito'
 include { featureCountsFlow } from './nf-modules/local/subworkflow/featureCounts'
 include { htseqCountsFlow } from './nf-modules/local/subworkflow/htseqCounts'
 include { starCountsFlow } from './nf-modules/local/subworkflow/starCounts'
+include { salmonCountsFlow } from './nf-modules/local/subworkflow/salmonQuant'
 include { geneCountsAnalysisFlow } from './nf-modules/local/subworkflow/geneCountsAnalysis'
 
 // Processes
 include { getSoftwareVersions } from './nf-modules/local/process/getSoftwareVersions'
-include { workflowSummaryMqc } from './nf-modules/local/process/workflowSummaryMqc'
 include { multiqc } from './nf-modules/local/process/multiqc'
 include { outputDocumentation } from './nf-modules/local/process/outputDocumentation'
 include { bigWig } from './nf-modules/local/process/bigWig'
@@ -368,9 +308,9 @@ workflow {
     if (params.aligner == "hisat2"){
       mappingHisat2Flow(
         chFilteredReads,
+	strandnessFlow.out.strandnessResults,
         chHisat2Index,
-        chGtf,
-        strandnessFlow.out.strandnessResults
+        chGtf
       )
       chAlignedBam = mappingHisat2Flow.out.bam
       chAlignedBai = mappingHisat2Flow.out.bai
@@ -388,8 +328,7 @@ workflow {
     // PROCESS : bigwig file
     if (!params.skipBigwig){
       bigWig(
-        chBamPassed,
-        strandnessFlow.out.strandnessResults
+        chBamPassed.join(strandnessFlow.out.strandnessResults)
       )
       chVersions = chVersions.mix(bigWig.out.versions)
     }
@@ -397,9 +336,8 @@ workflow {
     // PROCESS : Qualimap
     if (!params.skipQC && !params.skipQualimap){
       qualimap(
-        chBamPassed,
-        chGtf.collect(),
-        strandnessFlow.out.strandnessResults
+        chBamPassed.join(strandnessFlow.out.strandnessResults),
+        chGtf.collect()
       )
       chVersions = chVersions.mix(qualimap.out.versions)
     }
@@ -415,8 +353,8 @@ workflow {
     // SUBWORKFLOW: Duplicates
     markdupFlow(
         chBamPassed,
-        chGtf,
-        strandnessFlow.out.strandnessResults
+	strandnessFlow.out.strandnessResults,
+        chGtf.collect()
     )
     chVersions = chVersions.mix(markdupFlow.out.versions)
 
@@ -435,8 +373,8 @@ workflow {
     if(params.counts == 'featureCounts'){
       featureCountsFlow(
         chBamPassed,
-        chGtf.collect(),
-        strandnessFlow.out.strandnessResults
+	strandnessFlow.out.strandnessResults,
+        chGtf.collect()
       )
       chCounts = featureCountsFlow.out.counts
       chCountsTpm = featureCountsFlow.out.tpm
@@ -445,8 +383,8 @@ workflow {
     } else if (params.counts == 'HTseqCounts'){
       htseqCountsFlow (
         chBamPassed,
-        chGtf.collect(),
-        strandnessFlow.out.strandnessResults
+	strandnessFlow.out.strandnessResults,
+        chGtf.collect()
       )
       chCounts = htseqCountsFlow.out.counts
       chCountsTpm = htseqCountsFlow.out.tpm
@@ -455,14 +393,25 @@ workflow {
      } else if (params.counts == 'star'){
        starCountsFlow (
          mappingStarFlow.out.counts,
-         mappingStarFlow.out.logs,
-         chGtf.collect(),
-         strandnessFlow.out.strandnessResults
+	 mappingStarFlow.out.logs,
+	 strandnessFlow.out.strandnessResults,
+         chGtf.collect()
        )
       chCounts = starCountsFlow.out.counts
       chCountsTpm = starCountsFlow.out.tpm
       chCountsLogs = starCountsFlow.out.logs
       chVersions = chVersions.mix(starCountsFlow.out.versions)
+     } else if (params.counts == 'salmon'){
+       salmonCountsFlow (
+         mappingStarFlow.out.transcriptsBam,
+	 strandnessFlow.out.strandnessResults, 
+	 chTranscriptsFasta.collect(),
+	 chGtf.collect()
+       )
+       chCounts = Channel.empty()
+       chCountsTpm = Channel.empty()
+       chCountsLogs = Channel.empty()
+       chVersions = chVersions.mix(salmonCountsFlow.out.versions)
      }
 
     // SUBWORKFLOW: gene counts qc
@@ -523,8 +472,6 @@ workflow {
         chWarn.collect().ifEmpty([])
       )
       mqcReport = multiqc.out.report.toList()
-    }else{
-      mqcReport = []
     }
 }
 

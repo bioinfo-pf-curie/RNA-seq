@@ -1,5 +1,5 @@
 /*
- * Counts
+ * Merge Counts
  */
 
 process mergeCounts {
@@ -9,9 +9,9 @@ process mergeCounts {
   label 'medMem'
 
   input:
-  path inputCounts
+  path(inputCounts) // Channel [counts]
+  val(strandness) // Channel [strandness]
   path gtf
-  val strandness
   val tool
 
   output:

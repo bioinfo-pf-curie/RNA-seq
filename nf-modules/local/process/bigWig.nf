@@ -13,8 +13,7 @@ process bigWig {
              else null}
 
   input:
-  tuple val(prefix), path(bam), path(bai)
-  val strandness
+  tuple val(prefix), path(bam), path(bai), val(strandness)
 
   output:
   path('*.bigwig') , emit: bigWig

@@ -22,7 +22,8 @@ process rseqc {
     """
     echo \$(infer_experiment.py --version | awk '{print "rseqc "\$2}') > versions.txt    
     infer_experiment.py -i $bamRseqc -r $bed12 > ${prefix}.txt
-    parse_rseq_output.sh ${prefix}.txt > ${prefix}_strandness.txt
+    res=\$(parse_rseq_output.sh ${prefix}.txt)
+    echo "$prefix,\$res"> ${prefix}_strandness.txt
     cat ${prefix}_strandness.txt
     """  
   }

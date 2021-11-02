@@ -23,15 +23,16 @@
     path gtf
 
     output:
-    tuple val(prefix), path ('*.bam'), emit: bam
-    path ("*out.tab"), optional: true, emit: countsLogs
+    tuple val(prefix), path('*Aligned.out.bam'), emit: bam
+    tuple val(prefix), path("*ReadsPerGene.out.tab"), optional: true, emit: counts
+    path("*out.tab"), optional: true, emit: countsLogs
+    tuple val(prefix), path("*Aligned.toTranscriptome.out.bam"), optional: true, emit: transcriptsBam
     path ("*out"), emit: logs
-    path ("*ReadsPerGene.out.tab"), optional: true, emit: counts
     path ("versions.txt"), emit: versions
 
     script:
-    def starCountOpt = params.counts == 'star' && params.gtf ? params.starOptsCounts : ''
     def starGtfOpt = params.gtf ? "--sjdbGTFfile $gtf" : ''
+    def starQuantMode = params.counts == 'star' ? '--quantMode GeneCounts' : params.counts == 'salmon' ? '--quantMode TranscriptomeSAM' : '' 
     """
     echo "STAR "\$(STAR --version 2>&1) > versions.txt
     STAR --genomeDir $index \\
@@ -48,6 +49,6 @@
          --outSAMunmapped Within \\
          ${params.starOptions} \\
 	 --limitOutSJcollapsed 5000000 \\
-	 ${starCountOpt}
+	 ${starQuantMode}
     """
   }

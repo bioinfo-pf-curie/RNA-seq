@@ -42,6 +42,7 @@ workflow mappingStarFlow {
 
   emit:
   bam = samtoolsSort.out.bam
+  transcriptsBam = starAlign.out.transcriptsBam
   bai = samtoolsIndex.out.bai
   flagstat = samtoolsFlagstat.out.stats
   logs = starAlign.out.logs

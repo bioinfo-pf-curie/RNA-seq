@@ -8,5 +8,5 @@
                                           | |
                                           |_|
 
-${purple}                   v${manifest.version}${reset}
+${green}                   v${manifest.version}${reset}
 ${dim}------------------------------------------------------------------------${reset}

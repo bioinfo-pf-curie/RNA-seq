@@ -46,7 +46,7 @@ workflow strandnessFlow {
       bed12.collect()
     )
     chVersions = chVersions.mix(rseqc.out.versions)
-    strandnessResults = rseqc.out.strandnessResults
+    strandnessResults = rseqc.out.strandnessResults.splitCsv()
     strandnessOutputFiles = rseqc.out.rseqcResults
   } else {
     exit 1, "Cannot detect strandness without a bed12 annotation file. Please use the --stranded option."

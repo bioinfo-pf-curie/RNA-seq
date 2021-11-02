@@ -11,10 +11,9 @@ process hisat2Align {
       }
 
     input:
-    tuple val(prefix), path(reads)
+    tuple val(prefix), path(reads), val(strandness)
     path hs2Index
     path alignmentSplicesites
-    val strandness
 
     output:
     tuple val(prefix), path("${prefix}.bam"), emit: bam

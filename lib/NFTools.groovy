@@ -1,5 +1,3 @@
-//package common
-
 import colorlog.MonoChrome
 import colorlog.PolyChrome
 import groovy.text.GStringTemplateEngine
@@ -375,6 +373,52 @@ class NFTools {
       }
 
 
+      /**
+       * Channeling the samplePlan and create a file is no samplePlan is provided
+       * 
+       * @param samplePlan
+       * @param reads
+       * @param readPaths
+       * @param singleEnd
+       
+       * @return
+       */
+
+      public static Object getSamplePlan(samplePlan, reads, readPaths, singleEnd) {
+        if (samplePlan){
+	  return Channel.fromPath(samplePlan)
+	} else if(readPaths){
+          if (singleEnd){
+	    return Channel
+	      .from(readPaths)
+              .collectFile() {
+	        item -> ["sample_plan.csv", item[0] + ',' + item[0] + ',' + item[1][0] + '\n']
+               }
+          }else{
+            return Channel
+              .from(readPaths)
+              .collectFile() {
+                item -> ["sample_plan.csv", item[0] + ',' + item[0] + ',' + item[1][0] + ',' + item[1][1] + '\n']
+              }
+          }
+        }else{
+	  if (singleEnd){
+	    return Channel
+	      .fromFilePairs( reads, size: 1 )
+	      .collectFile() {
+	        item -> ["sample_plan.csv", item[0] + ',' + item[0] + ',' + item[1][0] + '\n']
+	      }
+  	  }else{
+	    return Channel
+	      .fromFilePairs( reads, size: 2 )
+	      .collectFile() {
+	        item -> ["sample_plan.csv", item[0] + ',' + item[0] + ',' + item[1][0] + ',' + item[1][1] + '\n']
+ 	      }
+	  }
+        }
+      }
+
+
    /************************************
     *
     * Workflow on complete
@@ -444,7 +488,7 @@ class NFTools {
         try {
             if (workflow.success) {
                 if (mqcReport.getClass() == ArrayList) {
-                    log.warn "[$workflow.manifest.name] Found multiple reports from process 'multiqc', will use only one"
+                    //log.warn "[$workflow.manifest.name] Found multiple reports from process 'multiqc', will use only one"
                     mqcReport = mqcReport[0]
                 }
             }

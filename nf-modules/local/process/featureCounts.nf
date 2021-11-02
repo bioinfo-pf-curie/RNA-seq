@@ -15,12 +15,11 @@ process featureCounts {
    }
 
   input:
-  tuple val(prefix), path(bam), path(bai) // Channel [prefix, bam, bai]
+  tuple val(prefix), path(bam), path(bai), val(strandness) // Channel [prefix, bam, bai, strandness]
   path gtf
-  val strandness
 
   output:
-  path "${prefix}_counts.csv"        , emit: counts
+  tuple val(prefix), path("${prefix}_counts.csv"), emit: counts
   path "${prefix}_counts.csv.summary", emit: logs
   path "versions.txt"                , emit: versions
 
