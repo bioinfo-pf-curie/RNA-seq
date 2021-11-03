@@ -1,3 +1,7 @@
+/*
+ * FastQC process
+ */
+
 process fastqc {
   tag "${prefix}"
   label 'fastqc'
@@ -14,11 +18,24 @@ process fastqc {
   path("versions.txt")       , emit: versions
 
   script:
-  pbase = reads[0].toString() - ~/(\.fq)?(\.fastq)?(\.gz)?$/
-  """
-  echo \$(fastqc --version) > versions.txt
-  fastqc -q $reads
-  mv ${pbase}_fastqc.html ${prefix}_fastqc.html
-  mv ${pbase}_fastqc.zip ${prefix}_fastqc.zip
-  """
+  if (params.singleEnd){
+    pbase = reads[0].toString() - ~/(\.fq)?(\.fastq)?(\.gz)?$/
+    """
+    echo \$(fastqc --version) > versions.txt
+    fastqc -q $reads --threads ${task.cpus}
+    mv ${pbase}_fastqc.html ${prefix}_fastqc.html
+    mv ${pbase}_fastqc.zip ${prefix}_fastqc.zip
+    """
+  }else{
+    pbase_1 = reads[0].toString() - ~/(\.fq)?(\.fastq)?(\.gz)?$/
+    pbase_2 = reads[1].toString() - ~/(\.fq)?(\.fastq)?(\.gz)?$/
+    """
+    echo \$(fastqc --version) > versions.txt
+    fastqc -q $reads --threads ${task.cpus}
+    mv ${pbase_1}_fastqc.html ${prefix}_R1_fastqc.html
+    mv ${pbase_1}_fastqc.zip ${prefix}_R1_fastqc.zip
+    mv ${pbase_2}_fastqc.html ${prefix}_R2_fastqc.html
+    mv ${pbase_2}_fastqc.zip ${prefix}_R2_fastqc.zip
+    """
+  }
 }
