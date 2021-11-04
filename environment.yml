@@ -24,7 +24,6 @@ dependencies:
   - bioconda::deeptools=3.5.1=py_0
   - bioconda::salmon=1.4.0=hf69c8f4_0
   - conda-forge::tbb=2020.2=hc9558a2_0
-  - bioconda::salmon=0.14.0=h84f40af_1
   - bioconda::qualimap=2.2.2d=1
 
   - conda-forge::r-base=4.0.3=h349a78a_8
