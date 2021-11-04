@@ -82,7 +82,7 @@ do
     fi
 
     ## Strandness
-    strandness=$(cat strandness/${sample}_strandness.txt)
+    strandness=$(cat strandness/${sample}_strandness.txt | awk -F, '{print $2}')
 
     ## Calculate percentage
     p_mapped=$(echo "${n_mapped} ${n_frag}" | awk ' { printf "%.*f",2,$1*100/$2 } ')

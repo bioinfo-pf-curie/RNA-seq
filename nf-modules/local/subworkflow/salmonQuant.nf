@@ -27,36 +27,24 @@ workflow salmonCountsFlow {
   chVersions = chVersions.mix(salmonQuantFromBam.out.versions)
 
   salmonTx2gene(
-    salmonQuantFromBam.out.results,
+    salmonQuantFromBam.out.results.collect(),
     gtf.collect()
   )
   chVersions = chVersions.mix(salmonTx2gene.out.versions)
 
   salmonTxImport(
-    salmonQuantFromBam.out.results.join(salmonTx2gene.out.results)
+    salmonQuantFromBam.out.results.collect(), 
+    salmonTx2gene.out.results.collect()
   )
   chVersions = chVersions.mix(salmonTxImport.out.versions)
 
-
-  // merge and order counts and strand
-  //featureCounts.out.counts
-  //  .join(strandness)
-  //  .multiMap { it ->
-  //    counts: it[1]
-  //    strand: it[2]
-  // }.set{chCountsAndStrand}
-
-  //mergeCounts(
-  //  chCountsAndStrand.counts.collect(),
-  //  chCountsAndStrand.strand.collect(),
-  //  gtf.collect(),
-  //  tool
-  //)
-  //chVersions = chVersions.mix(mergeCounts.out.versions)
-
   emit:
-  counts = Channel.empty()
-  tpm = Channel.empty()
-  logs = Channel.empty()
+  results = salmonQuantFromBam.out.results
+  tpmGene = salmonTxImport.out.tpmGene
+  countsGene = salmonTxImport.out.countsGene
+  countsGeneLengthScaled = salmonTxImport.out.countsGeneLengthScaled
+  countsGeneScaled = salmonTxImport.out.countsGeneScaled
+  tpmTranscript = salmonTxImport.out.tpmTranscript
+  countsTranscript = salmonTxImport.out.countsTranscript
   versions = chVersions
 }

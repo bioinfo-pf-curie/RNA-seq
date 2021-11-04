@@ -231,16 +231,16 @@ class NFTools {
           .map { k,v -> "<dt>$k</dt><dd><samp>${v ?: '<span style=\"color:#999999;\">N/A</a>'}</samp></dd>" }
                 .reduce { a, b -> return [a, b].join("\n            ") }
                 .map { x -> """
-                   id: 'summary'
-    		   description: " - this information is collected when the pipeline is started."
-    		   section_name: 'Workflow Summary'
-    		   section_href: '$workflow.manifest.homePage'
-    		   plot_type: 'html'
-    		   data: |
-        	         <dl class=\"dl-horizontal\">
-            	         $x
-		         </dl>
-		""".stripIndent()}
+    id: 'summary'
+    description: " - this information is collected when the pipeline is started."
+    section_name: 'Workflow Summary'
+    section_href: '$workflow.manifest.homePage'
+    plot_type: 'html'
+    data: |
+        <dl class=\"dl-horizontal\">
+            $x
+        </dl>
+    """.stripIndent()}
      }
 
 

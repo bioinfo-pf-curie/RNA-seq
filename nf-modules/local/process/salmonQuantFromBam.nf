@@ -16,7 +16,7 @@ process salmonQuantFromBam {
     path(gtf)
 
     output:
-    tuple val("${prefix}"), path("${prefix}"), emit: results
+    path("${prefix}"), emit: results
     path("versions.txt"), emit: versions
 
     script:

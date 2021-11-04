@@ -70,7 +70,13 @@ estimate_saturation <- function(counts, max_reads=Inf, ndepths=6, nreps=1, minco
   return(saturation)
 }##estimate_saturation
 
-counts <- read.csv(rawCounts, row.names=1, check.names=FALSE)
+if (grepl(".tsv$", rawCounts)){
+    counts <- read.table(rawCounts, row.names=1, check.names=FALSE)
+}else if (grepl(".csv$", rawCounts)){
+    counts <- read.csv(rawCounts, row.names=1, check.names=FALSE)
+}else{
+    stop("Unexpected counts file format. '.csv' or '.tsv' are supported")
+}
 sat <- estimate_saturation(counts=counts, ndepths=10, nreps=1, extend.lines=TRUE)
 
 ## save - one file per sample

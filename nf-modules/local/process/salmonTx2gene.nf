@@ -3,7 +3,7 @@
  */
 
 process salmonTx2gene {
-    tag "$prefix"
+    tag "$gtf"
     label "python"
     label "medCpu"
     label "medMem"
@@ -11,11 +11,11 @@ process salmonTx2gene {
     publishDir "${params.outDir}/counts", mode: 'copy'
 
     input:
-    tuple val(prefix), path("salmon/*")
+    path("salmon/*")
     path(gtf)
 
     output:
-    tuple val("${prefix}"), path("salmon_tx2gene.tsv"), emit: results
+    path("salmon_tx2gene.tsv"), emit: results
     path("versions.txt"), emit: versions
 
     script:

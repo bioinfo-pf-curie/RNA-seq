@@ -49,6 +49,7 @@ process multiqc {
   modulesList = "-m custom_content -m preseq -m rseqc -m bowtie1 -m hisat2 -m star -m cutadapt -m fastqc -m qualimap"
   modulesList = params.counts == 'featureCounts' ? "${modulesList} -m featureCounts" : "${modulesList}"  
   modulesList = params.counts == 'HTseqCounts' ? "${modulesList} -m htseq" : "${modulesList}"  
+  modulesList = params.counts == 'salmon' ? "${modulesList} -m salmon" : "${modulesList}"
  
   //warn=skippedPoorAlignment.size() > 0 ? "--warn workflowSummary/warnings.txt" : ""
   warn = warnings.name == 'warnings.txt' ? "--warn workflowSummary/warnings.txt" : ""

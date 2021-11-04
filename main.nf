@@ -378,7 +378,7 @@ workflow {
       )
       chCounts = featureCountsFlow.out.counts
       chCountsTpm = featureCountsFlow.out.tpm
-      chCountsLogs = featureCountsFlow.out.logs
+      chCountsMqc = featureCountsFlow.out.logs
       chVersions = chVersions.mix(featureCountsFlow.out.versions)
     } else if (params.counts == 'HTseqCounts'){
       htseqCountsFlow (
@@ -388,7 +388,7 @@ workflow {
       )
       chCounts = htseqCountsFlow.out.counts
       chCountsTpm = htseqCountsFlow.out.tpm
-      chCountsLogs = htseqCountsFlow.out.logs
+      chCountsMqc = htseqCountsFlow.out.logs
       chVersions = chVersions.mix(htseqCountsFlow.out.versions)
      } else if (params.counts == 'star'){
        starCountsFlow (
@@ -399,7 +399,7 @@ workflow {
        )
       chCounts = starCountsFlow.out.counts
       chCountsTpm = starCountsFlow.out.tpm
-      chCountsLogs = starCountsFlow.out.logs
+      chCountsMqc = starCountsFlow.out.logs
       chVersions = chVersions.mix(starCountsFlow.out.versions)
      } else if (params.counts == 'salmon'){
        salmonCountsFlow (
@@ -408,9 +408,9 @@ workflow {
 	 chTranscriptsFasta.collect(),
 	 chGtf.collect()
        )
-       chCounts = Channel.empty()
-       chCountsTpm = Channel.empty()
-       chCountsLogs = Channel.empty()
+       chCounts = salmonCountsFlow.out.countsGene
+       chCountsTpm = salmonCountsFlow.out.tpmGene
+       chCountsMqc = salmonCountsFlow.out.results
        chVersions = chVersions.mix(salmonCountsFlow.out.versions)
      }
 
@@ -463,7 +463,7 @@ workflow {
         identitoFlow.out.results.collect().ifEmpty([]),
         markdupFlow.out.picardMetrics.collect().ifEmpty([]),
         markdupFlow.out.dupradarResults.collect().ifEmpty([]),
-        chCountsLogs.collect().ifEmpty([]),
+        chCountsMqc.collect().ifEmpty([]),
         chGeneSatResults.collect().ifEmpty([]),
         chGeneTypeResults.collect().ifEmpty([]),
         chGeneExpAnResults.collect().ifEmpty([]),

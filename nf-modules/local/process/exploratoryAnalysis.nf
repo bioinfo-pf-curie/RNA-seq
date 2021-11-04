@@ -15,7 +15,7 @@ process exploratoryAnalysis {
   path heatmapHeader
 
   output:
-  path "*.{txt,pdf,csv}", optional:true, emit: results
+  path "*.{pdf,csv}", optional:true, emit: results
   path("versions.txt"), emit: versions
 
   script:
