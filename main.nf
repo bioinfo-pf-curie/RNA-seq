@@ -54,6 +54,7 @@ params.fastaFai = NFTools.getGenomeAttribute(params, 'fastafai')
 params.polym = NFTools.getGenomeAttribute(params, 'polym')
 params.starOptions = params.genomes[ params.genome ].starPpts ? NFTools.getGenomeAttribute(params, 'starOpts') : params.starOpts
 params.salmonQuantOptions = NFTools.getGenomeAttribute(params, 'salmonQuantOpts')
+params.salmonIndex = NFTools.getGenomeAttribute(params, 'salmon')
 params.gencode = NFTools.getGenomeAttribute(params, 'gencode')
 
 // Stage config files
@@ -75,11 +76,12 @@ summary = [
   'Inputs' : params.samplePlan ?: params.reads ?: null,
   'Genome' : params.genome,
   'GTF Annotation' : params.gtf ?: null,
-  'Gencode' : params.gencode,
+  'Gencode' : params.gencode ? 'yes' : 'no',
   'BED Annotation' : params.bed12 ?: null,
   'Identito' : params.polym ?: null,
   'Strandedness' : params.stranded,
-  'Aligner' : params.aligner,
+  'Aligner' : params.aligner ?: null,
+  'PseudoAligner' : params.pseudoAligner ?: null,
   'Counts' : params.counts,
   'Max Resources': "${params.maxMemory} memory, ${params.maxCpus} cpus, ${params.maxTime} time per job",
   'Container': workflow.containerEngine && workflow.container ? "${workflow.containerEngine} - ${workflow.container}" : null,
@@ -100,6 +102,10 @@ if (params.genomes && params.genome && !params.genomes.containsKey(params.genome
   exit 1, "The provided genome '${params.genome}' is not available in the genomes file. Currently the available genomes are ${params.genomes.keySet().join(", ")}"
 }
 
+if (params.pseudoAligner && params.aligner){
+  exit 1, "Cannot use both a pseudo-aligner and an aligner. Please use either of the '--aligner' and '--pseudoAligner' parameters." 
+}
+
 if (params.counts == 'star' && params.aligner != 'star'){
   exit 1, "Cannot run STAR counts without STAR aligner. Please check the '--aligner' and '--counts' parameters."
 }
@@ -116,6 +122,7 @@ if( params.starIndex && params.aligner == 'star' ){
     .ifEmpty { exit 1, "STAR index not found: ${params.starIndex}" }
     .set {chStarIndex}
   chHisat2Index = Channel.empty()
+  chSalmonIndex = Channel.empty()
 }
 else if ( params.hisat2Index && params.aligner == 'hisat2' ){
   Channel
@@ -123,6 +130,15 @@ else if ( params.hisat2Index && params.aligner == 'hisat2' ){
     .ifEmpty { exit 1, "HISAT2 index not found: ${params.hisat2Index}" }
     .set{chHisat2Index}
   chStarIndex = Channel.empty()
+  chSalmonIndex = Channel.empty()
+}
+else if ( params.salmonIndex && params.pseudoAligner == "salmon" ){
+  Channel
+    .fromPath("${params.salmonIndex}")
+    .ifEmpty { exit 1, "Salmon index not found: ${params.salmonIndex}" }
+    .set{chSalmonIndex}
+  chStarIndex = Channel.empty()
+  chHisat2Index = Channel.empty()
 }
 else {
     exit 1, "No genome index specified!"
@@ -233,7 +249,8 @@ include { identitoFlow } from './nf-modules/local/subworkflow/identito'
 include { featureCountsFlow } from './nf-modules/local/subworkflow/featureCounts'
 include { htseqCountsFlow } from './nf-modules/local/subworkflow/htseqCounts'
 include { starCountsFlow } from './nf-modules/local/subworkflow/starCounts'
-include { salmonCountsFlow } from './nf-modules/local/subworkflow/salmonQuant'
+include { salmonQuantFromBamFlow } from './nf-modules/local/subworkflow/salmonQuantFromBam'
+include { salmonQuantFromFastqFlow } from './nf-modules/local/subworkflow/salmonQuantFromFastq'
 include { geneCountsAnalysisFlow } from './nf-modules/local/subworkflow/geneCountsAnalysis'
 
 // Processes
@@ -257,6 +274,20 @@ workflow {
 
   main:
 
+    // Init MultiQC channels
+    chFastqcMqc = Channel.empty()
+    chrRNAMappingMqc = Channel.empty()
+    chAlignedMqc = Channel.empty()
+    chQualimapMqc = Channel.empty()
+    chPreseqMqc = Channel.empty()
+    chMarkDupMqc = Channel.empty()
+    chDupradarMqc = Channel.empty()
+    chIndentitoMqc = Channel.empty() 
+    chCountsMqc = Channel.empty()
+    chGeneSatResults=Channel.empty()                                                                                                                                                                       
+    chGeneTypeResults=Channel.empty()                                                                                                                                                                      
+    chGeneExpAnResults=Channel.empty()                                                                                                                                                                     
+
     // subroutines
     outputDocumentation(
       chOutputDocs,
@@ -268,6 +299,7 @@ workflow {
       fastqc(
         chRawReads
       )
+      chFastqMqc = fastqc.out.results.collect()
       chVersions = chVersions.mix(fastqc.out.versions)
     }
 
@@ -278,144 +310,177 @@ workflow {
     )
     chVersions = chVersions.mix(strandnessFlow.out.versions)
 
-    // PROCESS: rRNA mapping 
-    if (!params.skipRrna && params.rrna){
-      rRNAMapping(
-        chRawReads,
-        chRrnaAnnot.collect()
-      )
-      chFilteredReads = rRNAMapping.out.filteredReads
-      chVersions = chVersions.mix(rRNAMapping.out.versions)
-    }else{
-      chFilteredReads = chRawReads
-    }
+    //*****************************************
+    // ALIGNMENT-BASED ANALYSIS
 
-    // SUBWORKFLOW: STAR mapping
-    if (params.aligner == "star"){
-      mappingStarFlow(
-        chFilteredReads,
-        chStarIndex,
-        chGtf
-      )
-      chAlignedBam = mappingStarFlow.out.bam
-      chAlignedBai = mappingStarFlow.out.bai
-      chAlignedLogs = mappingStarFlow.out.logs
-      chAlignedFlagstat = mappingStarFlow.out.flagstat
-      chVersions = chVersions.mix(mappingStarFlow.out.versions)
-    }
+    if (!params.pseudoAligner && params.aligner){
 
-    // SUBWORKFLOW: HISAT2 mapping      
-    if (params.aligner == "hisat2"){
-      mappingHisat2Flow(
-        chFilteredReads,
-	strandnessFlow.out.strandnessResults,
-        chHisat2Index,
-        chGtf
-      )
-      chAlignedBam = mappingHisat2Flow.out.bam
-      chAlignedBai = mappingHisat2Flow.out.bai
-      chAlignedLogs = mappingHisat2Flow.out.logs
-      chAlignedFlagstat = mappingHisat2Flow.out.flagstat
-      chVersions = chVersions.mix(mappingHisat2Flow.out.versions)
-    }
+      // PROCESS: rRNA mapping 
+      if (!params.skipRrna && params.rrna){
+        rRNAMapping(
+          chRawReads,
+          chRrnaAnnot.collect()
+        )
+        chFilteredReads = rRNAMapping.out.filteredReads
+	chrRNAMappingMqc = rRNAMapping.out.logs.collect()
+        chVersions = chVersions.mix(rRNAMapping.out.versions)
+      }else{
+        chFilteredReads = chRawReads
+      }
 
-    // Filter removes all 'aligned' channels that fail the check
-    chAlignedFlagstat.join(chAlignedBam).join(chAlignedBai)
-      .filter { prefix, logs, bam, bai -> checkAlignmentPercent(prefix, logs) }
-      .map { prefix, logs, bam, bai -> [ prefix, bam, bai ] }
-      .set { chBamPassed }
+      // SUBWORKFLOW: STAR mapping
+      if (params.aligner == "star"){
+        mappingStarFlow(
+          chFilteredReads,
+          chStarIndex,
+          chGtf
+        )
+        chAlignedBam = mappingStarFlow.out.bam
+        chAlignedBai = mappingStarFlow.out.bai
+        chAlignedMqc = mappingStarFlow.out.logs
+        chAlignedFlagstat = mappingStarFlow.out.flagstat
+        chVersions = chVersions.mix(mappingStarFlow.out.versions)
+      }
+
+      // SUBWORKFLOW: HISAT2 mapping      
+      if (params.aligner == "hisat2"){
+        mappingHisat2Flow(
+          chFilteredReads,
+	  strandnessFlow.out.strandnessResults,
+          chHisat2Index,
+          chGtf
+        )
+        chAlignedBam = mappingHisat2Flow.out.bam
+        chAlignedBai = mappingHisat2Flow.out.bai
+        chAlignedMqc = mappingHisat2Flow.out.logs
+        chAlignedFlagstat = mappingHisat2Flow.out.flagstat
+        chVersions = chVersions.mix(mappingHisat2Flow.out.versions)
+      }
+
+      // Filter removes all 'aligned' channels that fail the check
+      chAlignedFlagstat.join(chAlignedBam).join(chAlignedBai)
+        .filter { prefix, logs, bam, bai -> checkAlignmentPercent(prefix, logs) }
+        .map { prefix, logs, bam, bai -> [ prefix, bam, bai ] }
+        .set { chBamPassed }
   
-    // PROCESS : bigwig file
-    if (!params.skipBigwig){
-      bigWig(
-        chBamPassed.join(strandnessFlow.out.strandnessResults)
-      )
-      chVersions = chVersions.mix(bigWig.out.versions)
-    }
+      // PROCESS : bigwig file
+      if (!params.skipBigwig){
+        bigWig(
+          chBamPassed.join(strandnessFlow.out.strandnessResults)
+        )
+        chVersions = chVersions.mix(bigWig.out.versions)
+      }
 
-    // PROCESS : Qualimap
-    if (!params.skipQC && !params.skipQualimap){
-      qualimap(
-        chBamPassed.join(strandnessFlow.out.strandnessResults),
-        chGtf.collect()
-      )
-      chVersions = chVersions.mix(qualimap.out.versions)
-    }
+      // PROCESS : Qualimap
+      if (!params.skipQC && !params.skipQualimap){
+        qualimap(
+          chBamPassed.join(strandnessFlow.out.strandnessResults),
+          chGtf.collect()
+        )
+	chQualimapMqc = qualimap.out.results.collect()
+        chVersions = chVersions.mix(qualimap.out.versions)
+      }
 
-    // PROCESS : Saturation curves
-    if (!params.skipQC && !params.skipSaturation){ 
-      preseq(
-        chBamPassed
-      )
-      chVersions = chVersions.mix(preseq.out.versions)
-    }
+      // PROCESS : Saturation curves
+      if (!params.skipQC && !params.skipSaturation){ 
+        preseq(
+          chBamPassed
+        )
+	chPreseqMqc = preseq.out.results.collect()
+        chVersions = chVersions.mix(preseq.out.versions)
+      }
       
-    // SUBWORKFLOW: Duplicates
-    markdupFlow(
+      // SUBWORKFLOW: Duplicates
+      markdupFlow(
         chBamPassed,
 	strandnessFlow.out.strandnessResults,
         chGtf.collect()
-    )
-    chVersions = chVersions.mix(markdupFlow.out.versions)
+      )
+      chMarkDupMqc = markdupFlow.out.picardMetrics.collect()
+      chDupradarMqc = markdupFlow.out.dupradarResults.collect()
+      chVersions = chVersions.mix(markdupFlow.out.versions)
 
-    // SUBWORKFLOW: Identito - polym and Monitoring
-    if (!params.skipIdentito){
-      identitoFlow(
+      // SUBWORKFLOW: Identito - polym and Monitoring
+      if (!params.skipIdentito){
+        identitoFlow(
           markdupFlow.out.bam,
           chFasta.collect(),
           chFastaFai.collect(),
           chPolymBed.collect()
-      )
-      chVersions = chVersions.mix(identitoFlow.out.versions)
+        )
+	chIdentitoMqc = identitoFlow.out.results.collect()
+        chVersions = chVersions.mix(identitoFlow.out.versions)
+      }
+
+      // SUBWORKFLOW: Counts
+      if(params.counts == 'featureCounts'){
+        featureCountsFlow(
+          chBamPassed,
+	  strandnessFlow.out.strandnessResults,
+          chGtf.collect()
+        )
+        chCounts = featureCountsFlow.out.counts
+        chCountsTpm = featureCountsFlow.out.tpm
+        chCountsMqc = featureCountsFlow.out.logs
+        chVersions = chVersions.mix(featureCountsFlow.out.versions)
+      } else if (params.counts == 'HTseqCounts'){
+        htseqCountsFlow (
+          chBamPassed,
+	  strandnessFlow.out.strandnessResults,
+          chGtf.collect()
+        )
+        chCounts = htseqCountsFlow.out.counts
+        chCountsTpm = htseqCountsFlow.out.tpm
+        chCountsMqc = htseqCountsFlow.out.logs
+        chVersions = chVersions.mix(htseqCountsFlow.out.versions)
+      } else if (params.counts == 'star'){
+        starCountsFlow (
+          mappingStarFlow.out.counts,
+	  mappingStarFlow.out.logs,
+	  strandnessFlow.out.strandnessResults,
+          chGtf.collect()
+        )
+        chCounts = starCountsFlow.out.counts
+        chCountsTpm = starCountsFlow.out.tpm
+        chCountsMqc = starCountsFlow.out.logs
+        chVersions = chVersions.mix(starCountsFlow.out.versions)
+      } else if (params.counts == 'salmon'){
+        salmonQuantFromBamFlow (
+          mappingStarFlow.out.transcriptsBam,
+	  strandnessFlow.out.strandnessResults, 
+	  chTranscriptsFasta,
+	  chGtf
+        )
+        chCounts = salmonQuantFromBamFlow.out.countsGene
+        chCountsTpm = salmonQuantFromBamFlow.out.tpmGene
+        chCountsMqc = salmonQuantFromBamFlow.out.results
+        chVersions = chVersions.mix(salmonQuantFromBamFlow.out.versions)
+      }
     }
 
-    // SUBWORKFLOW: Counts
-    if(params.counts == 'featureCounts'){
-      featureCountsFlow(
-        chBamPassed,
-	strandnessFlow.out.strandnessResults,
-        chGtf.collect()
-      )
-      chCounts = featureCountsFlow.out.counts
-      chCountsTpm = featureCountsFlow.out.tpm
-      chCountsMqc = featureCountsFlow.out.logs
-      chVersions = chVersions.mix(featureCountsFlow.out.versions)
-    } else if (params.counts == 'HTseqCounts'){
-      htseqCountsFlow (
-        chBamPassed,
-	strandnessFlow.out.strandnessResults,
-        chGtf.collect()
-      )
-      chCounts = htseqCountsFlow.out.counts
-      chCountsTpm = htseqCountsFlow.out.tpm
-      chCountsMqc = htseqCountsFlow.out.logs
-      chVersions = chVersions.mix(htseqCountsFlow.out.versions)
-     } else if (params.counts == 'star'){
-       starCountsFlow (
-         mappingStarFlow.out.counts,
-	 mappingStarFlow.out.logs,
-	 strandnessFlow.out.strandnessResults,
-         chGtf.collect()
-       )
-      chCounts = starCountsFlow.out.counts
-      chCountsTpm = starCountsFlow.out.tpm
-      chCountsMqc = starCountsFlow.out.logs
-      chVersions = chVersions.mix(starCountsFlow.out.versions)
-     } else if (params.counts == 'salmon'){
-       salmonCountsFlow (
-         mappingStarFlow.out.transcriptsBam,
-	 strandnessFlow.out.strandnessResults, 
-	 chTranscriptsFasta.collect(),
-	 chGtf.collect()
-       )
-       chCounts = salmonCountsFlow.out.countsGene
-       chCountsTpm = salmonCountsFlow.out.tpmGene
-       chCountsMqc = salmonCountsFlow.out.results
-       chVersions = chVersions.mix(salmonCountsFlow.out.versions)
-     }
 
+    //*****************************************
+    // PSEUDO-ALIGNMENT-BASED ANALYSIS
+
+    if (params.pseudoAligner == "salmon"){
+      salmonQuantFromFastqFlow (
+        chRawReads,
+	strandnessFlow.out.strandnessResults,
+	chSalmonIndex,
+	chGtf
+      )
+      chCounts = salmonQuantFromFastqFlow.out.countsGene
+      chCountsTpm = salmonQuantFromFastqFlow.out.tpmGene
+      chCountsMqc = salmonQuantFromFastqFlow.out.results
+      chVersions = chVersions.mix(salmonQuantFromFastqFlow.out.versions)
+    }
+
+
+    //******************************************
+    // COUNTS-BASED QC
+ 
     // SUBWORKFLOW: gene counts qc
-    if (!params.skipGeneCountsAnalysis){
+    if (!params.skipGeneCountsAnalysis && (params.aligner || params.pseudoAligner)){
       geneCountsAnalysisFlow(
         chCounts,
         chCountsTpm,
@@ -427,10 +492,6 @@ workflow {
       chGeneTypeResults=geneCountsAnalysisFlow.out.countsPerGenetype
       chGeneExpAnResults=geneCountsAnalysisFlow.out.expAnalysisResults
       chVersions = chVersions.mix(geneCountsAnalysisFlow.out.versions)
-    }else{
-      chGeneSatResults=Channel.empty()
-      chGeneTypeResults=Channel.empty()
-      chGeneExpAnResults=Channel.empty()
     }
 
     // MultiQC
@@ -454,15 +515,15 @@ workflow {
         chSplan.collect(),
         chMetadata.ifEmpty([]),
         chMultiqcConfig.ifEmpty([]),
-        fastqc.out.results.collect().ifEmpty([]),
-        rRNAMapping.out.logs.collect().ifEmpty([]),
-        chAlignedLogs.collect().ifEmpty([]),
+        chFastqMqc.ifEmpty([]),
+        chrRNAMappingMqc.ifEmpty([]),
+        chAlignedMqc.collect().ifEmpty([]),
         strandnessFlow.out.strandnessOutputFiles.collect().ifEmpty([]),
-        qualimap.out.results.collect().ifEmpty([]),
-        preseq.out.results.collect().ifEmpty([]),
-        identitoFlow.out.results.collect().ifEmpty([]),
-        markdupFlow.out.picardMetrics.collect().ifEmpty([]),
-        markdupFlow.out.dupradarResults.collect().ifEmpty([]),
+        chQualimapMqc.ifEmpty([]),
+        chPreseqMqc.ifEmpty([]),
+        chIndentitoMqc.ifEmpty([]),
+        chMarkDupMqc.ifEmpty([]),
+        chDupradarMqc.ifEmpty([]),
         chCountsMqc.collect().ifEmpty([]),
         chGeneSatResults.collect().ifEmpty([]),
         chGeneTypeResults.collect().ifEmpty([]),

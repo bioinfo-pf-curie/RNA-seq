@@ -22,9 +22,9 @@ dependencies:
   - bioconda::subread=2.0.1=h5bf99c6_1
   - bioconda::htseq=0.13.5=py37h9c5868f_1
   - bioconda::deeptools=3.5.1=py_0
-  - bioconda::snpsift=4.3.1t=hdfd78af_3
+  - bioconda::salmon=1.4.0=hf69c8f4_0
   - conda-forge::tbb=2020.2=hc9558a2_0
-  - bioconda::salmon=0.14.2=ha0cc327_0
+  - bioconda::salmon=0.14.0=h84f40af_1
   - bioconda::qualimap=2.2.2d=1
 
   - conda-forge::r-base=4.0.3=h349a78a_8

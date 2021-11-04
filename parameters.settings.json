@@ -90,11 +90,11 @@
       "type": "string",
       "nargs": "1",
       "choices": ["star","hisat2"],
-      "default_value": "star",
+      "default_value": null,
       "pattern": ".*",
       "render": "textfield",
       "arity": 0,
-      "group": "Mapping"
+      "group": "Mandatory"
     },
     {
       "name": "bowtie2Options",
@@ -123,19 +123,6 @@
       "group": "Mapping"
     },
     {
-      "name": "aligner",
-      "label": "Mapping",
-      "usage": "Tool for reads alignment",
-      "type": "string",
-      "nargs": "1",
-      "choices": ["star","hisat2"],
-      "default_value": "star",
-      "pattern": ".*",
-      "render": "textfield",
-      "arity": 0,
-      "group": "Mapping"
-    },
-    {
       "name": "saveAlignedIntermediates",
       "label": "Save aligned intermediates",
       "usage": "Save intermediates alignment files",
@@ -156,11 +143,25 @@
       "type": "string",
       "nargs": "1",
       "choices": ["star", "featureCounts", "HTseqCounts", "salmon"],
-      "default_value": "star",
+      "default_value": null,
       "pattern": ".*",
       "render": "textfield",
       "arity": 0,
-      "group": "Counts"
+      "group": "Mandatory"
+    },
+
+    {
+      "name": "pseudoAligner",
+      "label": "Mapping",
+      "usage": "Tool for reads pseudo-alignment",
+      "type": "string",
+      "nargs": "1",
+      "choices": ["salmon"],
+      "default_value": null,
+      "pattern": ".*",
+      "render": "textfield",
+      "arity": 0,
+      "group": "Mandatory"
     },
 
     {

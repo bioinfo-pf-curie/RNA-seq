@@ -1,19 +1,19 @@
 /*
- * Salmon quant from BAM file
+ * Salmon quant from Fastq file
  */
 
-process salmonQuantFromBam {
+process salmonQuantFromFastq {
     tag "$prefix"
     label "salmon"
     label "medCpu"
     label "medMem"
 
-    publishDir "${params.outDir}/counts", mode: 'copy'
+    publishDir "${params.outDir}/pseudoCounts", mode: 'copy'
 
     input:
-    tuple val(prefix), path(bam), val(strandness)
-    path(transcriptsFasta)
-    path(gtf)
+    tuple val(prefix), path(reads), val(strandness)
+    path  index
+    path  gtf
 
     output:
     path("${prefix}"), emit: results
@@ -26,17 +26,20 @@ process salmonQuantFromBam {
       strandOpts = params.singleEnd ? 'SF' : 'ISF'
     } else if (strandness == 'reverse') {
       strandOpts = params.singleEnd ? 'SR' : 'ISR'
-    }    
+    }
+    inputReads = params.singleEnd ? "-r $reads" : "-1 ${reads[0]} -2 ${reads[1]}"
+
     """
     echo \$(salmon --version 2>&1) > versions.txt
     salmon quant \\
-      --libType=$strandOpts \\
-      -a ${bam} \\
       --threads $task.cpus \\
-      -t ${transcriptsFasta} \\
-      --geneMap ${gtf} \\
+      --libType=$strandOpts \\
+      --validateMappings \\
       ${params.salmonQuantOptions} \\
+      --geneMap ${gtf} \\
       ${gencodeOpts} \\
+      $inputReads \\
+      --index $index \\
       -o ${prefix}
     """
 }

@@ -7,7 +7,7 @@ include { salmonTx2gene } from '../process/salmonTx2gene'
 include { salmonTxImport } from '../process/salmonTxImport'
 include { mergeCounts} from '../process/mergeCounts'
 
-workflow salmonCountsFlow {
+workflow salmonQuantFromBamFlow {
 
   take:
   bam // Channel [val(prefix), path(bam), path(bai)]
