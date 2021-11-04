@@ -102,6 +102,10 @@ if (params.genomes && params.genome && !params.genomes.containsKey(params.genome
   exit 1, "The provided genome '${params.genome}' is not available in the genomes file. Currently the available genomes are ${params.genomes.keySet().join(", ")}"
 }
 
+if (!params.pseudoAligner && !params.aligner){
+  exit 1, "Please provide a pseudo-aligner and an aligner, using either of the '--aligner' and '--pseudoAligner' parameters."
+}
+
 if (params.pseudoAligner && params.aligner){
   exit 1, "Cannot use both a pseudo-aligner and an aligner. Please use either of the '--aligner' and '--pseudoAligner' parameters." 
 }
