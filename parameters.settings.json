@@ -94,7 +94,7 @@
       "pattern": ".*",
       "render": "textfield",
       "arity": 0,
-      "group": "Mandatory"
+      "group": "Mandatory arguments"
     },
     {
       "name": "bowtie2Options",
@@ -123,6 +123,47 @@
       "group": "Mapping"
     },
     {
+      "name": "salmonQuantOpts",
+      "label": "Salmon options",
+      "usage": "Options for Salmon quantification",
+      "type": "string",
+      "nargs": "1",
+      "choices": [],
+      "default_value": "",
+      "pattern": ".*",
+      "render": "textfield",
+      "arity": 0,
+      "group": "Counts"
+    },
+
+    {
+      "name": "featurecountsOpts",
+      "label": "FeatureCounts options",
+      "usage": "Options for featureCounts quantification",
+      "type": "string",
+      "nargs": "1",
+      "choices": [],
+      "default_value": "-t exon -C -p",
+      "pattern": "*",
+      "render": "textfield",
+      "arity": 0,
+      "group": "Counts"
+    },
+    {
+      "name": "htseqOpts",                                                                                                                                                                          
+      "label": "HTSeq options",                                                                                                                                                                             
+      "usage": "Options for HTSeq quantification",                                                                                                                                                          
+      "type": "string",
+      "nargs": "1",
+      "choices": [],
+      "default_value": "-f bam -t exon -r pos",
+      "pattern": ".*",
+      "render": "textfield",
+      "arity": 0,
+      "group": "Counts"
+    }, 
+
+    {
       "name": "saveAlignedIntermediates",
       "label": "Save aligned intermediates",
       "usage": "Save intermediates alignment files",
@@ -147,7 +188,7 @@
       "pattern": ".*",
       "render": "textfield",
       "arity": 0,
-      "group": "Mandatory"
+      "group": "Mandatory arguments"
     },
 
     {
@@ -161,7 +202,7 @@
       "pattern": ".*",
       "render": "textfield",
       "arity": 0,
-      "group": "Mandatory"
+      "group": "Mandatory arguments"
     },
 
     {
@@ -171,6 +212,32 @@
       "type": "string",
       "nargs": "1",
       "choices": ["stringtie","scallop"],
+      "default_value": null,
+      "pattern": ".*",
+      "render": "textfield",
+      "arity": 0,
+      "group": "De novo assembly"
+    },
+    {
+      "name": "stringtieOps",
+      "label": "Stringtie options",
+      "usage": "Options for Stringtie analysis",
+      "type": "string",
+      "nargs": "1",
+      "choices": [],
+      "default_value": null,
+      "pattern": ".*",
+      "render": "textfield",
+      "arity": 0,
+      "group": "De novo assembly"
+    },
+    {
+      "name": "scallopOpts",
+      "label": "Scallop options",
+      "usage": "Options for Scallop analysis",
+      "type": "string",
+      "nargs": "1",
+      "choices": [],
       "default_value": null,
       "pattern": ".*",
       "render": "textfield",
