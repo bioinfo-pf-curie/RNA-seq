@@ -37,63 +37,87 @@ See the [nf-core](https://nf-co.re/) project for more details.
 ### Quick help
 
 ```bash
-nextflow run main.nf --help
-N E X T F L O W  ~  version 19.04.0
-Launching `main.nf` [stupefied_darwin] - revision: aa905ab621
-rnaseq v3.2.0
-=======================================================
-
+N E X T F L O W  ~  version 20.10.0
+Launching `main.nf` [awesome_archimedes] - revision: 7f7a25de60
+------------------------------------------------------------------------
+   ______ _   _   ___ 
+   | ___ \ \ | | / _ \
+   | |_/ /  \| |/ /_\ \______ ___  ___  __ _ 
+   |    /| . ` ||  _  |______/ __|/ _ \/ _` |
+   | |\ \| |\  || | | |      \__ \  __/ (_| |
+   \_| \_\_| \_/\_| |_/      |___/\___|\__, |
+                                          | |
+                                          |_|
+                     v4.0.0dev
+------------------------------------------------------------------------
+------------------------------------------------------------------------
 Usage:
-nextflow run rnaseq --reads '*_R{1,2}.fastq.gz' --genome hg19 -profile conda
-nextflow run rnaseq --samplePlan sample_plan --genome hg19 -profile conda
-	 
-Mandatory arguments:
-  --reads [file]                       Path to input data (must be surrounded with quotes)
-  --samplePlan [file]                  Path to sample plan input file (cannot be used with --reads)
-  --genome [str]                       Name of genome reference
-  -profile [str]                       Configuration profile to use. test / conda / toolsPath / singularity / cluster (see below)
-		   
-Inputs:
-  --singleEnd [bool]                   Specifies that the input is single end reads
+
+The typical command for running the pipeline is as follows:
+
+nextflow run main.nf --reads PATH --samplePlan PATH --profile STRING --genome STRING
+
+MANDATORY ARGUMENTS:
+	--genome        STRING                                                                            Name of the reference genome.
+	--profile       STRING [conda, cluster, docker, multiconda, conda, path, multipath, singularity]  Configuration profile to use. Can use multiple (comma separated).
+    --reads         PATH                                                                              Path to input data (must be surrounded with quotes)
+    --samplePlan    PATH                                                                              Path to sample plan (csv format) with raw reads (if `--reads` is not specified)
+    --aligner       STRING [star, hisat2]                                                             Tool for reads alignment
+    --counts        STRING [star, featureCounts, HTseqCounts, salmon]                                 Tool to use to estimate the raw counts per gene
+    --pseudoAligner STRING [salmon]                                                                   Tool for reads pseudo-alignment
 		 
-Strandness:
-  --stranded [bool]                    Library strandness ['auto', 'forward', 'reverse', 'no']. Default: 'auto'
-							   
-Mapping:
-  --aligner [str]                      Tool for read alignments ['star', 'hisat2']. Default: 'star'
-										 
-Counts:
-  --counts [str]                       Tool to use to estimate the raw counts per gene ['star', 'featureCounts', 'HTseqCounts']. Default: 'star'
-											   
-References: If not specified in the configuration file or you wish to overwrite any of the references.
-  --genomeAnnotationPath [file]        Path  to genome annotation folder
-  --fasta [file]                       Path the genome fasta file
-  --starIndex [dir]                    Path to STAR index
-  --hisat2Index [file]                 Path to HiSAT2 index
-  --gtf [file]                         Path to GTF file
-  --bed12 [file]                       Path to gene bed12 file
-  --polym [file]                       Path to BED file with polym to check
-  --saveAlignedIntermediates [bool]    Save the intermediate files from the Aligment step. Default: false
-																				 
-Other options:
-  --metadata [file]                    Add metadata file for multiQC report
-  --outDir [dir]                       The output directory where the results will be saved
-  -w/--work-dir [dir]                  The temporary directory where intermediate data will be saved
-  -name [str]                          Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic.
-																								   
-Skip options:
-  --skipQC [bool]                      Skip all QC steps apart from MultiQC
-  --skipRrna [bool]                    Skip rRNA mapping
-  --skipFastqc [bool]                  Skip FastQC
-  --skipSaturation [bool]              Skip Saturation qc
-  --skipDupradar [bool]                Skip dupRadar (and Picard MarkDups)
-  --skipQualimap [bool]                Skip Qualimap analysis
-  --skipExpan [bool]                   Skip exploratory analysis
-  --skipBigwig [bool]                  Skip bigwig files 
-  --skipIdentito [bool]                Skip identito checks
-  --skipMultiQC [bool]                 Skip MultiQC
-  --skipSoftVersions [bool]            Skip getSoftwareVersion
-																																				 
+INPUTS:
+	--singleEnd                                       For single-end input data
+	--stranded  STRING [auto, forward, reverse, no]   Library strandness
+
+MAPPING:
+
+    --bowtie2Options           STRING    Options for rRNA mapping with bowtie2
+    --saveAlignedIntermediates           Save intermediates alignment files
+	--starOptions              STRING    Options for STAR mapping
+
+COUNTS:
+	
+	--featurecountsOpts STRING   Options for featureCounts quantification
+	--htseqOpts         STRING   Options for HTSeq quantification
+	--salmonQuantOpts   STRING   Options for Salmon quantification
+
+DE NOVO ASSEMBLY:
+
+    --denovo STRING [stringtie, scallop]  Tool for reference-guided assembly of RNA transcripts
+    --scallopOpts  STRING                 Options for Scallop analysis
+    --stringtieOps STRING                 Options for Stringtie analysis
+		
+REFERENCES:
+
+    --bed12                PATH   Path to gene file (BED12)
+	--fasta                PATH   Path to genome fasta file
+	--genomeAnnotationPath PATH   Path to genome annotations folder
+	--gtf                  PATH   Path to GTF annotation file
+	--hisat2Index          PATH   Path to Hisat2 indexes
+	--polym                PATH   Path to BED file with polymorphisms for identito monitoring
+	--starIndex            PATH   Path to STAR indexes
+
+SKIP OPTIONS:
+
+	--skipBigWig                       Disable bigwig generation with Deeptools
+	--skipDupradar                     Disable duplicates analysis with DupRadar
+	--skipFastqc                       Disable Fastqc
+	--skipGeneCountsAnalysis           Disable exporatory analysis of genes count
+	--skipIdentito                     Disable Identito
+	--skipMultiqc                      Disable MultiQC
+	--skipQC                           Disable quality controls on raw and aligned reads [fastqc, qualimap, preseq]
+	--skipQualimap                     Disable RNA-seq quality controls with Qualimap
+	--skipRrna                         Disable rRNA mapping
+	--skipSaturation                   Disable saturation analysis with Preseq
+
+OTHER OPTIONS:
+
+    --metadata      PATH     Specify a custom metadata file for MultiQC
+	--multiqcConfig PATH     Specify a custom config file for MultiQC
+	--name          STRING   Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic
+	--outDir        PATH     The output directory where the results will be saved
+	
 =======================================================
 Available Profiles
   -profile test                        Run the test dataset
