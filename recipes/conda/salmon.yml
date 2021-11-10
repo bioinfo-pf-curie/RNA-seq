@@ -1,4 +1,4 @@
-name: salmon-1.4.0
+name: salmon
 channels:
   - bioconda
   - conda-forge

@@ -1,4 +1,4 @@
-name: deeptools-3.5.1
+name: deeptools
 channels:
   - conda-forge
   - bioconda

@@ -1,4 +1,4 @@
-name: featureCounts-2.0.1
+name: featureCounts
 channels:
   - conda-forge
   - bioconda

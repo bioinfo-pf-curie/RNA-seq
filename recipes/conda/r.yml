@@ -1,4 +1,4 @@
-name: rnaseqr-4.0.3
+name: rnaseqr
 channels:
   - conda-forge
   - bioconda

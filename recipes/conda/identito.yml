@@ -1,4 +1,4 @@
-name: identito-1.0.0
+name: identito
 channels:
   - conda-forge
   - bioconda
