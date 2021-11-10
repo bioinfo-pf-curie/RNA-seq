@@ -9,7 +9,7 @@ dependencies:
   - python=3.7.10=hffdb5ce_100_cpython
   - conda-forge::pymdown-extensions=7.1
   - bioconda::fastqc=0.11.9=hdfd78af_1
-  - bioconda::multiqc=1.10.1=py_0
+  - bioconda::multiqc=1.11=pyhdfd78af_0
   - bioconda::samtools=1.12=h9aed4be_1
   - bioconda::bcftools=1.12=h45bccc9_1
   - bioconda::star=2.7.6a=0
@@ -25,6 +25,9 @@ dependencies:
   - bioconda::salmon=1.4.0=hf69c8f4_0
   - conda-forge::tbb=2020.2=hc9558a2_0
   - bioconda::qualimap=2.2.2d=1
+  - bioconda::scallop-0.10.5=hbce0939_1
+  - bioconda::stringtie-2.1.7=h978d192_0
+  - bioconda::gffcompare-0.11.2=h7d875b9_2
 
   - conda-forge::r-base=4.0.3=h349a78a_8
   - conda-forge::r-dplyr=1.0.5=r40h03ef668_0

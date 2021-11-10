@@ -165,6 +165,20 @@
     },
 
     {
+      "name": "denovo",
+      "label": "Transcripts",
+      "usage": "Tool for reference-guided assembly of RNA transcripts",
+      "type": "string",
+      "nargs": "1",
+      "choices": ["stringtie","scallop"],
+      "default_value": null,
+      "pattern": ".*",
+      "render": "textfield",
+      "arity": 0,
+      "group": "De novo assembly"
+    },
+
+    {
       "name": "genomeAnnotationPath",
       "label": "Annotation path",
       "usage": "Path to genome annotations folder",

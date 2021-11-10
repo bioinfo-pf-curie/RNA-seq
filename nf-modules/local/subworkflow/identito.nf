@@ -1,22 +1,17 @@
 /* 
- * define the data analysis workflow 
+ * Identito monitoring
  */
 
-/* 
- * include requires tasks 
- */
 include { identitoPolym } from '../process/identitoPolym'
 include { identitoCombine } from '../process/identitoCombine'
 
 workflow identitoFlow {
-    // required inputs
     take:
     bam
     fasta
     fai
     polymBed
 
-    // workflow implementation
     main:
     chVersions = Channel.empty()
 

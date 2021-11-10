@@ -50,7 +50,7 @@ params.gtf = NFTools.getGenomeAttribute(params, 'gtf')
 params.transcriptsFasta = NFTools.getGenomeAttribute(params, 'transcriptsFasta') 
 params.bed12 = NFTools.getGenomeAttribute(params, 'bed12')
 params.fasta = NFTools.getGenomeAttribute(params, 'fasta')
-params.fastaFai = NFTools.getGenomeAttribute(params, 'fastafai')
+params.fastaFai = NFTools.getGenomeAttribute(params, 'fastaFai')
 params.polym = NFTools.getGenomeAttribute(params, 'polym')
 params.starOptions = params.genomes[ params.genome ].starPpts ? NFTools.getGenomeAttribute(params, 'starOpts') : params.starOpts
 params.salmonQuantOptions = NFTools.getGenomeAttribute(params, 'salmonQuantOpts')
@@ -63,6 +63,9 @@ chOutputDocs = Channel.fromPath("$baseDir/docs/output.md")
 chOutputDocsImages = file("$baseDir/docs/images/", checkIfExists: true)
 chPcaHeader = Channel.fromPath("$baseDir/assets/pcaHeader.txt")
 chHeatmapHeader = Channel.fromPath("$baseDir/assets/heatmapHeader.txt")
+
+// Tools
+denovoTools = params.denovo ? params.denovo.split(',').collect{it.trim().toLowerCase()} : []
 
 /*
 ===========================
@@ -82,6 +85,7 @@ summary = [
   'Strandedness' : params.stranded,
   'Aligner' : params.aligner ?: null,
   'PseudoAligner' : params.pseudoAligner ?: null,
+  'Guided Assembly' : params.denovo ?: null,
   'Counts' : params.counts,
   'Max Resources': "${params.maxMemory} memory, ${params.maxCpus} cpus, ${params.maxTime} time per job",
   'Container': workflow.containerEngine && workflow.container ? "${workflow.containerEngine} - ${workflow.container}" : null,
@@ -256,6 +260,8 @@ include { starCountsFlow } from './nf-modules/local/subworkflow/starCounts'
 include { salmonQuantFromBamFlow } from './nf-modules/local/subworkflow/salmonQuantFromBam'
 include { salmonQuantFromFastqFlow } from './nf-modules/local/subworkflow/salmonQuantFromFastq'
 include { geneCountsAnalysisFlow } from './nf-modules/local/subworkflow/geneCountsAnalysis'
+include { stringtieFlow } from './nf-modules/local/subworkflow/stringtie'
+include { scallopFlow } from './nf-modules/local/subworkflow/scallop'
 
 // Processes
 include { getSoftwareVersions } from './nf-modules/local/process/getSoftwareVersions'
@@ -278,7 +284,7 @@ workflow {
 
   main:
 
-    // Init MultiQC channels
+    // Init MultiQC Channels
     chFastqcMqc = Channel.empty()
     chrRNAMappingMqc = Channel.empty()
     chAlignedMqc = Channel.empty()
@@ -288,9 +294,13 @@ workflow {
     chDupradarMqc = Channel.empty()
     chIndentitoMqc = Channel.empty() 
     chCountsMqc = Channel.empty()
-    chGeneSatResults=Channel.empty()                                                                                                                                                                       
-    chGeneTypeResults=Channel.empty()                                                                                                                                                                      
-    chGeneExpAnResults=Channel.empty()                                                                                                                                                                     
+    chGeneSatResults=Channel.empty()
+    chGeneTypeResults=Channel.empty()
+    chGeneExpAnResults=Channel.empty()
+
+    // Init Channels
+    chCounts = Channel.empty()
+    chCountsTpm = Channel.empty()
 
     // subroutines
     outputDocumentation(
@@ -407,7 +417,7 @@ workflow {
       // SUBWORKFLOW: Identito - polym and Monitoring
       if (!params.skipIdentito){
         identitoFlow(
-          markdupFlow.out.bam,
+          chBamPassed,
           chFasta.collect(),
           chFastaFai.collect(),
           chPolymBed.collect()
@@ -484,7 +494,7 @@ workflow {
     // COUNTS-BASED QC
  
     // SUBWORKFLOW: gene counts qc
-    if (!params.skipGeneCountsAnalysis && (params.aligner || params.pseudoAligner)){
+    if (!params.skipGeneCountsAnalysis && params.counts && (params.aligner || params.pseudoAligner)){
       geneCountsAnalysisFlow(
         chCounts,
         chCountsTpm,
@@ -498,7 +508,31 @@ workflow {
       chVersions = chVersions.mix(geneCountsAnalysisFlow.out.versions)
     }
 
-    // MultiQC
+    //*******************************************
+    // GUIDED DE NOVO ASSEMBLY
+    chgffCompareMqc = Channel.empty()
+    if ("stringtie" in denovoTools){
+      stringtieFlow(
+        chBamPassed,
+	strandnessFlow.out.strandnessResults,
+        chGtf.collect()
+      )
+      chVersions = chVersions.mix(stringtieFlow.out.versions)
+      chgffCompareMqc = stringtieFlow.out.gffCompareResults
+    }
+
+    if ("scallop" in denovoTools){
+      scallopFlow(
+        chBamPassed,
+	strandnessFlow.out.strandnessResults,
+	chGtf.collect()
+      )
+      chVersions = chVersions.mix(scallopFlow.out.versions)
+    }
+  
+    //*******************************************
+    // MULTIQC
+
     if (!params.skipMultiQC){
 
       getSoftwareVersions(
@@ -525,13 +559,14 @@ workflow {
         strandnessFlow.out.strandnessOutputFiles.collect().ifEmpty([]),
         chQualimapMqc.ifEmpty([]),
         chPreseqMqc.ifEmpty([]),
-        chIndentitoMqc.ifEmpty([]),
+        chIdentitoMqc.ifEmpty([]),
         chMarkDupMqc.ifEmpty([]),
         chDupradarMqc.ifEmpty([]),
         chCountsMqc.collect().ifEmpty([]),
         chGeneSatResults.collect().ifEmpty([]),
         chGeneTypeResults.collect().ifEmpty([]),
         chGeneExpAnResults.collect().ifEmpty([]),
+	chgffCompareMqc.collect().ifEmpty([]),
         getSoftwareVersions.out.versionsYaml.collect().ifEmpty([]),
         workflowSummaryCh.collectFile(name: "workflow_summary_mqc.yaml"),
         chWarn.collect().ifEmpty([])

@@ -21,16 +21,18 @@ See the [nf-core](https://nf-co.re/) project for more details.
 1. Run quality control of raw sequencing reads ([`fastqc`](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/))
 2. Align reads on ribosomal RNAs sequences when available ([`bowtie1`](http://bowtie-bio.sourceforge.net/index.shtml))
 3. Align reads on reference genome ([`STAR`](https://github.com/alexdobin/STAR) / [`hisat2`](http://ccb.jhu.edu/software/hisat2/index.shtml))
-4. Infer reads orientation ([`rseqc`](http://rseqc.sourceforge.net/))
-5. Dedicated quality controls
+4. Pseudo-mapping algorithms ([`salmon`](https://salmon.readthedocs.io/en/latest/salmon.html))
+5. Infer reads orientation ([`rseqc`](http://rseqc.sourceforge.net/))
+6. Dedicated quality controls
     - Saturation curves ([`preseq`](http://smithlabresearch.org/software/preseq/) / [`R`](https://www.r-project.org/))
     - Duplicates ([`picard`](https://broadinstitute.github.io/picard/) / [`dupRadar`](https://bioconductor.org/packages/release/bioc/html/dupRadar.html))
     - Reads annotation ([`qualimap`](http://qualimap.conesalab.org/) / [`R`](https://www.r-project.org/))
     - Gene body coverage ([`qualimap`](http://qualimap.conesalab.org/))
-6. Identito monitoring based on a list of known polymorphism ([`bcftools`](http://samtools.github.io/bcftools/bcftools.html) / [`R`](https://www.r-project.org/))
-7. Generate counts table ([`STAR`](https://github.com/alexdobin/STAR) / [`featureCounts`](http://bioinf.wehi.edu.au/featureCounts/) / [`HTSeqCounts`](https://htseq.readthedocs.io/en/release_0.11.1/count.html))
-8. Exploratory analysis ([`R`](https://www.r-project.org/))
-9. Present all QC results in a final report ([`MultiQC`](http://multiqc.info/))
+7. Identito monitoring based on a list of known polymorphism ([`bcftools`](http://samtools.github.io/bcftools/bcftools.html) / [`R`](https://www.r-project.org/))
+8. Generate counts table ([`STAR`](https://github.com/alexdobin/STAR) / [`featureCounts`](http://bioinf.wehi.edu.au/featureCounts/) / [`HTSeqCounts`](https://htseq.readthedocs.io/en/release_0.11.1/count.html)/[`salmon`](https://salmon.readthedocs.io/en/latest/salmon.html))
+9. Exploratory analysis ([`R`](https://www.r-project.org/))
+10. Reference-guided de novo transcript assembly ([`stringtie`](https://ccb.jhu.edu/software/stringtie/), [`scallop`](https://github.com/Kingsford-Group/scallop))
+11. Present all QC results in a final report ([`MultiQC`](http://multiqc.info/))
 
 ### Quick help
 

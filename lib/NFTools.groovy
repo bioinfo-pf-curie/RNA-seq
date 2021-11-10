@@ -33,10 +33,12 @@ class NFTools {
      */
 
     public static void welcome(workflow, params) {
+        def colors = generateLogColors(params.get("monochromeLogs", false) as Boolean)
         nfHeader(params, workflow as WorkflowMetadata)
         if ("${workflow.manifest.version}" =~ /dev/ ) {
-            def devMessageFile = new File("${workflow.projectDir}/assets/devMessage.txt")
-            log.info devMessageFile.text
+	   //def devMessageFile = new File("${workflow.projectDir}/assets/devMessage.txt")
+           //log.info devMessageFile.text
+           printDisclaimer(params, workflow as WorkflowMetadata)
         }
         if (params.help) {
             def paramsWithUsage = readParamsFromJsonSettings("${workflow.projectDir}/parameters.settings.json")
@@ -63,6 +65,26 @@ class NFTools {
         ).make(context)
 	log.info txtTemplate.toString()
     }
+
+    /**
+     * Print Header in assets in the log
+     * @param params
+     * @param workflow
+     * @return
+     */
+
+    public static void printDisclaimer(params, WorkflowMetadata workflow) {
+
+        LinkedHashMap context = generateLogColors(params.get("monochromeLogs", false) as Boolean)
+        context << workflow.properties
+
+        def engine = new GStringTemplateEngine()
+        def txtTemplate = engine.createTemplate(
+          new File("${workflow.projectDir}/assets/devMessage.txt")
+        ).make(context)
+        log.info txtTemplate.toString()
+    }
+
 
 
     /**
@@ -324,7 +346,7 @@ class NFTools {
       /**
        * Channeling the input file containing FASTQ or BAM
        * Format is: "idSample,sampleName,pathToFastq1,[pathToFastq2]"
-       * or: "idSample,sampleName,pathToBam"
+       * or: "sampleID,sampleName,pathToBam"
        *
        * @param samplePlan
        * @return
