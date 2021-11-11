@@ -155,7 +155,7 @@ custom_data:
 
 sp:
    my_stats:
-      fn: '*.stats'
+      fn: '*mq.stats'
    gene_type:
       fn: '*genetype.txt'
    gene_saturation:

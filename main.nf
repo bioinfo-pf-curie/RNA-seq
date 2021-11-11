@@ -528,6 +528,7 @@ workflow {
 	chGtf.collect()
       )
       chVersions = chVersions.mix(scallopFlow.out.versions)
+      chgffCompareMqc = scallopFlow.out.gffCompareResults
     }
   
     //*******************************************
