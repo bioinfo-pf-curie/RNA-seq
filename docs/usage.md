@@ -73,6 +73,60 @@ results         # Finished results (configurable, see below)
 
 You can change the output director using the `--outDir/-w` options.
 
+### For gene-based quantification
+
+Gene-based quantification is a very common question in RNA-seq analysis.
+
+Broadly speaking, two different strategies can be used:
+
+- Sequencing reads are first aligned on a reference genome, and gene abundance is then estimated using
+tools such as `STAR`, `HTSeqCounts` or `featureCounts`.
+
+```bash
+nextflow run main.nf --reads '*_R{1,2}.fastq.gz' --aligner 'star' --counts 'star' -profile 'singularity,cluster'
+```
+
+- Or gene abundance can be directly infered from raw data using pseudo-alignment (or selective-alignment) method such as `salmon`
+
+```bash
+nextflow run main.nf --reads '*_R{1,2}.fastq.gz' --pseudoAligner 'salmon' -profile 'singularity,cluster'
+```
+
+In this case, there is no aligned (BAM) file, and the pipeline just take raw fastq files and directly extract counts table.
+
+Currently, [several studies](https://f1000research.com/articles/4-1521/v1) have shown that transcript quantification approaches (such as `salmon`) are more sensitive that read 
+counting methods (such as `HTSeqCounts` or `featureCounts`), although most of these demonstrations are made in simulated (and not real) data. 
+So, the current best practice would be to favor the usage of `salmon` over other tools.
+
+Then regarding the differences / benefits running `salmon` in alignment mode (consuming a BAM) versus in selective-alignment mode (from the raw reads), this point is discussed in the [mapping and alignment methodology paper](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-020-02151-8). The most obvious difference is that modes which are not based on the a BAM file are faster. On the other hand, it is usually useful to have a BAM file to perform additional analysis and visualization of the data. Regarding accuracy, it doesn't seem to have huge difference and as long as the `salmon` indexes are properly built (considering the genome as "decoy" sequence), and both methods usually lead to accurate quantification estimates.
+
+
+### For transcripts/gene-based quantification
+
+One of the main interest of `salmon` is its ability to estimate the abundance at both genes and (known) transcripts levels.  
+If you are interested in isoform analysis, it could also be useful to run `STAR` in a two pass mode. In this mode, the idea is to run a first alignment with usual parameters, 
+then collect the junctions detected and use them as 'annotated' junctions for the second mapping pass.
+
+The typical command line to estimate transcripts abundance with `salmon` would be ;
+
+```bash
+nextflow run main.nf --reads '*_R{1,2}.fastq.gz' --aligner 'star' --starTwoPass --counts 'salmon' -profile 'singularity,cluster'
+```
+
+### For reference-guided isoform assembly
+
+Since v4.0.0, the pipeline now includes tools for reference-guided de novo assembly. The goal of such analysis is to detect new isoform/genes from short reads.
+The typical output of this analysis is a `gtf` file with known and new isoforms.
+
+In the current version, `scallop` and `stringtie` are available and can be specified using the `--denovo` option. 
+Note that both methods require a BAM file as input. Multiple tools can be specificed (comma separated).
+
+In addition, as discussed previously, it is recommanded to use `STAR` in two pass mode to [improve novel splice junction detection](https://academic.oup.com/bioinformatics/article/32/1/43/1744001).
+
+```bash
+nextflow run main.nf --reads '*_R{1,2}.fastq.gz' --aligner 'star' --starTwoPass --denovo 'stringtie,scallop' -profile 'singularity,cluster'
+```
+
 ## Main arguments
 
 ### `--reads`
@@ -257,7 +311,7 @@ Change default options for Salmon quantification from either BAM file or FASTQ f
 
 ## Reference-guided Transcriptome Assembly
 
-###`--denovo`
+### `--denovo`
 
 Specify which tools to use for reference-guided transcriptome assembly. Several tools can be specified (comma separated)
 
@@ -265,11 +319,11 @@ Specify which tools to use for reference-guided transcriptome assembly. Several 
 --denovo 'scallop,stringtie'
 ```
 
-###`--scallopOpts`
+### `--scallopOpts`
 
 Change default scallop options. See the `nextflow.config` file for details.
 
-###`--stringtieOps`
+### `--stringtieOps`
 
 Change default stringtie options. See the `nextflow.config` file for details.			
 
