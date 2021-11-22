@@ -16,13 +16,18 @@
     * [`--genome`](#--genome)
 	* [`--genomeAnnotationPath`](#--genomeAnnotationPath)
 * [Alignment](#aligment)
-    * [`--aligner`](#--aligner)
 	* [`--bowtieOpts`](#--bowtieOpts)
-	* [`--starOpts`](#--starOpts)
+    * [`--hisat2Opts`](#--hisat2Opts)
+    * [`--starOpts`](#--starOpts)
+	* [`--starTwoPass`](#--starTwoPass)
 * [Counts](#counts)
-    * [`--counts`](#--counts)
 	* [`--htseqOpts`](#--htseqOpts)
 	* [`--featurecountsOpts`](#--featurecountsOpts)
+	* [`--salmonQuantOpts`](#--salmonQuantOpts)
+* [Reference-guided Transcriptome Assembly](#reference-guided-transcriptome-assembly)
+    * [`--denovo`](#--denovo)
+	* [`--scallopOpts`](#--scallopOpts)
+	* [`--stringtieOpts`](#--stringtieOpts)
 * [Profiles](#profiles)
 * [Job resources](#job-resources)
 * [Automatic resubmission](#automatic-resubmission)
@@ -189,16 +194,16 @@ params {
   genomes {
     'hg19' {
       fasta            = '<path to genome fasta file for identito monitoring>'
-	  fastaFai         = '<path to genome index file for identito monitoring>'
+      fastaFai         = '<path to genome index file for identito monitoring>'
       star             = '<path to the STAR index files>'
       hisat2           = '<path to the HiSat2 index files>'
-	  salmon           = '<path to the Salmon index files>'
+      salmon           = '<path to the Salmon index files>'
       rrna             = '<path to bowtie1 mapping on rRNA reference>'
       bed12            = '<path to Bed12 annotation file>'
       gtf              = '<path to GTF annotation file>'
-	  transcriptsFasta = '<path to fasta transcriptome file for pseudo-alignment>'
+      transcriptsFasta = '<path to fasta transcriptome file for pseudo-alignment>'
       gencode          = '<boolean - is the annotation file based on Gencode ?'
-	  polym            = '<path to bed file for identito monitoring>'
+      polym            = '<path to bed file for identito monitoring>'
 	}
     // Any number of additional genomes, key is used with --genome
   }
