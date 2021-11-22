@@ -97,20 +97,7 @@
       "group": "Mandatory arguments"
     },
     {
-      "name": "bowtie2Options",
-      "label": "Bowtie2 options",
-      "usage": "Options for rRNA mapping with bowtie2",
-      "type": "string",
-      "nargs": "1",
-      "choices": [],
-      "default_value": "",
-      "pattern": ".*",
-      "render": "textfield",
-      "arity": 0,
-      "group": "Mapping"
-    },
-    {
-      "name": "starOptions",
+      "name": "starOps",
       "label": "STAR options",
       "usage": "Options for STAR mapping",
       "type": "string",
@@ -122,6 +109,46 @@
       "arity": 0,
       "group": "Mapping"
     },
+    {
+      "name": "starTwoPass",
+      "label": "STAR Two Pass mode",
+      "usage": "Run STAR in two pass mode",
+      "type": "boolean",
+      "nargs": 0,
+      "choices": [],
+      "default_value": false,
+      "pattern": "",
+      "render": "check-box",
+      "arity": 0,
+      "group": "Mapping"
+    },
+    {
+      "name": "bowtieOpts",
+      "label": "Bowtie options",
+      "usage": "Options for rRNA mapping with bowtie",
+      "type": "string",
+      "nargs": "1",
+      "choices": [],
+      "default_value": "",
+      "pattern": ".*",
+      "render": "textfield",
+      "arity": 0,
+      "group": "Mapping"
+    },
+    {
+      "name": "hisat2Opts",
+      "label": "Hisat2 options",
+      "usage": "Options for genome mapping with Hisat2",
+      "type": "string",
+      "nargs": "1",
+      "choices": [],
+      "default_value": "",
+      "pattern": ".*",
+      "render": "textfield",
+      "arity": 0,
+      "group": "Mapping"
+    },
+ 
     {
       "name": "salmonQuantOpts",
       "label": "Salmon options",
@@ -135,7 +162,6 @@
       "arity": 0,
       "group": "Counts"
     },
-
     {
       "name": "featurecountsOpts",
       "label": "FeatureCounts options",
@@ -245,6 +271,8 @@
       "group": "De novo assembly"
     },
 
+
+
     {
       "name": "genomeAnnotationPath",
       "label": "Annotation path",
@@ -262,6 +290,19 @@
       "name": "fasta",
       "label": "Genome fasta",
       "usage": "Path to genome fasta file",
+      "type": "path",
+      "choices": [],
+      "nargs": "+",
+      "default_value": null,
+      "pattern": ".*\\*.*",
+      "render": "textfield",
+      "arity": 0,
+      "group": "References"
+    },
+    {
+      "name": "fastaFai",
+      "label": "Genome fasta index",
+      "usage": "Path to genome index fasta file",
       "type": "path",
       "choices": [],
       "nargs": "+",
@@ -298,6 +339,32 @@
       "group": "References"
     },
     {
+      "name": "salmonIndex",
+      "label": "Salmon index",
+      "usage": "Path to Salmon indexes",
+      "type": "path",
+      "choices": [],
+      "nargs": "+",
+      "default_value": null,
+      "pattern": ".*\\*.*",
+      "render": "textfield",
+      "arity": 0,
+      "group": "References"
+    },
+    {
+      "name": "rrna",
+      "label": "Bowtie index for rRNA mapping",
+      "usage": "Path to Bowtie indexes for rRNA mapping",
+      "type": "path",
+      "choices": [],
+      "nargs": "+",
+      "default_value": null,
+      "pattern": ".*\\*.*",
+      "render": "textfield",
+      "arity": 0,
+      "group": "References"
+    },
+    {
       "name": "gtf",
       "label": "GTF path",
       "usage": "Path to GTF annotation file",
@@ -324,6 +391,32 @@
       "group": "References"
     },
     {
+      "name": "transcriptsFasta",
+      "label": "Transcriptome fasta",
+      "usage": "Path to transcriptome fasta file",
+      "type": "path",
+      "choices": [],
+      "nargs": "+",
+      "default_value": null,
+      "pattern": ".*\\*.*",
+      "render": "textfield",
+      "arity": 0,
+      "group": "References"
+    },
+    {
+      "name": "gencode",
+      "label": "Transcriptome source",
+      "usage": "For Gencode-based GTF file",
+      "type": "boolean",
+      "nargs": 0,
+      "choices": [],
+      "default_value": false,
+      "pattern": "",
+      "render": "check-box",
+      "arity": 0,
+      "group": "Inputs"
+    },
+    {
       "name": "polym",
       "label": "Polymorphisms for identito monitoring",
       "usage": "Path to BED file with polymorphisms for identito monitoring",
@@ -336,6 +429,8 @@
       "arity": 0,
       "group": "References"
     },
+
+
 
     {
       "name": "skipQC",

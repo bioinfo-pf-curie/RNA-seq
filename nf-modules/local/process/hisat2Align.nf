@@ -1,3 +1,9 @@
+/*
+ * Hisat2 genome mapping
+ * External params:
+ * - hisat2Opts
+ */
+
 process hisat2Align {
     tag "$prefix"
     label 'hisat2'
@@ -40,6 +46,7 @@ process hisat2Align {
            --new-summary \\
 	   --rg-id ${prefix} --rg SM:${prefix} --rg PL:ILLUMINA \\
            --summary-file ${prefix}.hisat2_summary.txt \\
+	   ${params.hisat2Opts} \\
            | samtools view -bS -F 256 - > ${prefix}.bam
     """
   }

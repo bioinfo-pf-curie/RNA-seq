@@ -31,12 +31,10 @@
     path ("versions.txt"), emit: versions
 
     script:
-    def starGtfOpt = params.gtf ? "--sjdbGTFfile $gtf" : ''
-    def starQuantMode = params.counts == 'star' ? '--quantMode GeneCounts' : params.counts == 'salmon' ? '--quantMode TranscriptomeSAM' : '' 
     """
     echo "STAR "\$(STAR --version 2>&1) > versions.txt
     STAR --genomeDir $index \\
-         ${starGtfOpt} \\
+         --sjdbGTFfile ${gtf} \\
          --readFilesIn $reads  \\
          --runThreadN ${task.cpus} \\
          --runMode alignReads \\
@@ -47,8 +45,7 @@
          --outFileNamePrefix $prefix  \\
          --outSAMattrRGline ID:$prefix SM:$prefix LB:Illumina PL:Illumina  \\
          --outSAMunmapped Within \\
-         ${params.starOptions} \\
 	 --limitOutSJcollapsed 5000000 \\
-	 ${starQuantMode}
+         ${params.starAlignOptions}
     """
   }

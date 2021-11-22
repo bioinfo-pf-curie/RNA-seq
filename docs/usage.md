@@ -7,7 +7,10 @@
 * [Main arguments](#main-arguments)
     * [`--reads`](#--reads)
 	* [`--samplePlan`](#--samplePlan)
-	* [`--singleEnd`](#--singleend)
+    * [`--aligner`](#--aligner)
+	* [`--pseudoAligner`](#--pseudoAligner)
+    * [`--counts`](#--counts)
+    * [`--singleEnd`](#--singleend)
 	* [`--stranded`](#--stranded)
 * [Reference genomes](#reference-genomes)
     * [`--genome`](#--genome)
@@ -49,7 +52,7 @@ NXF_OPTS='-Xms1g -Xmx4g'
 ## Running the pipeline
 The typical command for running the pipeline is as follows:
 ```bash
-nextflow run main.nf --reads '*_R{1,2}.fastq.gz' -profile 'singularity'
+nextflow run main.nf --reads '*_R{1,2}.fastq.gz' --aligner 'star' --counts 'star' -profile 'singularity'
 ```
 
 This will launch the pipeline with the `singularity` configuration profile. See below for more information about profiles.
@@ -63,7 +66,7 @@ results         # Finished results (configurable, see below)
 # Other nextflow hidden files, eg. history of pipeline runs and old logs.
 ```
 
-You can change the output director using the `--outdir/-w` options.
+You can change the output director using the `--outDir/-w` options.
 
 ## Main arguments
 
@@ -94,6 +97,43 @@ Use this to specify a sample plan file instead of a regular expression to find f
 The sample plan is a csv file with the following information :
 
 Sample ID | Sample Name | Path to R1 fastq file | Path to R2 fastq file
+
+### `--aligner`
+
+The current version of the pipeline supports two different aligners;
+- [`STAR`](https://github.com/alexdobin/STAR)
+- [`hisat2`](http://ccb.jhu.edu/software/hisat2/index.shtml)
+
+Since version `4.0.0`, no default value is defined. You can specify the tool to use as follows:
+
+```bash
+--aligner 'STAR'
+```
+
+### `--pseudoAligner`
+
+Recent advances in the field of RNA-seq data analysis promote the usage of pseudo-aligner which are able to 
+estimate the gene/transcripts abundance directly from the raw fastq files.
+
+The following tools are currently available;
+- [`salmon`](https://salmon.readthedocs.io/en/latest/salmon.html)
+
+```bash
+--pseudoAligner 'salmon'
+```
+
+### `--counts`
+
+The raw count table for all samples can be generated from alignment file (bam) using one of the following tool:
+- [`STAR`](https://github.com/alexdobin/STAR). Require `--aligner 'STAR'`. Default value.
+- [`featureCounts`](http://bioinf.wehi.edu.au/featureCounts/)
+- [`HTSeqCounts`](https://htseq.readthedocs.io/en/release_0.11.1/count.html)
+- [`salmon`](https://salmon.readthedocs.io/en/latest/salmon.html)
+
+Since version `4.0.0`, no default value is defined. You can specify one of these tools using:
+```bash
+--counts 'salmon`
+```
 
 ### `--singleEnd`
 
@@ -148,13 +188,18 @@ The syntax for this reference configuration is as follows:
 params {
   genomes {
     'hg19' {
-      star     = '<path to the STAR index files>'
-      bowtie2 = '<path to the bowtie index files>'
-      hisat2   = '<path to the HiSat2 index files>'
-      rrna     = '<path to bowtie1 mapping on rRNA reference>'
-      bed12    = '<path to Bed12 annotation file>'
-      gtf      = '<path to GTF annotation file>'
-    }
+      fasta            = '<path to genome fasta file for identito monitoring>'
+	  fastaFai         = '<path to genome index file for identito monitoring>'
+      star             = '<path to the STAR index files>'
+      hisat2           = '<path to the HiSat2 index files>'
+	  salmon           = '<path to the Salmon index files>'
+      rrna             = '<path to bowtie1 mapping on rRNA reference>'
+      bed12            = '<path to Bed12 annotation file>'
+      gtf              = '<path to GTF annotation file>'
+	  transcriptsFasta = '<path to fasta transcriptome file for pseudo-alignment>'
+      gencode          = '<boolean - is the annotation file based on Gencode ?'
+	  polym            = '<path to bed file for identito monitoring>'
+	}
     // Any number of additional genomes, key is used with --genome
   }
 }
@@ -163,27 +208,22 @@ params {
 Note that these paths can be updated on command line using the following parameters:
 - `--starIndex` - Path to STAR index
 - `--hisat2Index` - Path to HiSAT2 index
+- `--salmonIndex` - Path to Salmon index
 - `--gtf` - Path to GTF file
+- `--gencode` - Specify that the GTF file is from Gencode
 - `--bed12` - Path to gene bed12 file
+- `--transcriptsFasta` - Path to transcriptome in fasta format
 - `--saveAlignedIntermediates` - Save the BAM files from the Aligment step  - not done by default
 
 ## Alignment
 
-### `--aligner`
-
-The current version of the pipeline supports two different aligners;
-- [`STAR`](https://github.com/alexdobin/STAR)
-- [`hisat2`](http://ccb.jhu.edu/software/hisat2/index.shtml)
-
-By default, the `STAR` mapper is run. You can specify the tool to use as follows:
-
-```bash
---aligner 'STAR'
-```
-
 ### `--bowtieOpts`
 
 Change default bowtie1 mapping options for rRNA cleaning. See the `nextflow.config` file for details.
+
+### `--hisat2Opts`
+
+Change default Hisat2 mapping option. See the `nextflow.config` file for details.
 
 ### `--starOpts`
  
@@ -191,19 +231,12 @@ Change default STAR mapping options for mapping.
 Note that the STAR options can vary from an organism to another. 
 See the `nextflow.config` file for details.
 
+### `--starTwoPass`
+
+Run the STAR aligner in two pass mode with the `--twopassMode Basic` option
+
+
 ## Counts
-
-### `--counts`
-
-The raw count table for all samples can be generated using one of the following tool:
-- [`STAR`](https://github.com/alexdobin/STAR). Require `--aligner 'STAR'`. Default value.
-- [`featureCounts`](http://bioinf.wehi.edu.au/featureCounts/)
-- [`HTSeqCounts`](https://htseq.readthedocs.io/en/release_0.11.1/count.html)
-
-You can specify one of these tools using:
-```bash
---counts 'featureCounts`
-```
 
 ### `--htseqOpts`
 
@@ -212,6 +245,29 @@ Change default HTSeq options. See the `nextflow.config` file for details.
 ### `--featurecountsOpts`
 
 Change default featureCounts options. See the `nextflow.config` file for details.
+
+### `--salmonQuantOpts`
+
+Change default options for Salmon quantification from either BAM file or FASTQ files. See the `nextflow.config` file for details.
+
+## Reference-guided Transcriptome Assembly
+
+### `--denovo`
+
+Specify which tools to use for reference-guided transcriptome assembly. Several tools can be specified (comma separated)
+
+```
+--denovo 'scallop,stringtie'
+```
+
+### `--scallopOpts`
+
+Change default scallop options. See the `nextflow.config` file for details.
+
+## `--stringtieOps`
+
+Change default stringtie options. See the `nextflow.config` file for details.			
+
 
 ## Profiles
 

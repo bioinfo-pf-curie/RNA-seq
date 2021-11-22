@@ -42,7 +42,6 @@ include {checkAlignmentPercent } from './lib/functions'
 */
 
 // Genome-based variables
-params.bowtie2Index = NFTools.getGenomeAttribute(params, 'bowtie2')
 params.starIndex = NFTools.getGenomeAttribute(params, 'star')
 params.hisat2Index = NFTools.getGenomeAttribute(params, 'hisat2')
 params.rrna = NFTools.getGenomeAttribute(params, 'rrna')
@@ -52,8 +51,7 @@ params.bed12 = NFTools.getGenomeAttribute(params, 'bed12')
 params.fasta = NFTools.getGenomeAttribute(params, 'fasta')
 params.fastaFai = NFTools.getGenomeAttribute(params, 'fastaFai')
 params.polym = NFTools.getGenomeAttribute(params, 'polym')
-params.starOptions = params.genomes[ params.genome ].starPpts ? NFTools.getGenomeAttribute(params, 'starOpts') : params.starOpts
-params.salmonQuantOptions = NFTools.getGenomeAttribute(params, 'salmonQuantOpts')
+params.starOptions = params.genomes[ params.genome ].starOpts ? NFTools.getGenomeAttribute(params, 'starOpts') : params.starOpts
 params.salmonIndex = NFTools.getGenomeAttribute(params, 'salmon')
 params.gencode = NFTools.getGenomeAttribute(params, 'gencode')
 
@@ -65,6 +63,11 @@ chPcaHeader = Channel.fromPath("$baseDir/assets/pcaHeader.txt")
 chHeatmapHeader = Channel.fromPath("$baseDir/assets/heatmapHeader.txt")
 
 // Tools
+starTwoPassOpts = params.starTwoPass ? '--twopassMode Basic' : ''
+starCountsOpts = params.counts == 'star' ? '--quantMode GeneCounts' : ''
+starBAMOpts = params.counts == 'salmon' ? '--quantMode TranscriptomeSAM' : ''
+params.starAlignOptions = "${params.starOptions} ${starTwoPassOpts} ${starCountsOpts} ${starBAMOpts}"
+
 denovoTools = params.denovo ? params.denovo.split(',').collect{it.trim().toLowerCase()} : []
 
 /*

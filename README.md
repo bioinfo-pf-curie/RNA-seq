@@ -31,7 +31,7 @@ See the [nf-core](https://nf-co.re/) project for more details.
 7. Identito monitoring based on a list of known polymorphism ([`bcftools`](http://samtools.github.io/bcftools/bcftools.html) / [`R`](https://www.r-project.org/))
 8. Generate counts table ([`STAR`](https://github.com/alexdobin/STAR) / [`featureCounts`](http://bioinf.wehi.edu.au/featureCounts/) / [`HTSeqCounts`](https://htseq.readthedocs.io/en/release_0.11.1/count.html)/[`salmon`](https://salmon.readthedocs.io/en/latest/salmon.html))
 9. Exploratory analysis ([`R`](https://www.r-project.org/))
-10. Reference-guided de novo transcript assembly ([`stringtie`](https://ccb.jhu.edu/software/stringtie/), [`scallop`](https://github.com/Kingsford-Group/scallop))
+10. Reference-guided de novo transcripts assembly ([`stringtie`](https://ccb.jhu.edu/software/stringtie/), [`scallop`](https://github.com/Kingsford-Group/scallop))
 11. Present all QC results in a final report ([`MultiQC`](http://multiqc.info/))
 
 ### Quick help
@@ -71,35 +71,36 @@ INPUTS:
     --stranded  STRING [auto, forward, reverse, no]   Library strandness
 
 MAPPING:
-
-    --bowtie2Options           STRING    Options for rRNA mapping with bowtie2
+    --bowtieOpts               STRING    Options for rRNA mapping with bowtie
+    --hisat2Opts               STRING    Options for genome mapping with Hisat2
     --saveAlignedIntermediates           Save intermediates alignment files
-    --starOptions              STRING    Options for STAR mapping
+    --starOpts                 STRING    Options for STAR mapping
+    --starTwoPass                        Run STAR in two pass mode
 
 COUNTS:
-	
     --featurecountsOpts STRING   Options for featureCounts quantification
     --htseqOpts         STRING   Options for HTSeq quantification
     --salmonQuantOpts   STRING   Options for Salmon quantification
 
 DE NOVO ASSEMBLY:
-
     --denovo STRING [stringtie, scallop]  Tool for reference-guided assembly of RNA transcripts
     --scallopOpts  STRING                 Options for Scallop analysis
     --stringtieOps STRING                 Options for Stringtie analysis
 		
 REFERENCES:
-
     --bed12                PATH   Path to gene file (BED12)
     --fasta                PATH   Path to genome fasta file
+    --fastaFai             PATH   Path to genome index fasta file
     --genomeAnnotationPath PATH   Path to genome annotations folder
     --gtf                  PATH   Path to GTF annotation file
     --hisat2Index          PATH   Path to Hisat2 indexes
     --polym                PATH   Path to BED file with polymorphisms for identito monitoring
+	--rrna                 PATH   Path to Bowtie indexes for rRNA mapping
+	--salmonIndex          PATH   Path to Salmon indexes
     --starIndex            PATH   Path to STAR indexes
+	--transcriptsFasta     PATH   Path to transcriptome fasta file
 
 SKIP OPTIONS:
-
     --skipBigWig                       Disable bigwig generation with Deeptools
     --skipDupradar                     Disable duplicates analysis with DupRadar
     --skipFastqc                       Disable Fastqc
@@ -112,7 +113,6 @@ SKIP OPTIONS:
     --skipSaturation                   Disable saturation analysis with Preseq
 
 OTHER OPTIONS:
-
     --metadata      PATH     Specify a custom metadata file for MultiQC
     --multiqcConfig PATH     Specify a custom config file for MultiQC
     --name          STRING   Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic
@@ -145,13 +145,13 @@ nextflow run main.nf -profile test,conda
 #### Run the pipeline from a sample plan
 
 ```
-nextflow run main.nf --samplePlan MY_SAMPLE_PLAN --genome 'hg19' --outDir MY_OUTPUT_DIR -profile conda
+nextflow run main.nf --samplePlan MY_SAMPLE_PLAN --aligner 'star' --counts 'star' --genome 'hg38' --outDir MY_OUTPUT_DIR -profile conda
 ```
 
 #### Run the pipeline on a computational cluster
 
 ```
-echo "nextflow run main.nf --reads '*.R{1,2}.fastq.gz' --genome 'hg19' --outDir MY_OUTPUT_DIR -profile singularity,cluster" | qsub -N rnaseq
+echo "nextflow run main.nf --reads '*.R{1,2}.fastq.gz' --aligner 'star' --counts 'star' --genome 'hg19' --outDir MY_OUTPUT_DIR -profile singularity,cluster" | qsub -N rnaseq
 ```
 
 ### Defining the '-profile'
@@ -180,6 +180,7 @@ A sample plan is a csv file (comma separated) that list all samples with their b
 
 
 SAMPLE_ID | SAMPLE_NAME | PATH_TO_R1_FASTQ | [PATH_TO_R2_FASTQ]
+
 
 ### Full Documentation
 
