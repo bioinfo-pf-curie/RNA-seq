@@ -257,7 +257,7 @@ Change default options for Salmon quantification from either BAM file or FASTQ f
 
 ## Reference-guided Transcriptome Assembly
 
-### `--denovo`
+###`--denovo`
 
 Specify which tools to use for reference-guided transcriptome assembly. Several tools can be specified (comma separated)
 
@@ -265,11 +265,11 @@ Specify which tools to use for reference-guided transcriptome assembly. Several 
 --denovo 'scallop,stringtie'
 ```
 
-### `--scallopOpts`
+###`--scallopOpts`
 
 Change default scallop options. See the `nextflow.config` file for details.
 
-## `--stringtieOps`
+###`--stringtieOps`
 
 Change default stringtie options. See the `nextflow.config` file for details.			
 
