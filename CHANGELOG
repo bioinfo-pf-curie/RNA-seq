@@ -10,6 +10,7 @@ NEW FEATURES
   - Add Stringtie for transcripts assembly
   - Add Scallop for transcripts assembly
   - Check mapping proportion for both STAR and Hisat2 (#140)
+  - Add Mouse mm39 genome annotation
 
 SIGNIFICANT USER-VISIBLE CHANGES
   - Remove default values for '--counts' and '--aligner'. These options are now mandatory
