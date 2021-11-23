@@ -147,6 +147,29 @@ class NFTools {
         return formattedParamsGroups.join('\n')
      }
 
+
+    /**
+     * Print Profile Help message
+     */
+
+
+    static String profileHelp(){
+
+    String.format("""\
+=======================================================
+Available Profiles
+   -profile test                        Run the test dataset
+   -profile conda                       Build a new conda environment before running the pipeline. Use `--condaCacheDir` to define the conda cache path
+   -profile multiconda                  Build a new conda environment per process before running the pipeline. Use `--condaCacheDir` to define the conda cache path
+   -profile path                        Use the installation path defined for all tools. Use `--globalPath` to define the insallation path
+   -profile multipath                   Use the installation paths defined for each tool. Use `--globalPath` to define the insallation path
+   -profile docker                      Use the Docker images for each process
+   -profile singularity                 Use the Singularity images for each process. Use `--singularityPath` to define the insallation path
+   -profile cluster                     Run the workflow on the cluster, instead of locally
+""")
+    }
+
+
     /**
      * Generate Help message
      * @param paramsWithUsage
@@ -165,8 +188,9 @@ class NFTools {
 
             nextflow run main.nf ${CLIHelpMsg.join(" ")}
 
-            %s
-            """.stripIndent(), prettyFormatParamsWithPaddingAndIndent(paramsWithUsage, 2, 4))
+        %s
+        %s
+            """.stripIndent(), prettyFormatParamsWithPaddingAndIndent(paramsWithUsage, 2, 4), profileHelp())
     }
 
 

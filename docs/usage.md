@@ -262,7 +262,7 @@ params {
       transcriptsFasta = '<path to fasta transcriptome file for pseudo-alignment>'
       gencode          = '<boolean - is the annotation file based on Gencode ?'
       polym            = '<path to bed file for identito monitoring>'
-	}
+    }
     // Any number of additional genomes, key is used with --genome
   }
 }
