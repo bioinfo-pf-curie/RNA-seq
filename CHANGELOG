@@ -1,13 +1,14 @@
 version-4.0.0
 
 NEW FEATURES
-  - DSL2 version of the RNA-seq pipeline
-  - Add identito monitoring
-  - Add STAR-Salmon sub-workflow
-  - Add '--pseudoAligner' option to run Salmon from raw reads
+  - DSL2 version of the RNA-seq pipeline (#144)
+  - Add identito monitoring (#145)
+  - Add STAR-Salmon sub-workflow (#133)
+  - Add '--pseudoAligner' option to run Salmon from raw reads (#133)
   - Add '--denovo' option for reference-guided transcripts assembly
   - Add Stringtie for transcripts assembly
   - Add Scallop for transcripts assembly
+  - Check mapping proportion for both STAR and Hisat2 (#140)
 
 SIGNIFICANT USER-VISIBLE CHANGES
   - Remove default values for '--counts' and '--aligner'. These options are now mandatory
