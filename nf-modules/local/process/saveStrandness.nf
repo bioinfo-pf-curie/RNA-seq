@@ -1,5 +1,5 @@
 /*
- * Strandness
+ * Strandness - save value in Txt file
  */
 
 process saveStrandness {

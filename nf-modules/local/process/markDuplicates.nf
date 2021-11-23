@@ -1,5 +1,7 @@
 /*
- * Duplicates
+ * Picard MarkDuplicates
+ * External parameters :
+ * @ params.tmpDir : temporary folder
  */
 
 process markDuplicates {

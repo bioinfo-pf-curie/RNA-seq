@@ -1,5 +1,9 @@
 /*
  * Salmon quant from Fastq file
+ * External parameters :
+ * @ params.singleEnd : is the data single-end ?
+ * @ params.gencode : is the annotation from Gencode ?
+ * @ params.salmonQuantOpts : addition option for Salmon quantification
  */
 
 process salmonQuantFromFastq {
@@ -35,7 +39,7 @@ process salmonQuantFromFastq {
       --threads $task.cpus \\
       --libType=$strandOpts \\
       --validateMappings \\
-      ${params.salmonQuantOptions} \\
+      ${params.salmonQuantOpts} \\
       --geneMap ${gtf} \\
       ${gencodeOpts} \\
       $inputReads \\

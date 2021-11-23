@@ -1,6 +1,8 @@
 /*
- * Reference-guided de novo isoform assembly
+ * Scallop - Reference-guided de novo isoform assembly
  * https://github.com/Kingsford-Group/scallop
+ * External parameters :
+ * @ params.scallopOpts : Additional Scallop parameters
  */
 
 process scallop {
@@ -26,10 +28,10 @@ process scallop {
     }
     """
     scallop \\
-        -i $bam \\
-        $strandOpts \\
+        -i ${bam} \\
+        ${strandOpts} \\
+        ${params.scallopOpts} \\
         -o ${prefix}.scallopTranscripts.gtf
-        $params.scallopOpts
 
     echo "scallop "\$(scallop --version 2>&1) > versions.txt
     """

@@ -1,7 +1,8 @@
 /*
  * Hisat2 genome mapping
- * External params:
- * - hisat2Opts
+ * External parameters :
+ * @ params.singleEnd :	is data	single-end sequencing ?
+ * @ params.hisat2Opts : addition Hisat2 parameters
  */
 
 process hisat2Align {

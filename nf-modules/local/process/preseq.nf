@@ -1,5 +1,7 @@
 /*
- * Saturation Curves
+ * Preseq - Saturation Curves
+ * External parameters :
+ * @ params.singleEnd :	is data	single-end sequencing ?
  */
 
 process preseq {

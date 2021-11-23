@@ -1,5 +1,5 @@
 /*
- * IDENTITO MONITORING
+ * Identito Monitoring - call variants on a list of known polyms
  */
 
 process identitoPolym {

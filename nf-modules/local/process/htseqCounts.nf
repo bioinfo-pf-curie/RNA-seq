@@ -1,5 +1,7 @@
 /*
- * HTSeqCounts
+ * HTSeqCounts - gene counting
+ * External parameters :
+ * @ params.htseqOpts :	additional parameter for HTSeqCounts
  */
 
 process htseqCounts {
@@ -32,6 +34,6 @@ process htseqCounts {
   }
   """
   echo \$(htseq-count --version | awk '{print "HTSeq "\$1}') > versions.txt
-  htseq-count ${params.htseqOpts} ${strandedOpt} ${bam} $gtf > ${prefix}_counts.csv
+  htseq-count ${params.htseqOpts} ${strandedOpt} ${bam} ${gtf} > ${prefix}_counts.csv
   """
 }

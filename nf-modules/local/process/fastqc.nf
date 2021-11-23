@@ -1,5 +1,7 @@
 /*
- * FastQC process
+ * FastQC - Quality controls on raw reads
+ * External parameters :
+ * @ params.singleEnd :	is data	single-end sequencing ?
  */
 
 process fastqc {

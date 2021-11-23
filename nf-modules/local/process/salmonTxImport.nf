@@ -1,14 +1,6 @@
 /*
- * Salmon Tx Import
- *
- * salmon.merged.salmon.gene_counts_length_scaled.tsv
- * salmon.merged.salmon.gene_counts_scaled.tsv
- * salmon.merged.salmon.gene_counts.tsv
- * salmon.merged.salmon.gene_tpm_length_scaled.tsv
- * salmon.merged.salmon.gene_tpm_scaled.tsv
- * salmon.merged.salmon.gene_tpm.tsv
- * salmon.merged.salmon.transcript_counts.tsv
- * salmon.merged.salmon.transcript_tpm.tsv
+ * Salmon
+ * Import Salmon results and generate counts table using TxImport
  */
 
 process salmonTxImport {

@@ -1,5 +1,5 @@
 /*
- * Merge Counts
+ * Merge Counts from multiple samples
  */
 
 process mergeCounts {

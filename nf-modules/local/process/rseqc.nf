@@ -1,3 +1,6 @@
+/*
+ * RSeQC - infer_experiment.py
+ */
 
 process rseqc {
     tag "${prefix - '_subsample'}"

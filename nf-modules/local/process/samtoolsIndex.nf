@@ -1,3 +1,7 @@
+/*
+ * Samtools - Index
+ */
+
 process samtoolsIndex {
   tag "$prefix"
   label 'samtools'

@@ -1,3 +1,7 @@
+/*
+ * Output documentation in HTML format
+ */
+
 process outputDocumentation {
     label 'python'
     label 'minCpu'

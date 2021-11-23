@@ -1,5 +1,5 @@
 /*
- * gffCompare
+ * gffCompare - compare reference and new GTF files
  */
 
 process gffcompare {

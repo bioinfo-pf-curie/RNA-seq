@@ -1,5 +1,7 @@
 /* 
- * FeatureCounts
+ * FeatureCounts - gene counting
+ * External parameters :
+ * @ params.featurecountsOpts : additional parameter for featureCounts
  */
 
 process featureCounts {

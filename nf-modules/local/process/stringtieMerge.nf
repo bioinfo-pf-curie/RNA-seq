@@ -1,5 +1,5 @@
 /*
- * Stringtie merge
+ * Stringtie - Merge
  * https://ccb.jhu.edu/software/stringtie/index.shtml?t=manual
  */
 
@@ -22,9 +22,9 @@ process stringtieMerge {
     echo -e ${stringtieGtf} | tr " " "\n" > listofgtf.tsv
     stringtie \\
         --merge \\
-        -G $gtf \\
+        -G ${gtf} \\
         -o stringtie_mergedTranscripts.gtf \\
-        -p $task.cpus \\
+        -p ${task.cpus} \\
 	listofgtf.tsv
 
     echo "stringtie "\$(stringtie --version 2>&1) > versions.txt

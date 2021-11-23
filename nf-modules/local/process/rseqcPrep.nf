@@ -1,3 +1,9 @@
+/*
+ * RSeQC - Quick mapping on a subset of reads for RSeQC
+ * External parameters :
+ * @ params.singleEnd :	is data	single-end sequencing ?
+ * @ params.nCheck : number of reads to subset
+ */
 
 process rseqcPrep {
   tag "${prefix}"
@@ -14,11 +20,12 @@ process rseqcPrep {
 
   script:
   inputOpts = params.singleEnd ? "-U ${reads[0]}" : "-1 ${reads[0]} -2 ${reads[1]}"
+  subset = params.nCheck ?: 200000
   """
   echo \$(bowtie2 --version | awk 'NR==1{print "bowtie2 "\$3}') > versions.txt
   bowtie2 --fast --end-to-end --reorder \\
           -p ${task.cpus} \\
-          -u ${params.nCheck} \\
+          -u ${subset} \\
           -x ${params.bowtie2Index} \\
           ${inputOpts} > ${prefix}_subsample.bam 
    """

@@ -1,6 +1,8 @@
 /*
- * Reference-guided de novo isoform assembly
+ * Stringtie - Reference-guided de novo isoform assembly
  * https://ccb.jhu.edu/software/stringtie/index.shtml?t=manual
+ * External parameters :
+ * @ params.stringtieOpts : Additional Stringtie parameters
  */
 
 process stringtie {
@@ -38,7 +40,7 @@ process stringtie {
         -C ${prefix}.coverage.gtf \\
         -b ${prefix}.ballgown \\
         -p $task.cpus \\
-        $params.stringtieOpts
+        ${params.stringtieOpts}
 
     echo "stringtie "\$(stringtie --version 2>&1) > versions.txt
     """

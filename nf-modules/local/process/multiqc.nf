@@ -1,5 +1,7 @@
 /*
  * MultiQC for RNA-seq report
+ * External parameters :
+ * @ params.singleEnd :	is data	single-end sequencing ?
  */
 
 process multiqc {

@@ -1,3 +1,7 @@
+/*
+ * Samtools - Flagstat
+ */
+
 process samtoolsFlagstat {
   tag "$prefix"
   label 'samtools'

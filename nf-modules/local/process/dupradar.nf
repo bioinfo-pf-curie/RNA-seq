@@ -1,3 +1,9 @@
+/*
+ * DupRadar for duplicates assessment
+ * External parameters :
+ * @ params.singleEnd : is data single-end sequencing ?
+ */
+
 process dupradar {
   tag "${prefix}"
   label 'dupradar'

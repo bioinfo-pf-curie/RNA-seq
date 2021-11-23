@@ -1,5 +1,5 @@
 /*
- * Reads distribution
+ * Reads distribution - gene type distribution
  */
 
 process getCountsPerGeneType {

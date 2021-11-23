@@ -1,5 +1,5 @@
 /*
- * Exploratory analysis
+ * Exploratory analysis from gene counts table
  */
 
 process exploratoryAnalysis {

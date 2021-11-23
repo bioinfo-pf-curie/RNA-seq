@@ -1,5 +1,7 @@
 /* 
- * Qualimap
+ * Qualimap - quality controls on RNA-seq BAM file
+ * External parameters :
+ * @ params.singleEnd :	is data	single-end sequencing ?
  */
 
 process qualimap {
@@ -19,7 +21,7 @@ process qualimap {
 
   script:
   peOpts = params.singleEnd ? '' : '-pe'
-  memory     = task.memory.toGiga() + "G"
+  memory = task.memory.toGiga() + "G"
   strandnessOpts = 'non-strand-specific'
   if (stranded == 'forward') {
     strandnessOpts = 'strand-specific-forward'
@@ -32,10 +34,10 @@ process qualimap {
   qualimap \\
     --java-mem-size=$memory \\
     rnaseq \\
-    -bam $bam \\
-    -gtf $gtf \\
-    -p $strandnessOpts \\
-    $peOpts \\
+    -bam ${bam} \\
+    -gtf ${gtf} \\
+    -p ${strandnessOpts} \\
+    ${peOpts} \\
     -outdir ${prefix}
   echo \$(qualimap -h 2>&1 |  grep "QualiMap" | sed -e 's/v.//') > versions.txt
   """

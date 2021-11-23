@@ -1,6 +1,7 @@
 /*
- * IDENTITO MONITORING
+ * Identito Monitoring - combine per sample polym information
  */
+
 process identitoCombine {
   label 'lowCpu'
   label 'lowMem'

@@ -1,6 +1,10 @@
 /*
- * rRNA mapping 
+ * rRNA mapping using bowtie
+ * External parameters :
+ * @ params.singleEnd :	is data	single-end sequencing ?
+ * @ params.bowtieOpts : additional bowtie parameters
  */
+
 process rRNAMapping {
   tag "${prefix}"
   label 'bowtie'
@@ -29,7 +33,7 @@ process rRNAMapping {
   bowtie ${params.bowtieOpts} \\
          -p ${task.cpus} \\
          --un ${prefix}_norRNA.fastq \\
-         --sam ${params.rrna} \\
+         --sam ${annot} \\
          ${inputOpts} \\
          ${prefix}.sam  2> ${prefix}.log && \
   gzip -f ${prefix}_norRNA*.fastq 

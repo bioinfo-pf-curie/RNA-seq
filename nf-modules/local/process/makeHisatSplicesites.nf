@@ -1,3 +1,8 @@
+/*
+ * Hisat2 / makeHisatSplicesites
+ */
+
+
 process makeHisatSplicesites {
   label 'hisat2'
   label 'minCpu'

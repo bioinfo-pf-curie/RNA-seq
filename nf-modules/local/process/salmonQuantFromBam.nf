@@ -1,5 +1,9 @@
 /*
  * Salmon quant from BAM file
+ * External parameters :
+ * @ params.singleEnd : is the data single-end ?
+ * @ params.gencode : is the annotation from Gencode ?
+ * @ params.salmonQuantOpts : addition option for Salmon quantification
  */
 
 process salmonQuantFromBam {
@@ -32,10 +36,10 @@ process salmonQuantFromBam {
     salmon quant \\
       --libType=$strandOpts \\
       -a ${bam} \\
-      --threads $task.cpus \\
+      --threads ${task.cpus} \\
       -t ${transcriptsFasta} \\
       --geneMap ${gtf} \\
-      ${params.salmonQuantOptions} \\
+      ${params.salmonQuantOpts} \\
       ${gencodeOpts} \\
       -o ${prefix}
     """
