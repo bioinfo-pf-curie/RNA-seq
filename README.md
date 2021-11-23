@@ -94,6 +94,7 @@ REFERENCES:
     --genomeAnnotationPath PATH   Path to genome annotations folder
     --gtf                  PATH   Path to GTF annotation file
     --hisat2Index          PATH   Path to Hisat2 indexes
+    --bowtie2Index         PATH   Path to Bowtie2 indexes
     --polym                PATH   Path to BED file with polymorphisms for identito monitoring
     --rrna                 PATH   Path to Bowtie indexes for rRNA mapping
     --salmonIndex          PATH   Path to Salmon indexes

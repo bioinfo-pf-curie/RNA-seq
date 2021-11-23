@@ -12,7 +12,6 @@ workflow strandnessFlow {
   reads // Channel [prefix, [reads]]
   bed12 // Channel path(bed12)
 
-
   main:
   chVersions = Channel.empty()
 

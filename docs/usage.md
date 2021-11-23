@@ -253,6 +253,7 @@ params {
     'hg19' {
       fasta            = '<path to genome fasta file for identito monitoring>'
       fastaFai         = '<path to genome index file for identito monitoring>'
+	  bowtie2          = '<path to the bowtie2 index files>' 
       star             = '<path to the STAR index files>'
       hisat2           = '<path to the HiSat2 index files>'
       salmon           = '<path to the Salmon index files>'
@@ -269,6 +270,7 @@ params {
 ```
 
 Note that these paths can be updated on command line using the following parameters:
+- `--bowtie2Index` - Path to bowtie2 index
 - `--starIndex` - Path to STAR index
 - `--hisat2Index` - Path to HiSAT2 index
 - `--salmonIndex` - Path to Salmon index

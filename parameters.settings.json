@@ -339,6 +339,19 @@
       "group": "References"
     },
     {
+      "name": "bowtie2Index",
+      "label": "bowtie2 index",
+      "usage": "Path to Bowtie2 indexes",
+      "type": "path",
+      "choices": [],
+      "nargs": "+",
+      "default_value": null,
+      "pattern": ".*\\*.*",
+      "render": "textfield",
+      "arity": 0,
+      "group": "References"
+    },
+    {
       "name": "salmonIndex",
       "label": "Salmon index",
       "usage": "Path to Salmon indexes",
