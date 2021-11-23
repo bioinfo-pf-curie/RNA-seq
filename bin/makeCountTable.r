@@ -9,17 +9,8 @@ gtf <- args[2]
 count_tool <- toupper(args[3])
 strandedList <- args[4]
 
-if (!require(rtracklayer)){
-  source("http://bioconductor.org/biocLite.R")
-  biocLite("rtracklayer", suppressUpdates=TRUE)
-  library("rtracklayer") 
-}
-
-if (!require(GenomicFeatures)){
-  source("http://bioconductor.org/biocLite.R")
-  biocLite("GenomicFeatures", suppressUpdates=TRUE)
-  library("GenomicFeatures")
-}
+stopifnot(require(rtracklayer))
+stopifnot(require(GenomicFeatures))
 
 ##ensembl2symbol
 ## x : a count matrix with gene name as rownames
