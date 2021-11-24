@@ -13,6 +13,7 @@ process rseqcPrep {
 
   input:
   tuple val(prefix), path(reads)
+  path(index)
 
   output:
   tuple val("${prefix}"), path("${prefix}_subsample.bam"), emit: bamRseqc
@@ -22,11 +23,12 @@ process rseqcPrep {
   inputOpts = params.singleEnd ? "-U ${reads[0]}" : "-1 ${reads[0]} -2 ${reads[1]}"
   subset = params.nCheck ?: 200000
   """
+  localIndex=`find -L ./ -name "*.rev.1.bt2" | sed 's/.rev.1.bt2//'`
   echo \$(bowtie2 --version | awk 'NR==1{print "bowtie2 "\$3}') > versions.txt
   bowtie2 --fast --end-to-end --reorder \\
           -p ${task.cpus} \\
           -u ${subset} \\
-          -x ${params.bowtie2Index} \\
+          -x \${localIndex} \\
           ${inputOpts} > ${prefix}_subsample.bam 
    """
 }

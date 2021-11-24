@@ -11,6 +11,7 @@ workflow strandnessFlow {
   take:
   reads // Channel [prefix, [reads]]
   bed12 // Channel path(bed12)
+  bowtie2Index // Channel path(bowtie2Index)
 
   main:
   chVersions = Channel.empty()
@@ -36,7 +37,8 @@ workflow strandnessFlow {
   // auto detection of strandness status
   if (params.stranded == 'auto' && params.bed12){
     rseqcPrep(
-      reads
+      reads,
+      bowtie2Index.collect()
     )
     chVersions = chVersions.mix(rseqcPrep.out.versions)
 

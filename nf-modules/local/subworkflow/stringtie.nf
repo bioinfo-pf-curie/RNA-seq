@@ -30,7 +30,8 @@ workflow stringtieFlow {
 
   gffcompare(
     stringtieMerge.out.mergedGtf.collect(), 
-    gtf.collect()
+    gtf.collect(),
+    Channel.value("stringtie")
   )
   chVersions = chVersions.mix(gffcompare.out.versions)
 

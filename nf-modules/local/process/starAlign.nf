@@ -8,7 +8,7 @@ process starAlign {
   tag "$prefix"
   label 'star'
   label 'highCpu'
-  label 'highMem'
+  label 'extraMem'
   publishDir "${params.outDir}/mapping", mode: 'copy',
     saveAs: {filename ->
       if (filename.indexOf(".bam") == -1) "logs/$filename"

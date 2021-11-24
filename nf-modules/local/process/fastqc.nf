@@ -21,23 +21,17 @@ process fastqc {
 
   script:
   if (params.singleEnd){
-    pbase = reads[0].toString() - ~/(\.fq)?(\.fastq)?(\.gz)?$/
     """
     echo \$(fastqc --version) > versions.txt
-    fastqc -q $reads --threads ${task.cpus}
-    mv ${pbase}_fastqc.html ${prefix}_fastqc.html
-    mv ${pbase}_fastqc.zip ${prefix}_fastqc.zip
+    [ ! -f  ${prefix}.fastq.gz ] && ln -s $reads ${prefix}.fastq.gz
+    fastqc -q ${prefix}.fastq.gz --threads ${task.cpus} ${prefix}.fastq.gz
     """
   }else{
-    pbase_1 = reads[0].toString() - ~/(\.fq)?(\.fastq)?(\.gz)?$/
-    pbase_2 = reads[1].toString() - ~/(\.fq)?(\.fastq)?(\.gz)?$/
     """
     echo \$(fastqc --version) > versions.txt
-    fastqc -q $reads --threads ${task.cpus}
-    mv ${pbase_1}_fastqc.html ${prefix}_R1_fastqc.html
-    mv ${pbase_1}_fastqc.zip ${prefix}_R1_fastqc.zip
-    mv ${pbase_2}_fastqc.html ${prefix}_R2_fastqc.html
-    mv ${pbase_2}_fastqc.zip ${prefix}_R2_fastqc.zip
+    [ ! -f  ${prefix}_1.fastq.gz ] && ln -s ${reads[0]} ${prefix}_1.fastq.gz
+    [ ! -f  ${prefix}_2.fastq.gz ] && ln -s ${reads[1]} ${prefix}_2.fastq.gz
+    fastqc -q --threads ${task.cpus} ${prefix}_1.fastq.gz ${prefix}_2.fastq.gz
     """
   }
 }

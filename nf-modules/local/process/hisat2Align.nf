@@ -9,7 +9,7 @@ process hisat2Align {
     tag "$prefix"
     label 'hisat2'
     label 'highCpu'
-    label 'highMem'
+    label 'extraMem'
     publishDir "${params.outDir}/mapping", mode: 'copy',
       saveAs: {filename ->
         if (filename.indexOf(".hisat2_summary.txt") > 0) "logs/$filename"
@@ -38,7 +38,8 @@ process hisat2Align {
     inputOpts = params.singleEnd ? "-U ${reads}" : "-1 ${reads[0]} -2 ${reads[1]}"
     """
     echo \$(hisat2 --version | awk 'NR==1{print "hisat2 "\$3}') > versions.txt
-    hisat2 -x $indexBase \\
+    localIndex=`find -L ./ -name "*.1.ht2" | sed 's/.1.ht2//'`
+    hisat2 -x \${localIndex} \\
            ${inputOpts} \\
            ${strandOpts} \\
            --known-splicesite-infile $alignmentSplicesites \\

@@ -7,11 +7,12 @@ process gffcompare {
     label 'minCpu'
     label 'medMem'
 
-    publishDir "${params.outDir}/gffcompare", mode: 'copy'
+    publishDir "${params.outDir}/gffcompare/${source}/", mode: 'copy'
 
     input:
     path(denovoGtf)
     path(refGtf)
+    val(source)
 
     output:
     path("gffcompare*")   , emit: results
@@ -22,7 +23,7 @@ process gffcompare {
     """
     gffcompare \\
       -r ${refGtf} \\
-      -o gffcompare \\
+      -o gffcompare_${source} \\
       ${denovoGtf}
 
     echo \$(gffcompare --version 2>&1) > versions.txt

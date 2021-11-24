@@ -22,7 +22,8 @@ workflow scallopFlow {
 
   gffcompare(
     scallop.out.transcriptGtf.map{it[1]}.collect(), 
-    gtf.collect()
+    gtf.collect(),
+    Channel.value("scallop")
   )
   chVersions = chVersions.mix(gffcompare.out.versions)
 

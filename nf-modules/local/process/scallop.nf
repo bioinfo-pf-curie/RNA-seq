@@ -8,8 +8,8 @@
 process scallop {
     tag "$prefix"
     label 'scallop'
-    label 'medCpu'
-    label 'medMem'
+    label 'lowCpu'
+    label 'highMem'
     publishDir "${params.outDir}/scallop", mode: 'copy'
 
     input:

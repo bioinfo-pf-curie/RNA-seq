@@ -42,11 +42,12 @@ include {checkAlignmentPercent } from './lib/functions'
 */
 
 // Genome-based variables
+params.bowtie2Index = NFTools.getGenomeAttribute(params, 'bowtie2')
 params.starIndex = NFTools.getGenomeAttribute(params, 'star')
 params.hisat2Index = NFTools.getGenomeAttribute(params, 'hisat2')
 params.rrna = NFTools.getGenomeAttribute(params, 'rrna')
 params.gtf = NFTools.getGenomeAttribute(params, 'gtf')
-params.transcriptsFasta = NFTools.getGenomeAttribute(params, 'transcriptsFasta') 
+params.transcriptsFasta = NFTools.getGenomeAttribute(params, 'transcriptsFasta')
 params.bed12 = NFTools.getGenomeAttribute(params, 'bed12')
 params.fasta = NFTools.getGenomeAttribute(params, 'fasta')
 params.fastaFai = NFTools.getGenomeAttribute(params, 'fastaFai')
@@ -71,39 +72,14 @@ params.starAlignOptions = "${params.starOptions} ${starTwoPassOpts} ${starCounts
 denovoTools = params.denovo ? params.denovo.split(',').collect{it.trim().toLowerCase()} : []
 
 /*
-===========================
-   SUMMARY
-===========================
-*/
-
-summary = [
-  'Pipeline Release': workflow.revision ?: null,
-  'Run Name': customRunName,
-  'Inputs' : params.samplePlan ?: params.reads ?: null,
-  'Genome' : params.genome,
-  'GTF Annotation' : params.gtf ?: null,
-  'Gencode' : params.gencode ? 'yes' : 'no',
-  'BED Annotation' : params.bed12 ?: null,
-  'Identito' : params.polym ?: null,
-  'Strandedness' : params.stranded,
-  'Aligner' : params.aligner ?: null,
-  'PseudoAligner' : params.pseudoAligner ?: null,
-  'Guided Assembly' : params.denovo ?: null,
-  'Counts' : params.counts,
-  'Max Resources': "${params.maxMemory} memory, ${params.maxCpus} cpus, ${params.maxTime} time per job",
-  'Container': workflow.containerEngine && workflow.container ? "${workflow.containerEngine} - ${workflow.container}" : null,
-  'Profile' : workflow.profile,
-  'OutDir' : params.outDir,
-  'WorkDir': workflow.workDir
-].findAll{ it.value != null }
-
-workflowSummaryCh = NFTools.summarize(summary, workflow, params)
-
-/*
 ==========================
  VALIDATE INPUTS
 ==========================
 */
+
+if (!params.genome){
+  exit 1, "No genome provided. The --genome option is mandatory"
+}
 
 if (params.genomes && params.genome && !params.genomes.containsKey(params.genome)) {
   exit 1, "The provided genome '${params.genome}' is not available in the genomes file. Currently the available genomes are ${params.genomes.keySet().join(", ")}"
@@ -137,7 +113,7 @@ if( params.starIndex && params.aligner == 'star' ){
 }
 else if ( params.hisat2Index && params.aligner == 'hisat2' ){
   Channel
-    .fromPath("${params.hisat2Index}*")
+    .fromPath("${params.hisat2Index}")
     .ifEmpty { exit 1, "HISAT2 index not found: ${params.hisat2Index}" }
     .set{chHisat2Index}
   chStarIndex = Channel.empty()
@@ -153,6 +129,15 @@ else if ( params.salmonIndex && params.pseudoAligner == "salmon" ){
 }
 else {
     exit 1, "No genome index specified!"
+}
+
+if (params.bowtie2Index){
+  Channel
+    .fromPath("${params.bowtie2Index}")
+    .ifEmpty { exit 1, "Bowtie2 index not found: ${params.bowtie2Index}" }
+    .set{chBowtie2Index}
+}else{
+  chBowtie2Index = Channel.empty()
 }
 
 if( params.gtf ){
@@ -232,6 +217,35 @@ if ( params.polym ){
   log.warn "No polymorphisms available - identito monitoring will be skipped !"
   chPolymBed = Channel.empty()
 }
+
+/*
+===========================
+   SUMMARY
+===========================
+*/
+
+summary = [
+  'Pipeline Release': workflow.revision ?: null,
+  'Run Name': customRunName,
+  'Inputs' : params.samplePlan ?: params.reads ?: null,
+  'Genome' : params.genome,
+  'GTF Annotation' : params.gtf ?: null,
+  'Gencode' : params.gencode ? 'yes' : 'no',
+  'BED Annotation' : params.bed12 ?: null,
+  'Identito' : params.polym ?: null,
+  'Strandedness' : params.stranded,
+  'Aligner' : params.aligner ?: null,
+  'PseudoAligner' : params.pseudoAligner ?: null,
+  'Guided Assembly' : params.denovo ?: null,
+  'Counts' : params.counts,
+  'Max Resources': "${params.maxMemory} memory, ${params.maxCpus} cpus, ${params.maxTime} time per job",
+  'Container': workflow.containerEngine && workflow.container ? "${workflow.containerEngine} - ${workflow.container}" : null,
+  'Profile' : workflow.profile,
+  'OutDir' : params.outDir,
+  'WorkDir': workflow.workDir
+].findAll{ it.value != null }
+
+workflowSummaryCh = NFTools.summarize(summary, workflow, params)
 
 /*
 ==============================
@@ -323,7 +337,8 @@ workflow {
     // SUBWORKFLOW: Strandness rseqc
     strandnessFlow(
       chRawReads,
-      chBedRseqc
+      chBedRseqc,
+      chBowtie2Index
     )
     chVersions = chVersions.mix(strandnessFlow.out.versions)
 
@@ -521,7 +536,7 @@ workflow {
         chGtf.collect()
       )
       chVersions = chVersions.mix(stringtieFlow.out.versions)
-      chgffCompareMqc = stringtieFlow.out.gffCompareResults
+      chgffCompareMqc = chgffCompareMqc.mix(stringtieFlow.out.gffCompareResults)
     }
 
     if ("scallop" in denovoTools){
@@ -531,7 +546,8 @@ workflow {
 	chGtf.collect()
       )
       chVersions = chVersions.mix(scallopFlow.out.versions)
-      chgffCompareMqc = scallopFlow.out.gffCompareResults
+      // TODO - Bug in gffcompare multisample outputs and MultiQC
+      //chgffCompareMqc = chgffCompareMqc.mix(scallopFlow.out.gffCompareResults)
     }
   
     //*******************************************

@@ -6,7 +6,7 @@ process salmonTx2gene {
     tag "$gtf"
     label "python"
     label "medCpu"
-    label "medMem"
+    label "highMem"
 
     publishDir "${params.outDir}/counts", mode: 'copy'
 
