@@ -235,6 +235,7 @@ summary = [
   'Identito' : params.polym ?: null,
   'Strandedness' : params.stranded,
   'Aligner' : params.aligner ?: null,
+  'Star TwoPass' : params.starTwoPass ?:null,
   'PseudoAligner' : params.pseudoAligner ?: null,
   'Guided Assembly' : params.denovo ?: null,
   'Counts' : params.counts,

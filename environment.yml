@@ -22,14 +22,15 @@ dependencies:
   - bioconda::subread=2.0.1=h5bf99c6_1
   - bioconda::htseq=0.13.5=py37h9c5868f_1
   - bioconda::deeptools=3.5.1=py_0
-  - bioconda::salmon=1.4.0=hf69c8f4_0
+  - bioconda::salmon=1.4.0=h84f40af_1
   - conda-forge::tbb=2020.2=hc9558a2_0
   - bioconda::qualimap=2.2.2d=1
-  - bioconda::scallop-0.10.5=hbce0939_1
-  - bioconda::stringtie-2.1.7=h978d192_0
-  - bioconda::gffcompare-0.11.2=h7d875b9_2
+  - bioconda::scallop=0.10.5=hbce0939_1
+  - bioconda::stringtie=2.1.7=h978d192_0
+  - bioconda::gffcompare=0.11.2=h7d875b9_2
 
   - conda-forge::r-base=4.0.3=h349a78a_8
+  - conda-forge::icu=68.1=h58526e2_0
   - conda-forge::r-dplyr=1.0.5=r40h03ef668_0
   - conda-forge::r-data.table=1.14.0=r40hcfec24a_0
   - conda-forge::r-gplots=3.1.1=r40hc72bb7e_0
