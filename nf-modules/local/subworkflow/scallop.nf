@@ -21,14 +21,13 @@ workflow scallopFlow {
   chVersions = chVersions.mix(scallop.out.versions)
 
   gffcompare(
-    scallop.out.transcriptGtf.map{it[1]}.collect(), 
-    gtf.collect(),
-    Channel.value("scallop")
+    scallop.out.transcriptGtf, 
+    gtf.collect()
   )
   chVersions = chVersions.mix(gffcompare.out.versions)
 
   emit:
-  combinedGtf = gffcompare.out.combinedGtf
   gffCompareResults = gffcompare.out.results
+  mqc = gffcompare.out.mqc
   versions = chVersions
 }

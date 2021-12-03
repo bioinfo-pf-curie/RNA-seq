@@ -47,7 +47,7 @@ if args.warn is not None:
         warn_data=myfile.readlines()
         warn_str = ""
         for x in warn_data:
-            warn_str += "<br>[WARNING] " + x.rstrip()
+            warn_str += "<br><p style=\"color:#FF9900\">[WARNING] " + x.rstrip() + "</p>"
         report_comment += warn_str
 
 multiqc_list += [report_comment]

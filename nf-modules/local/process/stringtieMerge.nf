@@ -14,8 +14,8 @@ process stringtieMerge {
     path(gtf)
 
     output:
-    path("stringtie_mergedTranscripts.gtf")   , emit: mergedGtf
-    path("versions.txt")                      , emit: versions
+    tuple val("stringtieMerge"), path("mergedTranscripts.gtf"), emit: mergedGtf
+    path("versions.txt"), emit: versions
 
     script:
     """
@@ -23,7 +23,7 @@ process stringtieMerge {
     stringtie \\
         --merge \\
         -G ${gtf} \\
-        -o stringtie_mergedTranscripts.gtf \\
+        -o mergedTranscripts.gtf \\
         -p ${task.cpus} \\
 	listofgtf.tsv
 

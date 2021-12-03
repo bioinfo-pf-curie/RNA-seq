@@ -29,14 +29,14 @@ workflow stringtieFlow {
   chVersions = chVersions.mix(stringtieMerge.out.versions)
 
   gffcompare(
-    stringtieMerge.out.mergedGtf.collect(), 
-    gtf.collect(),
-    Channel.value("stringtie")
+    stringtieMerge.out.mergedGtf, 
+    gtf.collect()
   )
   chVersions = chVersions.mix(gffcompare.out.versions)
 
   emit:
   combinedGtf = stringtieMerge.out.mergedGtf
   gffCompareResults = gffcompare.out.results
+  mqc = gffcompare.out.mqc
   versions = chVersions
 }

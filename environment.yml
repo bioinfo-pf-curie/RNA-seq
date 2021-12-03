@@ -28,6 +28,7 @@ dependencies:
   - bioconda::scallop=0.10.5=hbce0939_1
   - bioconda::stringtie=2.1.7=h978d192_0
   - bioconda::gffcompare=0.11.2=h7d875b9_2
+  - bioconda::snpsift=4.3.1t=hdfd78af_3
 
   - conda-forge::r-base=4.0.3=h349a78a_8
   - conda-forge::icu=68.1=h58526e2_0

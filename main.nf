@@ -537,7 +537,7 @@ workflow {
         chGtf.collect()
       )
       chVersions = chVersions.mix(stringtieFlow.out.versions)
-      chgffCompareMqc = chgffCompareMqc.mix(stringtieFlow.out.gffCompareResults)
+      chgffCompareMqc = chgffCompareMqc.mix(stringtieFlow.out.mqc)
     }
 
     if ("scallop" in denovoTools){
@@ -547,10 +547,9 @@ workflow {
 	chGtf.collect()
       )
       chVersions = chVersions.mix(scallopFlow.out.versions)
-      // TODO - Bug in gffcompare multisample outputs and MultiQC
-      //chgffCompareMqc = chgffCompareMqc.mix(scallopFlow.out.gffCompareResults)
+      chgffCompareMqc = chgffCompareMqc.mix(scallopFlow.out.mqc)
     }
-  
+
     //*******************************************
     // MULTIQC
 
@@ -560,14 +559,27 @@ workflow {
         chVersions.unique().collectFile()
       )
 
+      // Warnings
+      chWarnMapping = Channel.empty()
       if (skippedPoorAlignment.size() > 0){
         Channel.fromList(skippedPoorAlignment)
              .flatMap{ it -> it + ": Poor alignment rate. Sample discarded"}
-             .collectFile(name: 'warnings.txt', newLine: true)
-             .set{chWarn}
-      }else{
-        chWarn = Channel.empty()
+             .set{chWarnMapping}
       }
+      
+      strandnessFlow.out.strandnessResults
+        .map{it[1]}
+        .unique()
+	.count()
+	.filter{it > 1}
+	.flatMap{"Samples with different strandness detected !"}
+	.set{chWarnStrand}
+
+     chWarnStrand
+       .mix(chWarnMapping)
+       .collectFile(name: 'warnings.txt', newLine: true)
+       .set{chWarn}
+
     
       multiqc(
         customRunName,

@@ -54,8 +54,8 @@ process multiqc {
   modulesList = params.counts == 'featureCounts' ? "${modulesList} -m featureCounts" : "${modulesList}"  
   modulesList = params.counts == 'HTseqCounts' ? "${modulesList} -m htseq" : "${modulesList}"  
  
-  //warn=skippedPoorAlignment.size() > 0 ? "--warn workflowSummary/warnings.txt" : ""
-  warn = warnings.name == 'warnings.txt' ? "--warn workflowSummary/warnings.txt" : ""
+  //warn=skippedPoorAlignment.size() > 0 ? "--warn warnings.txt" : ""
+  warn = warnings.name == 'warnings.txt' ? "--warn warnings.txt" : ""
   """
   stats2multiqc.sh ${splan} ${alignerOpts} ${isPE}
   medianReadNb="\$(sort -t, -k3,3n mq.stats | awk -F, '{a[i++]=\$3;} END{x=int((i+1)/2); if (x<(i+1)/2) printf "%.0f", (a[x-1]+a[x])/2; else printf "%.0f",a[x-1];}')"
