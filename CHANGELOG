@@ -13,6 +13,7 @@ NEW FEATURES
   - Add Mouse mm39 genome annotation
 
 SIGNIFICANT USER-VISIBLE CHANGES
+  - Add T2T chm13 fasta genome
   - Improve warnings reporting in report
   - Remove default values for '--counts' and '--aligner'. These options are now mandatory
   - Updata MultiQC version to v1.11
