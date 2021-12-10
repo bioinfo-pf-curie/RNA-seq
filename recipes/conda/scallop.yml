@@ -4,4 +4,4 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - bioconda::scallop-0.10.5=hbce0939_1
+  - bioconda::scallop=0.10.5=hbce0939_1
