@@ -331,7 +331,7 @@ workflow {
       fastqc(
         chRawReads
       )
-      chFastqMqc = fastqc.out.results.collect()
+      chFastqcMqc = fastqc.out.results.collect()
       chVersions = chVersions.mix(fastqc.out.versions)
     }
 
@@ -586,7 +586,7 @@ workflow {
         chSplan.collect(),
         chMetadata.ifEmpty([]),
         chMultiqcConfig.ifEmpty([]),
-        chFastqMqc.ifEmpty([]),
+        chFastqcMqc.ifEmpty([]),
         chrRNAMappingMqc.ifEmpty([]),
         chAlignedMqc.collect().ifEmpty([]),
         strandnessFlow.out.strandnessOutputFiles.collect().ifEmpty([]),
