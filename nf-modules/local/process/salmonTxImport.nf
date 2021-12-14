@@ -4,7 +4,7 @@
  */
 
 process salmonTxImport {
-    label "R"
+    label "r"
     label "medCpu"
     label "medMem"
 
