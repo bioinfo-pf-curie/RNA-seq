@@ -245,11 +245,11 @@ Available Profiles
      * @return
      */
 
-     public static String getGenomeAttribute(params, attribute) {
+     public static String getGenomeAttribute(params, attribute, genome=params.genome) {
         def val = ''
-        if (params.genomes && params.genome && params.genomes.containsKey(params.genome)) {
-            if (params.genomes[ params.genome ].containsKey(attribute)) {
-                val = params.genomes[ params.genome ][ attribute ]
+        if (params.genomes && params.genomes.containsKey(genome)) {
+            if (params.genomes[ genome ].containsKey(attribute)) {
+                val = params.genomes[ genome ][ attribute ]
             }
         }
         return val

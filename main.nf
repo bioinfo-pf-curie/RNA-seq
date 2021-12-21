@@ -5,7 +5,8 @@ Copyright Institut Curie 2019-2021
 This software is a computer program whose purpose is to analyze high-throughput sequencing data.
 You can use, modify and/ or redistribute the software under the terms of license (see the LICENSE file for more details).
 The software is distributed in the hope that it will be useful, but "AS IS" WITHOUT ANY WARRANTY OF ANY KIND.
-Users are therefore encouraged to test the software's suitability as regards their requirements in conditions enabling the security of their systems and/or data. The fact that you are presently reading this means that you have had knowledge of the license and that you accept its terms.
+Users are therefore encouraged to test the software's suitability as regards their requirements in conditions enabling the security of their systems and/or data. 
+The fact that you are presently reading this means that you have had knowledge of the license and that you accept its terms.
 */
 
 
@@ -13,8 +14,8 @@ Users are therefore encouraged to test the software's suitability as regards the
 ========================================================================================
                          RNA-seq DSL2
 ========================================================================================
- RNA-seq Analysis Pipeline.
-  https://gitlab.curie.fr/data-analysis/rnaseq
+RNA-seq Analysis Pipeline.
+https://gitlab.curie.fr/data-analysis/rnaseq
 ----------------------------------------------------------------------------------------
 */
 
@@ -52,7 +53,7 @@ params.bed12 = NFTools.getGenomeAttribute(params, 'bed12')
 params.fasta = NFTools.getGenomeAttribute(params, 'fasta')
 params.fastaFai = NFTools.getGenomeAttribute(params, 'fastaFai')
 params.polym = NFTools.getGenomeAttribute(params, 'polym')
-params.starOptions = params.genomes[ params.genome ].starOpts ? NFTools.getGenomeAttribute(params, 'starOpts') : params.starOpts
+params.starOptions = params.starOpts ? params.starOpts : params.genomes[ params.genome ].starOpts ? NFTools.getGenomeAttribute(params, 'starOpts') : params.starDefaultOpts
 params.salmonIndex = NFTools.getGenomeAttribute(params, 'salmon')
 params.gencode = NFTools.getGenomeAttribute(params, 'gencode')
 
@@ -102,6 +103,12 @@ if (params.stranded == 'auto' && !params.bed12){
 if ((params.reads && params.samplePlan) || (params.readPaths && params.samplePlan)){
   exit 1, "Input reads must be defined using either '--reads' or '--samplePlan' parameter. Please choose one way"
 }
+
+/*
+==========================
+ BUILD CHANNELS
+==========================
+*/
 
 if( params.starIndex && params.aligner == 'star' ){
   Channel
