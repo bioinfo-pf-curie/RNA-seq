@@ -45,11 +45,10 @@ process starAlign {
        --outSAMtype BAM Unsorted  \\
        --readFilesCommand zcat \\
        --runDirPerm All_RWX \\
-       --outTmpDir "${params.tmpDir}/rnaseq_\$(date +%d%s%S%N)"\\
+       --outTmpDir "${params.tmpDir}/star_\$(date +%d%s%S%N)"\\
        --outFileNamePrefix $prefix  \\
        --outSAMattrRGline ID:$prefix SM:$prefix LB:Illumina PL:Illumina  \\
        --outSAMunmapped Within \\
-       --limitOutSJcollapsed 5000000 \\
        ${params.starAlignOptions}
   """
 }
