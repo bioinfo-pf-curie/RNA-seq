@@ -12,9 +12,6 @@ process preseq {
   label 'highMem'
   publishDir "${params.outDir}/preseq", mode: 'copy'
 
-  when:
-  !params.skipQC && !params.skipSaturation
-
   input:
   tuple val(prefix), path(bam), path(bai)
 
