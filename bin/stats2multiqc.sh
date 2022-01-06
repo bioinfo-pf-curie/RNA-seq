@@ -8,7 +8,7 @@ is_pe=$3
 ## Catch sample names
 all_samples=$(awk -F, '{print $1}' $splan)
 
-echo -e "Sample_id,Sample_name,Number_of_frag,Number_of_rRNA,Percent_of_rRNA,Strandness,Number_of_aligned,Percent_of_aligned,Number_of_uniquely_aligned,Percent_uniquely_aligned,Number_of_multiple_aligned,Percent_multiple,Number_of_duplicates,Percent_duplicates,Percent_saturation" > mq.stats
+echo -e "Sample_id,Sample_name,Number_of_frag,Number_of_rRNA,Percent_of_rRNA,Strandness,Number_of_aligned,Percent_of_aligned,Number_of_uniquely_aligned,Percent_uniquely_aligned,Number_of_multiple_aligned,Percent_multiple_aligned,Number_of_duplicates,Percent_duplicates,Percent_saturation" > mq.stats
 
 for sample in $all_samples
 do

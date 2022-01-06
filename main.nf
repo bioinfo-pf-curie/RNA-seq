@@ -476,7 +476,7 @@ workflow {
       } else if (params.counts == 'star'){
         starCountsFlow (
           mappingStarFlow.out.counts,
-	  mappingStarFlow.out.logs,
+	  mappingStarFlow.out.countsLogs,
 	  strandnessFlow.out.strandnessResults,
           chGtf.collect()
         )

@@ -171,7 +171,7 @@ table_cond_formatting_rules:
             - gt: 10
         fail:
             - gt: 20
-    Percent_of_aligned_reads:
+    Percent_of_aligned:
         pass:
             - gt: 80
         warn:
