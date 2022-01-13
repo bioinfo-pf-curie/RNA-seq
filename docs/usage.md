@@ -295,7 +295,25 @@ Change default Hisat2 mapping option. See the `nextflow.config` file for details
 ### `--starOpts`
  
 Change default STAR mapping options for mapping.
-Note that the STAR options can vary from an organism to another. 
+By default STAR is run with the following options
+
+```
+--outSAMmultNmax 1 --outFilterMismatchNmax 999 --outFilterMismatchNoverLmax 0.04 --outSAMprimaryFlag OneBestScore \
+--outMultimapperOrder Random --outSAMattributes All
+```
+
+In other words, it means that only one alignment will be reported in the output, randomly chosen from the top scoring alignments (in case of multiple alignments).
+The allowed number of mismatches is indexed on the read length (0.04 * read length). 
+And all common SAM attributes will be added.
+
+Note that the default STAR options can vary from an organism to another. 
+For instance, for Human data, the pipeline adds the ENCODE recommanded options to the default ones 
+
+```
+--outFilterType BySJout --outFilterMultimapNmax 20 --alignSJoverhangMin 8 --alignSJDBoverhangMin 1 --outFilterMismatchNmax 999 \
+--outFilterMismatchNoverLmax 0.04 --alignIntronMin 20 --alignIntronMax 1000000 --alignMatesGapMax 1000000
+```
+
 See the `nextflow.config` file for details.
 
 ### `--starTwoPass`
