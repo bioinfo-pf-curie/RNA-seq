@@ -6,7 +6,6 @@ process outputDocumentation {
     label 'python'
     label 'minCpu'
     label 'minMem'
-    publishDir "${params.summaryDir}/", mode: 'copy'
 
     input:
     path outputDocs 

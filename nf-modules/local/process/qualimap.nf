@@ -9,7 +9,6 @@ process qualimap {
   label 'qualimap'
   label 'minCpu'
   label 'medMem'
-  publishDir "${params.outDir}/qualimap/" , mode: 'copy'
 
   input:
   tuple val(prefix), path(bam), path(bai), val(stranded)
@@ -17,7 +16,7 @@ process qualimap {
 
   output:
   path ("${prefix}"), emit: results
-  path ("versions.txt")      , emit: versions
+  path ("versions.txt"), emit: versions
 
   script:
   peOpts = params.singleEnd ? '' : '-pe'

@@ -2,16 +2,10 @@
  * Hisat2 / makeHisatSplicesites
  */
 
-
 process makeHisatSplicesites {
   label 'hisat2'
   label 'minCpu'
   label 'lowMem'
-  publishDir "${params.outDir}/mapping", mode: 'copy',
-    saveAs: { filename ->
-      if (params.saveAlignedIntermediates) filename
-      else null
-     }
 
   input:
   path gtf

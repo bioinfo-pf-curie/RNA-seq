@@ -7,10 +7,6 @@ process getSoftwareVersions{
   label 'python'
   label 'minCpu'
   label 'lowMem'
-  publishDir path: "${params.outDir}/softwareVersions", mode: "copy"
-
-  when:
-  !params.skipSoftVersions
 
   input:
   path versions

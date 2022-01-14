@@ -6,7 +6,6 @@ process exploratoryAnalysis {
   label 'r'
   label 'minCpu'
   label 'lowMem'
-  publishDir "${params.outDir}/exploratoryAnalysis", mode: 'copy'
 
   input:
   path tableRaw 

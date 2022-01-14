@@ -7,10 +7,6 @@ process bigWig {
   label 'deeptools'
   label 'medCpu'
   label 'medMem'
-  publishDir "${params.outDir}/bigWig", mode: "copy",
-    saveAs: {filename ->
-    	     if ( filename.endsWith(".bigwig") ) "$filename"
-             else null}
 
   input:
   tuple val(prefix), path(bam), path(bai), val(strandness)

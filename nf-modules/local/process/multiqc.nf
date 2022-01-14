@@ -8,10 +8,6 @@ process multiqc {
   label 'multiqc'
   label 'minCpu'
   label 'lowMem'
-  publishDir "${params.outDir}/MultiQC", mode: 'copy'
-
-  when:
-  !params.skipMultiQC
 
   input:
   val customRunName

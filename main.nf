@@ -53,7 +53,6 @@ params.bed12 = NFTools.getGenomeAttribute(params, 'bed12')
 params.fasta = NFTools.getGenomeAttribute(params, 'fasta')
 params.fastaFai = NFTools.getGenomeAttribute(params, 'fastaFai')
 params.polym = NFTools.getGenomeAttribute(params, 'polym')
-params.starOptions = params.starOpts ? params.starOpts : params.genomes[ params.genome ].starOpts ? NFTools.getGenomeAttribute(params, 'starOpts') : params.starDefaultOpts
 params.salmonIndex = NFTools.getGenomeAttribute(params, 'salmon')
 params.gencode = NFTools.getGenomeAttribute(params, 'gencode')
 
@@ -65,11 +64,6 @@ chPcaHeader = Channel.fromPath("$baseDir/assets/pcaHeader.txt")
 chHeatmapHeader = Channel.fromPath("$baseDir/assets/heatmapHeader.txt")
 
 // Tools
-starTwoPassOpts = params.starTwoPass ? '--twopassMode Basic' : ''
-starCountsOpts = params.counts == 'star' ? '--quantMode GeneCounts' : ''
-starBAMOpts = params.counts == 'salmon' ? '--quantMode TranscriptomeSAM' : ''
-params.starAlignOptions = "${params.starOptions} ${starTwoPassOpts} ${starCountsOpts} ${starBAMOpts}"
-
 denovoTools = params.denovo ? params.denovo.split(',').collect{it.trim().toLowerCase()} : []
 
 /*

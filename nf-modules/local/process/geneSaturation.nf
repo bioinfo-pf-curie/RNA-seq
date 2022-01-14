@@ -6,7 +6,6 @@ process geneSaturation {
   label 'r'
   label 'minCpu'
   label 'medMem'
-  publishDir "${params.outDir}/geneSaturation" , mode: 'copy'
 
   input:
   path inputCounts

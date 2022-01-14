@@ -7,7 +7,6 @@ process samtoolsIndex {
   label 'samtools'
   label 'minCpu'
   label 'lowMem'
-  publishDir "${params.outDir}/mapping", mode: 'copy'
  
   input:
   tuple val(prefix), path (bam)

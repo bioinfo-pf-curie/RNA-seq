@@ -7,8 +7,6 @@ process identitoCombine {
   label 'lowMem'
   label 'identito'
 
-  publishDir "${params.outDir}/identito", mode: 'copy'
-
   input:
   path(matrix)
 

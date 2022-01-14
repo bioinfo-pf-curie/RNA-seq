@@ -3,7 +3,6 @@
  */
 
 process mergeCounts {
-  publishDir "${params.outDir}/counts", mode: 'copy'
   label 'r'
   label 'minCpu'
   label 'medMem'

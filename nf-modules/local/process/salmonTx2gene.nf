@@ -8,8 +8,6 @@ process salmonTx2gene {
     label "medCpu"
     label "highMem"
 
-    publishDir "${params.outDir}/counts", mode: 'copy'
-
     input:
     path("salmon/*")
     path(gtf)

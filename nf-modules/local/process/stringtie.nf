@@ -1,47 +1,44 @@
 /*
  * Stringtie - Reference-guided de novo isoform assembly
  * https://ccb.jhu.edu/software/stringtie/index.shtml?t=manual
- * External parameters :
- * @ params.stringtieOpts : Additional Stringtie parameters
  */
 
 process stringtie {
-    tag "$prefix"
-    label 'stringtie'
-    label 'medCpu'
-    label 'medMem'
-    publishDir "${params.outDir}/stringtie", mode: 'copy'
+  tag "$prefix"
+  label 'stringtie'
+  label 'medCpu'
+  label 'medMem'
 
-    input:
-    tuple val(prefix), path(bam), path(bai), val(strandness) // Channel [prefix, bam, bai, strandness]
-    path(gtf)
+  input:
+  tuple val(prefix), path(bam), path(bai), val(strandness) // Channel [prefix, bam, bai, strandness]
+  path(gtf)
 
-    output:
-    tuple val(prefix), path("*.coverage.gtf")   , emit: coverageGtf
-    tuple val(prefix), path("*.transcripts.gtf"), emit: transcriptGtf
-    tuple val(prefix), path("*.abundance.txt")  , emit: abundance
-    tuple val(prefix), path("*.ballgown")       , emit: ballgown
-    path  "versions.txt"                        , emit: versions
+  output:
+  tuple val(prefix), path("*.coverage.gtf")   , emit: coverageGtf
+  tuple val(prefix), path("*.transcripts.gtf"), emit: transcriptGtf
+  tuple val(prefix), path("*.abundance.txt")  , emit: abundance
+  tuple val(prefix), path("*.ballgown")       , emit: ballgown
+  path  "versions.txt"                        , emit: versions
 
-    script:
-    def strandOpts = ''
-    if (strandness == 'forward') {
-        strandOpts = '--fr'
-    } else if (strandness == 'reverse') {
-        strandOpts = '--rf'
-    }
-    """
-    stringtie \\
-        $bam \\
-        $strandOpts \\
-        -G $gtf \\
-        -o ${prefix}.transcripts.gtf \\
-        -A ${prefix}.gene.abundance.txt \\
-        -C ${prefix}.coverage.gtf \\
-        -b ${prefix}.ballgown \\
-        -p $task.cpus \\
-        ${params.stringtieOpts}
-
-    echo "stringtie "\$(stringtie --version 2>&1) > versions.txt
-    """
+  script:
+  def args = task.ext.args ?: ''
+  def strandOpts = ''
+  if (strandness == 'forward') {
+      strandOpts = '--fr'
+  } else if (strandness == 'reverse') {
+      strandOpts = '--rf'
+  }
+  """
+  stringtie \\
+    $bam \\
+    $strandOpts \\
+    -G $gtf \\
+    -o ${prefix}.transcripts.gtf \\
+    -A ${prefix}.gene.abundance.txt \\
+    -C ${prefix}.coverage.gtf \\
+    -b ${prefix}.ballgown \\
+    -p $task.cpus \\
+    ${args}
+  echo "stringtie "\$(stringtie --version 2>&1) > versions.txt
+  """
 }

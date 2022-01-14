@@ -7,10 +7,6 @@ process rseqc {
     label 'rseqc'
     label 'medCpu'
     label 'lowMem'
-    publishDir "${params.outDir}/strandness" , mode: 'copy',
-      saveAs: {filename ->
-        if (filename.indexOf(".txt") > 0) "$filename"
-        else null }
 
     input:
     tuple val(prefix), path(bamRseqc)

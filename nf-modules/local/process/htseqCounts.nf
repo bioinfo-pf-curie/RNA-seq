@@ -1,7 +1,5 @@
 /*
  * HTSeqCounts - gene counting
- * External parameters :
- * @ params.htseqOpts :	additional parameter for HTSeqCounts
  */
 
 process htseqCounts {
@@ -9,12 +7,6 @@ process htseqCounts {
   label 'htseq'
   label 'medCpu'
   label 'medMem'
-  publishDir "${params.outDir}/counts", mode: 'copy',
-    saveAs: {filename ->
-      if (filename.indexOf("_gene.HTseqCounts.txt.summary") > 0) "gene_count_summaries/$filename"
-      else if (filename.indexOf("_gene.HTseqCounts.txt") > 0) "gene_counts/$filename"
-      else "$filename"
-    }
   
   input:
   tuple val(prefix), path(bam), path(bai), val(strandness)
@@ -26,6 +18,7 @@ process htseqCounts {
   path("versions.txt"), emit: versions 
 
   script:
+  def args   = task.ext.args ?: ''
   def strandedOpt = '-s no' 
   if (strandness == 'forward'){
       strandedOpt= '-s yes'
@@ -34,6 +27,6 @@ process htseqCounts {
   }
   """
   echo \$(htseq-count --version | awk '{print "HTSeq "\$1}') > versions.txt
-  htseq-count ${params.htseqOpts} ${strandedOpt} ${bam} ${gtf} > ${prefix}_counts.csv
+  htseq-count ${args} ${strandedOpt} ${bam} ${gtf} > ${prefix}_counts.csv
   """
 }

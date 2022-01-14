@@ -1,7 +1,5 @@
 /*
  * Picard MarkDuplicates
- * External parameters :
- * @ params.tmpDir : temporary folder
  */
 
 process markDuplicates {
@@ -9,11 +7,6 @@ process markDuplicates {
   label 'picard'
   label 'minCpu'
   label 'medMem'
-  publishDir "${params.outDir}/markDuplicates", mode: 'copy',
-    saveAs: {filename -> 
-      if (filename.indexOf("_metrics.txt") > 0) "metrics/$filename" 
-      else if (params.saveAlignedIntermediates) filename
-    }
 
   input:
   tuple val(prefix), path(bam), path(bai)
@@ -24,10 +17,11 @@ process markDuplicates {
   path('versions.txt'), emit: versions
 
   script:
+  def javaArgs = task.ext.args ?: ''
   markdupMemOption = "\"-Xms" +  (task.memory.toGiga() / 2).trunc() + "g -Xmx" + (task.memory.toGiga() - 1) + "g\""
   """
   echo \$(picard MarkDuplicates --version 2>&1 | sed -e 's/Version:/picard /') > versions.txt
-  picard ${markdupMemOption} -Djava.io.tmpdir=${params.tmpDir} MarkDuplicates \\
+  picard ${markdupMemOption} ${javaArgs} MarkDuplicates \\
       MAX_RECORDS_IN_RAM=50000 \\
       INPUT=${bam} \\
       OUTPUT=${prefix}.markDups.bam \\

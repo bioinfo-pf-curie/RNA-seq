@@ -8,8 +8,6 @@ process salmonTxImport {
     label "medCpu"
     label "medMem"
 
-    publishDir "${params.outDir}/counts", mode: 'copy'
-
     input:
     path("salmon/*")
     path(salmonTx2gene)

@@ -1,7 +1,5 @@
 /*
  * STAR reads alignment
- * External parameters :
- * @ params.starAlignOptions : addition STAR alignment parameters
  */
 
 process starAlign {
@@ -9,17 +7,6 @@ process starAlign {
   label 'star'
   label 'highCpu'
   label 'extraMem'
-  publishDir "${params.outDir}/mapping", mode: 'copy',
-    saveAs: {filename ->
-      if (filename.indexOf(".bam") == -1) "logs/$filename"
-      else if (params.saveAlignedIntermediates) filename
-      else null
-    }
-  publishDir "${params.outDir}/counts", mode: 'copy',
-    saveAs: {filename ->
-      if (filename.indexOf("ReadsPerGene.out.tab") > 0) "$filename"
-      else null
-    }
 
   input:
   tuple val(prefix), path(reads)
@@ -35,6 +22,7 @@ process starAlign {
   path ("versions.txt"), emit: versions
 
   script:
+  def args = task.ext.args ?: ''
   """
   echo "STAR "\$(STAR --version 2>&1) > versions.txt
   STAR --genomeDir $index \\
@@ -49,6 +37,6 @@ process starAlign {
        --outFileNamePrefix $prefix  \\
        --outSAMattrRGline ID:$prefix SM:$prefix LB:Illumina PL:Illumina  \\
        --outSAMunmapped Within \\
-       ${params.starAlignOptions}
+       ${args}
   """
 }

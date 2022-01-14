@@ -7,8 +7,6 @@ process gffcompare {
     label 'minCpu'
     label 'medMem'
 
-    publishDir "${params.outDir}/gffcompare/", mode: 'copy'
-
     input:
     tuple val(prefix), path(denovoGtf)
     path(refGtf)

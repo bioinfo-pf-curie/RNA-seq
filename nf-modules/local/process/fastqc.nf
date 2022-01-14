@@ -9,8 +9,6 @@ process fastqc {
   label 'fastqc'
   label 'medCpu'
   label 'lowMem'
-  publishDir "${params.outDir}/fastqc", mode: 'copy',
-    saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
 
   input:
   tuple val(prefix), path(reads)

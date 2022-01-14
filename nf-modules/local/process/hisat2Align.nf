@@ -2,7 +2,6 @@
  * Hisat2 genome mapping
  * External parameters :
  * @ params.singleEnd :	is data	single-end sequencing ?
- * @ params.hisat2Opts : addition Hisat2 parameters
  */
 
 process hisat2Align {
@@ -10,12 +9,6 @@ process hisat2Align {
     label 'hisat2'
     label 'highCpu'
     label 'extraMem'
-    publishDir "${params.outDir}/mapping", mode: 'copy',
-      saveAs: {filename ->
-        if (filename.indexOf(".hisat2_summary.txt") > 0) "logs/$filename"
-        else if (params.saveAlignedIntermediates) filename
-        else null
-      }
 
     input:
     tuple val(prefix), path(reads), val(strandness)
@@ -28,6 +21,7 @@ process hisat2Align {
     path ("versions.txt")                   , emit: versions
 
     script:
+    def args   = task.ext.args ?: ''
     indexBase = hs2Index[0].toString() - ~/.\d.ht2/
     def strandOpts = ''
     if (strandness=='forward'){
@@ -48,7 +42,7 @@ process hisat2Align {
            --new-summary \\
 	   --rg-id ${prefix} --rg SM:${prefix} --rg PL:ILLUMINA \\
            --summary-file ${prefix}.hisat2_summary.txt \\
-	   ${params.hisat2Opts} \\
+	   ${args} \\
            | samtools view -bS -F 256 - > ${prefix}.bam
     """
   }

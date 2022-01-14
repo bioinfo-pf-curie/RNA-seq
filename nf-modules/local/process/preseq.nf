@@ -10,7 +10,6 @@ process preseq {
   label 'preseq'
   label 'minCpu'
   label 'highMem'
-  publishDir "${params.outDir}/preseq", mode: 'copy'
 
   input:
   tuple val(prefix), path(bam), path(bai)
