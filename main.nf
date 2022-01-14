@@ -311,7 +311,7 @@ workflow {
     chPreseqMqc = Channel.empty()
     chMarkDupMqc = Channel.empty()
     chDupradarMqc = Channel.empty()
-    chIndentitoMqc = Channel.empty() 
+    chIdentitoMqc = Channel.empty() 
     chCountsMqc = Channel.empty()
     chGeneSatResults=Channel.empty()
     chGeneTypeResults=Channel.empty()

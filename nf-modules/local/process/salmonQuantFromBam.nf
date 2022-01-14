@@ -20,6 +20,7 @@ process salmonQuantFromBam {
   path("versions.txt"), emit: versions
 
   script:
+  def args = task.ext.args ?: ''
   strandOpts = params.singleEnd ? 'U' : 'IU'
   if (strandness == 'forward') {
     strandOpts = params.singleEnd ? 'SF' : 'ISF'
