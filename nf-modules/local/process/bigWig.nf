@@ -16,14 +16,14 @@ process bigWig {
   path("versions.txt"), emit: versions
 
   script:
+  def args = task.ext.args ?: ''
   strandOpts = strandness == 'forward' ? '--filterRNAstrand forward' : strandness == 'reverse' ? '--filterRNAstrand reverse' : ''
   """
   echo \$(bamCoverage --version) > versions.txt
   bamCoverage -b ${bam} \\
-              -o ${prefix}_cpm.bigwig \\
+              -o ${prefix}.bigwig \\
               -p ${task.cpus} \\
               ${strandOpts} \\
-	      --normalizeUsing CPM \\
-	      --skipNonCoveredRegions
+	      ${args}
   """
 }
