@@ -50,6 +50,7 @@ custom_data:
               placement: 6000
             Strandness:
               scale: false
+              format: '{:.0f}'
               placement: 3000
             Number_of_aligned:
               title: 'Aligned'
