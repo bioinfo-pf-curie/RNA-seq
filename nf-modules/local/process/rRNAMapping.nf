@@ -30,7 +30,11 @@ process rRNAMapping {
          --un ${prefix}_norRNA.fastq \\
          --sam \${localIndex} \\
          ${inputOpts} \\
-         ${prefix}.sam  2> ${prefix}.log && \
+         ${prefix}.sam  2> ${prefix}.log
+
+  ## fix bug in MultiQC
+  sed -i -e s'/one alignment/one reported alignment/' ${prefix}.log
+
   gzip -f ${prefix}_norRNA*.fastq 
   rm -f ${prefix}.sam
   """
