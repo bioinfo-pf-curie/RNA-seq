@@ -7,6 +7,7 @@ include { mergeCounts} from '../process/mergeCounts'
 workflow starCountsFlow {
 
   take:
+  starBams
   starCounts // Channel path(starCounts)
   starCountsLogs // Channel path(starCountsLogs)
   strandness // Channel val(strandness)
@@ -16,8 +17,19 @@ workflow starCountsFlow {
   tool = Channel.value("star")
   chVersions = Channel.empty()
 
+  // Phase counts with aligned data if any has been skipped
+  starBams
+    .join(starCounts)
+    .map(it -> [it[0], it[3]])
+    .set{chStarCounts}
+
+  starBams
+    .join(starCountsLogs)
+    .map(it -> [it[0], it[3]])
+    .set{chStarCountsLogs}                                                                                                                                                                             
+
   // Merge and order counts
-  starCounts
+  chStarCounts
     .join(strandness)
     .multiMap { it ->
       counts: it[1]
@@ -35,6 +47,6 @@ workflow starCountsFlow {
   emit:
   counts = mergeCounts.out.countsTable
   tpm = mergeCounts.out.tpmTable
-  logs = starCountsLogs
+  logs = chStarCountsLogs
   versions = chVersions
 }

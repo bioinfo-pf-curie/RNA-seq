@@ -33,8 +33,28 @@ customRunName = NFTools.checkRunName(workflow.runName, params.name)
 
 // Custom functions/variables
 mqcReport = []
+
 skippedPoorAlignment = []
-include {checkAlignmentPercent } from './lib/functions'
+def checkAlignmentPercent(prefix, logs) {
+  def percentAligned = 0;
+  logs.eachLine { line ->
+    if ((matcher = line =~ /([\d\.]+) \+ ([\d\.]+) mapped \s*/)) {
+      nbAligned = matcher[0][1]
+
+    } else if ((matcher = line =~ /([\d\.]+) \+ ([\d\.]+) in total \s*/)) {
+      nbTotal = matcher[0][1]
+    }
+  }
+  percentAligned = nbAligned.toFloat() / nbTotal.toFloat() * 100
+  if(percentAligned.toFloat() <= '2'.toFloat() ){
+      log.info "#################### VERY POOR ALIGNMENT RATE! IGNORING FOR FURTHER DOWNSTREAM ANALYSIS! ($prefix)    >> ${percentAligned}% <<"
+      skippedPoorAlignment << prefix
+      return false
+  } else {
+      log.info "          Passed alignment > ${prefix} >> ${percentAligned}% <<"
+      return true
+  }
+}
 
 /*
 ===================================
@@ -43,6 +63,14 @@ include {checkAlignmentPercent } from './lib/functions'
 */
 
 // Genome-based variables
+if (!params.genome){
+  exit 1, "No genome provided. The --genome option is mandatory"
+}
+
+if (params.genomes && params.genome && !params.genomes.containsKey(params.genome)) {
+  exit 1, "The provided genome '${params.genome}' is not available in the genomes file. Currently the available genomes are ${params.genomes.keySet().join(", ")}"
+}
+
 params.bowtie2Index = NFTools.getGenomeAttribute(params, 'bowtie2')
 params.starIndex = NFTools.getGenomeAttribute(params, 'star')
 params.hisat2Index = NFTools.getGenomeAttribute(params, 'hisat2')
@@ -71,14 +99,6 @@ denovoTools = params.denovo ? params.denovo.split(',').collect{it.trim().toLower
  VALIDATE INPUTS
 ==========================
 */
-
-if (!params.genome){
-  exit 1, "No genome provided. The --genome option is mandatory"
-}
-
-if (params.genomes && params.genome && !params.genomes.containsKey(params.genome)) {
-  exit 1, "The provided genome '${params.genome}' is not available in the genomes file. Currently the available genomes are ${params.genomes.keySet().join(", ")}"
-}
 
 if (!params.pseudoAligner && !params.aligner){
   exit 1, "Please provide a pseudo-aligner and an aligner, using either of the '--aligner' and '--pseudoAligner' parameters."
@@ -469,7 +489,8 @@ workflow {
         chVersions = chVersions.mix(htseqCountsFlow.out.versions)
       } else if (params.counts == 'star'){
         starCountsFlow (
-          mappingStarFlow.out.counts,
+	  chBamPassed,
+	  mappingStarFlow.out.counts,
 	  mappingStarFlow.out.countsLogs,
 	  strandnessFlow.out.strandnessResults,
           chGtf.collect()
