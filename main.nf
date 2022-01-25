@@ -1,14 +1,13 @@
 #!/usr/bin/env nextflow
 
 /*
-Copyright Institut Curie 2019-2021
+Copyright Institut Curie 2019-2022
 This software is a computer program whose purpose is to analyze high-throughput sequencing data.
 You can use, modify and/ or redistribute the software under the terms of license (see the LICENSE file for more details).
 The software is distributed in the hope that it will be useful, but "AS IS" WITHOUT ANY WARRANTY OF ANY KIND.
 Users are therefore encouraged to test the software's suitability as regards their requirements in conditions enabling the security of their systems and/or data. 
 The fact that you are presently reading this means that you have had knowledge of the license and that you accept its terms.
 */
-
 
 /*
 ========================================================================================
@@ -33,28 +32,7 @@ customRunName = NFTools.checkRunName(workflow.runName, params.name)
 
 // Custom functions/variables
 mqcReport = []
-
-skippedPoorAlignment = []
-def checkAlignmentPercent(prefix, logs) {
-  def percentAligned = 0;
-  logs.eachLine { line ->
-    if ((matcher = line =~ /([\d\.]+) \+ ([\d\.]+) mapped \s*/)) {
-      nbAligned = matcher[0][1]
-
-    } else if ((matcher = line =~ /([\d\.]+) \+ ([\d\.]+) in total \s*/)) {
-      nbTotal = matcher[0][1]
-    }
-  }
-  percentAligned = nbAligned.toFloat() / nbTotal.toFloat() * 100
-  if(percentAligned.toFloat() <= '2'.toFloat() ){
-      log.info "#################### VERY POOR ALIGNMENT RATE! IGNORING FOR FURTHER DOWNSTREAM ANALYSIS! ($prefix)    >> ${percentAligned}% <<"
-      skippedPoorAlignment << prefix
-      return false
-  } else {
-      log.info "          Passed alignment > ${prefix} >> ${percentAligned}% <<"
-      return true
-  }
-}
+include {checkAlignmentPercent} from './lib/functions'
 
 /*
 ===================================
@@ -416,7 +394,7 @@ workflow {
         .filter { prefix, logs, bam, bai -> checkAlignmentPercent(prefix, logs) }
         .map { prefix, logs, bam, bai -> [ prefix, bam, bai ] }
         .set { chBamPassed }
-  
+
       // PROCESS : bigwig file
       if (!params.skipBigwig){
         bigWig(
@@ -582,13 +560,12 @@ workflow {
       )
 
       // Warnings
-      chWarnMapping = Channel.empty()
-      if (skippedPoorAlignment.size() > 0){
-        Channel.fromList(skippedPoorAlignment)
-             .flatMap{ it -> it + ": Poor alignment rate. Sample discarded"}
-             .set{chWarnMapping}
-      }
-      
+      chAlignedBam
+        .join(chBamPassed, remainder: true)
+        .filter{it -> it[2] == null}
+        .flatMap{ it -> it[0] + ": Poor alignment rate. Sample discarded !"}
+        .set{chWarnMapping}
+
       strandnessFlow.out.strandnessResults
         .map{it[1]}
         .unique()
@@ -598,10 +575,9 @@ workflow {
 	.set{chWarnStrand}
 
      chWarnStrand
-       .mix(chWarnMapping)
+       .concat(chWarnMapping)
        .collectFile(name: 'warnings.txt', newLine: true)
        .set{chWarn}
-
     
       multiqc(
         customRunName,
