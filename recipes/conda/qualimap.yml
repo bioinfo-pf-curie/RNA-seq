@@ -1,4 +1,4 @@
-name: qualimap-2.2.2d
+name: qualimap
 channels:
   - conda-forge
   - bioconda

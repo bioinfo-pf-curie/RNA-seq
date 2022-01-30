@@ -1,4 +1,4 @@
-name: unix-1.0.0
+name: unix
 channels:
   - bioconda
   - conda-forge

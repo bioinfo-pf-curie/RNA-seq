@@ -1,4 +1,4 @@
-name: hisat2-2.2.1
+name: hisat2
 channels:
   - conda-forge
   - bioconda

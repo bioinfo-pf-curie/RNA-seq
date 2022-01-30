@@ -8,7 +8,7 @@ is_pe=$3
 ## Catch sample names
 all_samples=$(awk -F, '{print $1}' $splan)
 
-echo -e "Sample_id,Sample_name,Number_of_frag,Number_of_rRNA,Percent_of_rRNA,Strandness,Number_of_aligned,Percent_of_aligned,Number_of_uniquely_aligned,Percent_uniquely_aligned,Number_of_multiple_aligned,Percent_multiple,Number_of_duplicates,Percent_duplicates,Percent_saturation" > mq.stats
+echo -e "Sample_id,Sample_name,Number_of_frag,Number_of_rRNA,Percent_of_rRNA,Strandness,Number_of_aligned,Percent_of_aligned,Number_of_uniquely_aligned,Percent_uniquely_aligned,Number_of_multiple_aligned,Percent_multiple_aligned,Number_of_duplicates,Percent_duplicates,Percent_saturation" > mq.stats
 
 for sample in $all_samples
 do
@@ -16,6 +16,7 @@ do
     sname=$(awk -F, -v sname=$sample '$1==sname{print $2}' $splan)
 
     ##n_frag
+    n_frag='NA'
     if [ -d "rrna" ]; then
 	n_frag=$(grep "reads processed" rrna/${sample}.log | cut -d: -f 2 | sed -e 's/ //')
     elif [ $aligner == "star" ]; then
@@ -24,6 +25,8 @@ do
 	n_frag=$(grep "Total pairs" alignment/${sample}.hisat2_summary.txt | cut -d: -f2 | sed -e 's/ //g')
     elif [[ $aligner == "hisat2" && $is_pe == "0" ]]; then
 	n_frag=$(grep "Total reads" alignment/${sample}.hisat2_summary.txt | cut -d: -f2 | sed -e 's/ //g')
+    elif [[ $aligner == "salmon" ]]; then
+	n_frag=$(grep "num_processed" counts/${sample}/aux_info/meta_info.json | cut -f2 -d: | sed -e "s/ \|,//g")
     fi
 
     ##n_rRNA
@@ -45,10 +48,13 @@ do
 	    n_unique=$(grep " 1 time" alignment/${sample}.hisat2_summary.txt | cut -d: -f 2 | sed -e 's/ //g' | awk -F"(" 'BEGIN{s=0}{s=s+$1}END{print s}')
 	    n_multi=$(grep ">1 time" alignment/${sample}.hisat2_summary.txt | cut -d: -f 2 | sed -e 's/ //g' | awk -F"(" 'BEGIN{s=0}{s=s+$1}END{print s}')
 	    n_mapped=$(($n_unique + $n_multi))
+	elif [ $aligner == "salmon" ]; then
+	    n_mapped=$(grep "num_mapped" counts/SRR1106775_1/aux_info/meta_info.json | cut -f2 -d: | sed -e "s/ \|,//g")
 	else
-	    echo -e "Aligner not yet supported"
-	    exit 1
-	    fi
+	    n_unique='NA'
+	    n_multi='NA'
+	    n_mapped='NA'
+	fi
     else
 	if [ $aligner == "star" ]; then
             n_unique=$(grep "Uniquely mapped reads number" alignment/${sample}Log.final.out | cut -d"|" -f 2 | sed -e 's/\t//g')
@@ -58,10 +64,13 @@ do
 	    n_unique=$(grep " 1 time" alignment/${sample}.hisat2_summary.txt | cut -d: -f 2 | sed -e 's/ //g' | awk -F"(" 'BEGIN{s=0}{s=s+$1}END{print s}')
 	    n_multi=$(grep ">1 time" alignment/${sample}.hisat2_summary.txt | cut -d: -f 2 | sed -e 's/ //g' | awk -F"(" 'BEGIN{s=0}{s=s+$1}END{print s}')
 	    n_mapped=$(($n_unique + $n_multi))
+	elif [ $aligner == "salmon" ]; then
+	    n_mapped=$(grep "num_mapped" counts/SRR1106775_1/aux_info/meta_info.json | cut -f2 -d: | sed -e "s/ \|,//g")
 	else
-            echo -e "Aligner not yet supported"
-            exit 1
-            fi
+	    n_unique='NA'
+	    n_multi='NA'
+	    n_mapped='NA'
+        fi
     fi
 
     ##n_dup
@@ -82,24 +91,25 @@ do
     fi
 
     ## Strandness
-    strandness=$(cat strandness/${sample}_strandness.txt)
+    strandness=$(cat strandness/${sample}_strandness.txt | awk -F, '{print $2}')
 
     ## Calculate percentage
-    p_mapped=$(echo "${n_mapped} ${n_frag}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
+    p_mapped='NA'
+    p_unique='NA'
+    p_multi='NA'
+    if [[ $n_mapped != 'NA' && $n_frag != 'NA' ]]; then
+	p_mapped=$(echo "${n_mapped} ${n_frag}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
+    fi
     if [ $n_unique != 'NA' ]; then  
 	p_unique=$(echo "${n_unique} ${n_frag}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
-    else
-	p_unique='NA'
     fi
     if [ $n_multi != 'NA' ]; then  
 	p_multi=$(echo "${n_multi} ${n_frag}" | awk ' { printf "%.*f",2,$1*100/$2 } ') 
-    else
-	p_multi='NA'
     fi
 
 
-    if [ -e preseq/${sample}_sorted_extrap_ccurve.txt ]; then
-	p_sat=$(awk -v nbreads=${n_mapped} 'BEGIN{p=0} NR>1 && $1>nbreads && nbreads>p{val=$2} {p=$1; x=$2} END{printf "%.*f",2,val/x*100}' preseq/${sample}_sorted_extrap_ccurve.txt)
+    if [ -e preseq/${sample}_extrap_ccurve.txt ]; then
+	p_sat=$(awk -v nbreads=${n_mapped} 'BEGIN{p=0} NR>1 && $1>nbreads && nbreads>p{val=$2} {p=$1; x=$2} END{printf "%.*f",2,val/x*100}' preseq/${sample}_extrap_ccurve.txt)
     else
 	p_sat='NA'
     fi

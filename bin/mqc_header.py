@@ -45,9 +45,9 @@ if re.match(r".*dev(el)?$", args.version):
 if args.warn is not None:
     with open (args.warn, "r") as myfile:
         warn_data=myfile.readlines()
-        warn_str = ""
+        warn_str = "  "
         for x in warn_data:
-            warn_str += "<br>[WARNING] " + x.rstrip()
+            warn_str += "<p style=\"color:#FF9900\">[WARNING] " + x.rstrip() + "</p>"
         report_comment += warn_str
 
 multiqc_list += [report_comment]

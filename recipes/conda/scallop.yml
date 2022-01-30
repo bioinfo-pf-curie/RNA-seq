@@ -1,0 +1,7 @@
+name: scallop
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - bioconda::scallop=0.10.5=hbce0939_1

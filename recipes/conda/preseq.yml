@@ -1,4 +1,4 @@
-name: preseq-3.1.2
+name: preseq
 channels:
   - conda-forge
   - bioconda

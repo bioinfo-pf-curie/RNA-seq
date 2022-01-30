@@ -1,4 +1,27 @@
 ***************************************
+version-4.0.0
+
+NEW FEATURES
+  - DSL2 version of the RNA-seq pipeline (#144)
+  - Add identito monitoring (#145)
+  - Add STAR-Salmon sub-workflow (#133)
+  - Add '--pseudoAligner' option to run Salmon from raw reads (#133)
+  - Add '--denovo' option for reference-guided transcripts assembly
+  - Add Stringtie for transcripts assembly
+  - Add Scallop for transcripts assembly
+  - Check mapping proportion for both STAR and Hisat2 (#140)
+  - Add Mouse mm39 genome annotation
+
+SIGNIFICANT USER-VISIBLE CHANGES
+  - Add T2T chm13 fasta genome
+  - Improve warnings reporting in report
+  - Remove default values for '--counts' and '--aligner'. These options are now mandatory
+  - Updata MultiQC version to v1.11
+
+BUG FIXES
+  - Default STAR options
+
+***************************************
 version-3.2.0
 
 NEW FEATURES

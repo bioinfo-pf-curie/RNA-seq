@@ -1,6 +1,6 @@
 # You can use this file to create a conda environment for this pipeline:
 #   conda env create -f environment.yml
-name: rnaseq-3.2.0
+name: rnaseq-4.0.0
 channels:
   - bioconda
   - conda-forge
@@ -9,7 +9,7 @@ dependencies:
   - python=3.7.10=hffdb5ce_100_cpython
   - conda-forge::pymdown-extensions=7.1
   - bioconda::fastqc=0.11.9=hdfd78af_1
-  - bioconda::multiqc=1.10.1=py_0
+  - bioconda::multiqc=1.11=pyhdfd78af_0
   - bioconda::samtools=1.12=h9aed4be_1
   - bioconda::bcftools=1.12=h45bccc9_1
   - bioconda::star=2.7.6a=0
@@ -19,20 +19,26 @@ dependencies:
   - bioconda::picard=2.25.3=hdfd78af_0
   - bioconda::preseq=3.1.2=h06ef8b0_1
   - bioconda::rseqc=4.0.0=py37h73a75cf_1
+  - conda-forge::bc=1.07.1=h7f98852_0
   - bioconda::subread=2.0.1=h5bf99c6_1
   - bioconda::htseq=0.13.5=py37h9c5868f_1
   - bioconda::deeptools=3.5.1=py_0
-  - bioconda::snpsift=4.3.1t=hdfd78af_3
+  - bioconda::salmon=1.4.0=h84f40af_1
   - conda-forge::tbb=2020.2=hc9558a2_0
-  - bioconda::salmon=0.14.2=ha0cc327_0
   - bioconda::qualimap=2.2.2d=1
+  - bioconda::scallop=0.10.5=hbce0939_1
+  - bioconda::stringtie=2.1.7=h978d192_0
+  - bioconda::gffcompare=0.11.2=h7d875b9_2
+  - bioconda::snpsift=4.3.1t=hdfd78af_3
 
   - conda-forge::r-base=4.0.3=h349a78a_8
+  - conda-forge::icu=68.1=h58526e2_0
   - conda-forge::r-dplyr=1.0.5=r40h03ef668_0
   - conda-forge::r-data.table=1.14.0=r40hcfec24a_0
   - conda-forge::r-gplots=3.1.1=r40hc72bb7e_0
   - conda-forge::r-matrix=1.3_2=r40he454529_0
   - conda-forge::r-proxy=0.4_25=r40hcfec24a_0
+  - conda-forge::r-dendextend=1.15.1=r40hc72bb7e_0
   - conda-forge::r-pheatmap=1.0.12=r40h6115d3f_2
   - conda-forge::r-rcolorbrewer=1.1_2=r40h6115d3f_1003
   - bioconda::bioconductor-dupradar=1.20.0=r40hdfd78af_1
@@ -41,5 +47,4 @@ dependencies:
   - bioconda::bioconductor-edger=3.32.1=r40h399db7b_0
   - bioconda::bioconductor-deseq2=1.30.1=r40h399db7b_0
   - bioconda::bioconductor-tximport=1.18.0=r40hdfd78af_1
-
 

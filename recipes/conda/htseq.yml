@@ -1,4 +1,4 @@
-name: HTSeqCounts-0.13.5
+name: HTSeqCounts
 channels:
   - conda-forge
   - bioconda

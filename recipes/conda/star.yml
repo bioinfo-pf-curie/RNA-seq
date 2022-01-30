@@ -1,4 +1,4 @@
-name: star-2.7.6a
+name: star
 channels:
   - bioconda
   - conda-forge
