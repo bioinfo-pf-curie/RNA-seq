@@ -16,9 +16,10 @@ process samtoolsFlagstat {
   path("versions.txt") , emit: versions
 
   script:
+  
   """
   echo \$(samtools --version | head -1) > versions.txt
-  samtools flagstat ${bam} > ${prefix}.flagstats
+  samtools flagstat ${bam} > ${bam.baseName}.flagstats
   """
 }
     
