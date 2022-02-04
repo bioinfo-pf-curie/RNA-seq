@@ -255,7 +255,7 @@ params {
     'hg19' {
       fasta            = '<path to genome fasta file for identito monitoring>'
       fastaFai         = '<path to genome index file for identito monitoring>'
-	  bowtie2          = '<path to the bowtie2 index files>' 
+      bowtie2          = '<path to the bowtie2 index files>' 
       star             = '<path to the STAR index files>'
       hisat2           = '<path to the HiSat2 index files>'
       salmon           = '<path to the Salmon index files>'

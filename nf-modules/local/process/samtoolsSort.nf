@@ -22,7 +22,7 @@ process samtoolsSort {
   samtools sort \\
     ${args} \\
     -@  ${task.cpus}  \\
-    -o ${prefix}_sorted.bam  \\
+    -o ${bam.baseName}_sorted.bam  \\
     ${bam}
   """
 }
