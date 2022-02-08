@@ -24,8 +24,8 @@ process markDuplicates {
   picard ${markdupMemOption} ${javaArgs} MarkDuplicates \\
       MAX_RECORDS_IN_RAM=50000 \\
       INPUT=${bam} \\
-      OUTPUT=${prefix}.markDups.bam \\
-      METRICS_FILE=${prefix}.markDups_metrics.txt \\
+      OUTPUT=${prefix}_markDups.bam \\
+      METRICS_FILE=${prefix}_markDups_metrics.txt \\
       REMOVE_DUPLICATES=false \\
       ASSUME_SORTED=true \\
       PROGRAM_RECORD_ID='null' \\
