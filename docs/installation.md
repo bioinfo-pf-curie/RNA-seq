@@ -1,20 +1,21 @@
 # Installation
 
-This documentation has been modified from the nf-core guidelines
+This documentation has been adapted from the nf-core guidelines
 (see https://nf-co.re/usage/installation for details).
 
 To start using this pipeline, follow the steps below:
 
-1. [Install Nextflow](#1-install-nextflow)
-2. [Install the pipeline](#2-install-the-pipeline)
-3. [Pipeline configuration](#3-pipeline-configuration)
-    * [Cluster usage](#31cluster-usage)
-    * [Software deps: Singularity](#31-software-deps-singularity)
-    * [Software deps: Conda](#32-software-deps-conda)
-    * [Software deps: Tools Path](#32-software-deps-tools-path)
-4. [Reference genomes](#4-reference-genomes)
+1. [Install Nextflow](#install-nextflow)
+2. [Install the pipeline](#install-the-pipeline)
+3. [Geniac](#geniac)
+4. [Pipeline configuration](#pipeline-configuration)
+    * [Resources](#resources)
+    * [Software dependencies](#software-dependencies)
+5. [Cluster usage](#cluster-usage)
+6. [Reference genomes](#reference-genomes)
 
-## 1) Install NextFlow
+## Install Nextflow
+
 Nextflow runs on most POSIX systems (Linux, Mac OSX etc). It can be installed by running the following commands:
 
 ```bash
@@ -32,105 +33,87 @@ mv nextflow ~/bin/
 
 See [nextflow.io](https://www.nextflow.io/) for further instructions on how to install and configure Nextflow.
 
-## 2) Install the pipeline
+## Install the pipeline
 
-### Basic installation
+You just need to download/clone the source code and transfer the pipeline files manually:
 
-First, clone the repository using `git clone http://repository_url`
+```bash
+wget https://mypipeline/archive/master.zip
+mkdir -p ~/mypipelines
+unzip master.zip -d ~/mypipelines/
+cd ~/mypipelines
+nextflow run ~/mypipelines/mypipeline-master
+```
 
-Note that the current repo contains a test dataset managed with `git lfs`.
-Be sure that `git lfs` is instaled and run `git lfs pull` to pull the test datasets.
+If you would like to make changes to the pipeline, it's better to fork the repository on your github account and then clone the pipeline from your personal repository. 
+Once cloned, you can run the pipeline directly as above.
 
-In order to run the pipeline out-of-the box, you will have to move the `*.config.example` files into `*.config` files, edit them and set the expected path compliant with your setup.
+## Geniac
 
-We also provide a `cmake` interface to build the configuration files and install the pipeline according to your needs as described below.
+This current version of the pipeline is compatible with the `geniac` utility for automatic production deployment.
+See the [`docs/geniac.md`](geniac.md) page for details and [geniac](https://geniac.readthedocs.io).
 
-### Advanced installation
+## Pipeline configuration
 
-Check that `cmake` with  `version 3` is installed on you computer.
-In some distributions (such as CentOS) it is available with the command `cmake3`
+By default, the pipeline loads a basic server configuration [`conf/base.config`](../conf/base.config).
 
-#### Installation steps
+They define some default parameters to set the minimal computing resource requirements to run the processes. They are suitable for running the pipeline on a simple local server.
 
-* Let's assume you have cloned the git repository in the folder `${HOME}/RNA-seq`
+Note that a few variables related to software dependencies can be changed in this configuration file.
 
-* Create the folder `${HOME}/build`
-
-* `cd ${HOME}/build`
-
-#### Display the options available for installation
-
-The different options are displayed using the following command in the **Cache values** section:
-
-* `cmake -LH ../RNA-seq/`
-
-The options for the **a**nalysis **p**ipeline start with the prefix **ap**
-
-
-#### Set the option for the installation
-
-Default options have to be replaced. Otherwise, the pipeline will not work.
-
-* `cmake ../RNA-seq -DCMAKE_INSTALL_PREFIX=${HOME}/install -Dap_singularity_image_path=/path/to/images -Dap_annotation_path=/data/annotations/pipelines`
-
-Other options can be provided.
-
-* Altenatively, you can use  `cmake  -C ../RNA-seq/install/cmake-init.cmake ../RNA-seq/` provided that you first edited the
-`../RNA-seq/install/cmake-init.cmake` to set the options complant with your setup.
-
-#### Installation
-
-* `make; make install`
-
-The pipeline will be available in `${HOME}/install` (i.e. in the path you defined using `-DCMAKE_INSTALL_PREFIX`). 
-The config files with the defined options will be available in the `conf` folder of your installed version.
-
-### For developpers
-
-To avoid multiple installations for testing while developping, the developpers can copy the content of `${HOME}/install/conf`
-to `${HOME}/RNA-seq/conf` and run the pipeline as usually.
-
-## 3) Pipeline configuration
-
-By default, the pipeline loads a basic server configuration [`conf/base.config`](../conf/base.config)
-This uses a number of sensible defaults for process requirements and is suitable for running
-on a simple (if powerful!) local server.
-
-Be warned of two important points about this default configuration:
+Be aware of two important points about this default configuration:
 
 1. The default profile uses the `local` executor
-    * All jobs are run in the login session. If you're using a simple server, this may be fine. 
-	If you're using a compute cluster, take care of not running all jobs on the head node.
+    * All jobs run in the login session. If you use a simple server, this may be fine. 
+	If you use a computing cluster, take care of not running all the jobs on the submission node.
     * See the [nextflow docs](https://www.nextflow.io/docs/latest/executor.html) for information about running with other hardware backends.
 	Most job scheduler systems are natively supported.
-2. Nextflow will expect all software to be installed and available on the `PATH`
-    * It's expected to use an additional config profile for docker, singularity or conda support. See below.
+2. Nextflow will expect all software to be installed and available on the `PATH` environment variable.
+    * It's expected to use an additional config profile for [conda](https://docs.conda.io), [singularity](https://sylabs.io/guides/3.6/user-guide/) and [Docker](https://www.docker.com/) (See below).
 
-#### 3.1) Cluster usage
+### Resources
 
-In order to use the pipeline on a computational cluster, you will have to specify a few parameters.
+The required resources for each process are defined in the configuration [`conf/process.config`](../conf/process.config).
+These resources are usually defined using the `label` directive associated with the number of RAM/CPUs available for each job.
+This file can be edited if one wants to change the resources allocated to a specific process.
+
+### Software dependencies
+
+#### Paths
+
+By default, Nextflow expects all the tools to be installed and available in the `PATH` environment variable.
+This path can be set using the `-profile path` combined with the `--globalPath /my/path` option specifying where the tools are installed.
+In addition, the `-profile multipath` is available in order to specify the `PATH` for each tool, instead of a global one.
+
+#### Conda
+
+If you're not able to use [singularity](https://sylabs.io/guides/3.6/user-guide/) _or_ [Docker](https://www.docker.com/), you can instead use [conda](https://docs.conda.io) to manage the software requirements.
+This is slower and less reproducible than the above, but is still better than having to install all requirements yourself!
+The pipeline ships with a conda environment file and Nextflow has a built-in support for this.
+
+To use it first ensure that you have [conda](https://docs.conda.io) installed (we recommend to use [miniconda](https://conda.io/miniconda.html)), then follow the same pattern as above and use the flag `-profile conda`
+Note that in this case, the conda environment will be created in the `$HOME/conda-cache-nextflow` folder by default. This folder can be changed using the `--condaCacheDir` option.
+
+In addition to a general conda environment, this pipeline also comes with a `-profile multiconda` setting. In this case, a conda environment per tool (note that each process is assigned a tool with the label directive) will be created.
+This configuration is useful if different processes require different tool versions (leading to potential conda conflicts thus making impossible to use the `-profile conda` option).
+
+#### Singularity
+
+Using [singularity](https://sylabs.io/guides/3.6/user-guide/) is in general a great idea to manage environment and ensure reproducibility.
+The process is very similar: running the pipeline with the option `-profile singularity` tells Nextflow to enable singularity to run the pipeline. 
+Containers with all of the software requirements can be automatically generated using the `recipes` information.
+Once available, the user can specified where to look for the images using the option `--singularityImagePath /my/path/to/singularity/containers`.
+
+#### Docker
+
+A generic configuration profile is available with `-profile docker`.
+In this case, the pipeline will look for `Docker` containers as defined in the [`conf/docker.config`](conf/docker.config).
+
+### Cluster usage
+
+By default, we set up a `cluster` profile to execute the pipeline on a computational cluster.
 Please, edit the `cluster.config` file to set up your own cluster configuration.
 
-#### 3.2) Software deps: Singularity
+### Reference genomes
 
-Using [Singularity](http://singularity.lbl.gov/) is in general a great idea to manage environment and ensure reproducibility.
-The process is very similar: running the pipeline with the option `-profile singularity` tells Nextflow to enable singularity for this run. 
-Images containing all of the software requirements can be automatically fetched as explained in the folder [`utils/singularity`](../utils/singularity/README.md).
-In addition the `containerPath` variable from the `containers.config` file has to be modified to set the path to the singularity images.
-
-#### 3.3) Software deps: Conda
-
-If you're not able to use Docker _or_ Singularity, you can instead use conda to manage the software requirements.
-This is slower and less reproducible than the above, but is still better than having to install all requirements yourself!
-The pipeline ships with a conda environment file and nextflow has built-in support for this.
-To use it first ensure that you have conda installed (we recommend [miniconda](https://conda.io/miniconda.html)), then follow the same pattern as above and use the flag `-profile conda`
-Note that in this case, the environment will be created in the `cache/work` folder.
-
-### 3.4) Software deps: Tools Path
-
-Finally, if for any reason you do not want to use conda or singularity, the pipeline provides a last config file `tools-path.config`
-which allows to simply set the `PATH` environment from which all dependancies must be available.
-
-## 4) Reference genomes
-
-See [`docs/reference_genomes.md`](reference_genomes.md)
+See [`docs/referenceGenomes.md`](referenceGenomes.md)

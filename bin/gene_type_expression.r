@@ -17,8 +17,13 @@ message("R package loc. (Arg 4: ", ifelse(length(args) > 3, args[4], "Not specif
 
 
 stopifnot(require(rtracklayer))
-
-counts.tpm <- read.csv(countsTPM, row.names=1, check.names=FALSE)
+if (grepl(".tsv$", countsTPM)){
+    counts.tpm <- read.table(countsTPM, row.names=1, check.names=FALSE)
+}else if (grepl(".csv$", countsTPM)){
+    counts.tpm <- read.csv(countsTPM, row.names=1, check.names=FALSE)
+}else{
+    stop("Unexpected counts file format. '.csv' or '.tsv' are supported")
+}
 
 ## count number of expressed genes
 idx <- which(rowSums(counts.tpm)>0)
@@ -29,8 +34,8 @@ d.gtf <- rtracklayer::import(gtf)
 my_genes <- d.gtf[d.gtf$type == "gene"]
 
 ## remove "." in ENSEMBL Ids
-my_genes$gene_id <- gsub(".[0-9]+$","",my_genes$gene_id)
-
+my_genes$gene_id <- gsub("\\.[0-9]+$","",my_genes$gene_id)
+rownames(counts.tpm) <- gsub("\\.[0-9]+$","",rownames(counts.tpm))
 
 if (length(my_genes) > 0 && is.element("gene_type", colnames(elementMetadata(my_genes)))){
    mcols(my_genes) <- mcols(my_genes)[c("gene_id", "gene_type","gene_name")]

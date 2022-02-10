@@ -28,8 +28,16 @@ if (!require("gplots")) {
 
 
 ## Load a raw count table from a csv file
-d <- read.csv(rawCounts, row.names = 1, check.names=FALSE)
-d <- as.matrix(d)
+if (grepl(".tsv$", rawCounts)){
+    d <- read.table(rawCounts, row.names=1, check.names=FALSE)
+}else if (grepl(".csv$", rawCounts)){
+    d <- read.csv(rawCounts, row.names=1, check.names=FALSE)
+}else{
+    stop("Unexpected counts file format. '.csv' or '.tsv' are supported")
+}
+
+## round values for salmon estimate abundance
+d <- as.matrix(round(d))
 
 ## Convert to DESeq2 object
 dds <- DESeqDataSetFromMatrix(countData=d, colData=DataFrame(condition=1:ncol(d)), ~ 1)

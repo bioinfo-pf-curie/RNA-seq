@@ -4,37 +4,48 @@
 
 * [Introduction](#general-nextflow-info)
 * [Running the pipeline](#running-the-pipeline)
+    * [For gene-based quantification](#for-gene-based-quantification)
+	* [For isoform-based quantification](#for-isoform-based-quentification)
+	* [For reference-guided de-novo assembly](#for-reference-guided-de-novo-assembly)
 * [Main arguments](#main-arguments)
-    * [`-profile`](#-profile-single-dash)
-        * [`conda`](#conda)
-        * [`toolsPath`](#toolsPath)
-        * [`singularity`](#singularity)
-        * ['cluster'](#cluster)
-        * [`test`](#test)
     * [`--reads`](#--reads)
 	* [`--samplePlan`](#--samplePlan)
-	* [`--singleEnd`](#--singleend)
+    * [`--aligner`](#--aligner)
+	* [`--pseudoAligner`](#--pseudoAligner)
+    * [`--counts`](#--counts)
+    * [`--singleEnd`](#--singleend)
 	* [`--stranded`](#--stranded)
-	* [`--aligner`](#--aligner)
-	* [`--counts`](#--counts)
 * [Reference genomes](#reference-genomes)
     * [`--genome`](#--genome)
-* [Tools parameters](#tools-parameters)
+	* [`--genomeAnnotationPath`](#--genomeAnnotationPath)
+* [Alignment](#aligment)
+	* [`--bowtieOpts`](#--bowtieOpts)
+    * [`--hisat2Opts`](#--hisat2Opts)
+    * [`--starOpts`](#--starOpts)
+	* [`--starTwoPass`](#--starTwoPass)
+* [Counts](#counts)
+	* [`--htseqOpts`](#--htseqOpts)
+	* [`--featurecountsOpts`](#--featurecountsOpts)
+	* [`--salmonQuantOpts`](#--salmonQuantOpts)
+* [Reference-guided Transcriptome Assembly](#reference-guided-transcriptome-assembly)
+    * [`--denovo`](#--denovo)
+	* [`--scallopOpts`](#--scallopOpts)
+	* [`--stringtieOpts`](#--stringtieOpts)
+* [Profiles](#profiles)
 * [Job resources](#job-resources)
 * [Automatic resubmission](#automatic-resubmission)
 * [Custom resource requests](#custom-resource-requests)
 * [Other command line parameters](#other-command-line-parameters)
     * [`--skip*`](#--skip*)
 	* [`--metadata`](#--metadta)
-	* [`--outdir`](#--outdir)
-    * [`--email`](#--email)
+	* [`--outDir`](#--outdir)
     * [`-name`](#-name-single-dash)
     * [`-resume`](#-resume-single-dash)
     * [`-c`](#-c-single-dash)
-    * [`--max_memory`](#--max_memory)
-    * [`--max_time`](#--max_time)
-    * [`--max_cpus`](#--max_cpus)
-    * [`--multiqc_config`](#--multiqc_config)
+    * [`--maxMemory`](#--max_memory)
+    * [`--maxTime`](#--max_time)
+    * [`--maxCpus`](#--max_cpus)
+    * [`--multiqcConfig`](#--multiqc_config)
 
 ## General Nextflow info
 
@@ -49,7 +60,7 @@ NXF_OPTS='-Xms1g -Xmx4g'
 ## Running the pipeline
 The typical command for running the pipeline is as follows:
 ```bash
-nextflow run main.nf --reads '*_R{1,2}.fastq.gz' -profile 'singularity'
+nextflow run main.nf --reads '*_R{1,2}.fastq.gz' --aligner 'star' --counts 'star' -profile 'singularity'
 ```
 
 This will launch the pipeline with the `singularity` configuration profile. See below for more information about profiles.
@@ -63,30 +74,66 @@ results         # Finished results (configurable, see below)
 # Other nextflow hidden files, eg. history of pipeline runs and old logs.
 ```
 
-You can change the output director using the `--outdir/-w` options.
+You can change the output director using the `--outDir/-w` options.
+
+### For gene-based quantification
+
+Gene-based quantification is a very common question in RNA-seq analysis. Broadly speaking, two different strategies can be used:
+
+- Sequencing reads are first aligned on a reference genome, and gene counts are estimated using
+tools such as `STAR`, `HTSeqCounts` or `featureCounts`.
+
+```bash
+nextflow run main.nf --reads '*_R{1,2}.fastq.gz' --aligner 'star' --counts 'star' -profile 'singularity,cluster'
+```
+
+- Or gene abundance can be directly infered from raw sequencing data using pseudo-alignment (or selective-alignment) methods such as `salmon`
+
+```bash
+nextflow run main.nf --reads '*_R{1,2}.fastq.gz' --pseudoAligner 'salmon' -profile 'singularity,cluster'
+```
+
+In this case, there is no aligned (BAM) file, and the pipeline just take raw fastq files and directly extract counts table.
+
+Currently, [several studies](https://f1000research.com/articles/4-1521/v1) have shown that transcript quantification approaches (such as `salmon`) are more sensitive than read 
+counting methods (such as `HTSeqCounts` or `featureCounts`), although most of these demonstrations are made from simulated data. 
+So far, the current best practice would thus be to favor the usage of `salmon` over other tools.
+
+Then regarding the differences / benefits of running `salmon` in alignment mode (from a BAM) versus in selective-alignment mode (from raw reads), this point is discussed in the [mapping and alignment methodology paper](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-020-02151-8). The most obvious difference is that modes which are not based on a BAM file are much faster. On the other hand, it is usually useful to have a BAM file to perform additional analysis and visualization of the data. Regarding accuracy, it doesn't seem to have huge difference and as long as the `salmon` indexes are properly built (considering the genome as "decoy" sequence), both methods usually lead to accurate quantification estimates.
+
+
+### For isoform-based quantification
+
+One of the main interest of `salmon` is its ability to estimate the abundance at both genes and (known) transcripts levels.  
+If you are interested in isoform analysis, it could also be useful to run `STAR` in a two-pass mode. Here, the idea is to run a first alignment with usual parameters, 
+then collect the junctions detected and use them as "annotated" junctions for the second mapping pass.  
+In addition, all default tools' parameters cannot be updated on the command line. As an example here, we would like to add the `--numBootstraps` parameters which is
+required to run tools such as `sleuth` for differential analysis as the isoform levels.
+
+The typical command line to estimate both known isoform and gene abundances with `salmon` would be ;
+
+```bash
+nextflow run main.nf --reads '*_R{1,2}.fastq.gz' --aligner 'star' --starTwoPass --counts 'salmon' --salmonQuantOpts '--numBootstraps 100' -profile 'singularity,cluster'
+```
+
+### For reference-guided de-novo assembly
+
+Since v4.0.0, the pipeline now includes tools for reference-guided de-novo assembly.  
+The goal of such analysis is to detect new isoform/genes from short reads data. The typical output is a new `gtf` file with known and new transcripts.
+
+In the current version, `scallop` and `stringtie` are available and can be specified using the `--denovo` option. 
+Note that both methods require a BAM file as input. Multiple tools can be specificed (comma separated).  
+
+The results are then assessed using the `gffCompare` utility which will compare a know `gtf` with the one(s) generated by the pipeline.
+In most of the case, a high fraction is detection transcripts should correspond to known ones. `GffCompare` thus proposes sensitivity/specificy metrics for [accuracy estimation](https://ccb.jhu.edu/software/stringtie/gffcompare.shtml).
+
+Here again, it is recommanded to run `STAR` in two-pass mode to [improve novel splice junction detection](https://academic.oup.com/bioinformatics/article/32/1/43/1744001).
+
+```bash
+nextflow run main.nf --reads '*_R{1,2}.fastq.gz' --aligner 'star' --starTwoPass --denovo 'stringtie,scallop' -profile 'singularity,cluster'
+```
 
 ## Main arguments
-
-### `-profile`
-
-Use this parameter to choose a configuration profile. Profiles can give configuration presets for different compute environments. Note that multiple profiles can be loaded, for example: `-profile singularity` - the order of arguments is important!
-
-If `-profile` is not specified at all the pipeline will be run locally and expects all software to be installed and available on the `PATH`.
-
-* `conda`
-    * A generic configuration profile to be used with [conda](https://conda.io/docs/)
-    * Pulls most software from [Bioconda](https://bioconda.github.io/)
-* `toolsPath`
-    * A generic configuration profile to be used with [conda](https://conda.io/docs/)
-    * Use the conda images available on the cluster
-* `singularity`
-    * A generic configuration profile to be used with [Singularity](http://singularity.lbl.gov/)
-    * Use the singularity images available on the cluster
-* `cluster`
-    * Run the workflow on the computational cluster
-* `test`
-    * A profile with a complete configuration for automated testing
-    * Includes links to test data so needs no other parameters
 
 ### `--reads`
 
@@ -116,6 +163,43 @@ The sample plan is a csv file with the following information :
 
 Sample ID | Sample Name | Path to R1 fastq file | Path to R2 fastq file
 
+### `--aligner`
+
+The current version of the pipeline supports two different aligners;
+- [`STAR`](https://github.com/alexdobin/STAR)
+- [`hisat2`](http://ccb.jhu.edu/software/hisat2/index.shtml)
+
+Since version `4.0.0`, no default value is defined. You can specify the tool to use as follows:
+
+```bash
+--aligner 'STAR'
+```
+
+### `--pseudoAligner`
+
+Recent advances in the field of RNA-seq data analysis promote the usage of pseudo-aligner which are able to 
+estimate the gene/transcripts abundance directly from the raw fastq files.
+
+The following tools are currently available;
+- [`salmon`](https://salmon.readthedocs.io/en/latest/salmon.html)
+
+```bash
+--pseudoAligner 'salmon'
+```
+
+### `--counts`
+
+The raw count table for all samples can be generated from alignment file (bam) using one of the following tool:
+- [`STAR`](https://github.com/alexdobin/STAR). Require `--aligner 'STAR'`. Default value.
+- [`featureCounts`](http://bioinf.wehi.edu.au/featureCounts/)
+- [`HTSeqCounts`](https://htseq.readthedocs.io/en/release_0.11.1/count.html)
+- [`salmon`](https://salmon.readthedocs.io/en/latest/salmon.html)
+
+Since version `4.0.0`, no default value is defined. You can specify one of these tools using:
+```bash
+--counts 'salmon`
+```
+
 ### `--singleEnd`
 
 By default, the pipeline expects paired-end data. If you have single-end data, you need to specify `--singleEnd` on the command line when you launch the pipeline. A normal glob pattern, enclosed in quotation marks, can then be used for `--reads`. For example:
@@ -143,31 +227,6 @@ If you do not have the information, you can the automatic detection mode (defaul
 
 In the case, the pipeline will the run the [`rseqc`](http://rseqc.sourceforge.net/) tool to automatically detect the strandness parameter.
 
-### `--aligner`
-
-The current version of the pipeline supports three different aligners;
-- [`STAR`](https://github.com/alexdobin/STAR). Default value.
-- [`tophat2`](http://ccb.jhu.edu/software/tophat/index.shtml)
-- [`hisat2`](http://ccb.jhu.edu/software/hisat2/index.shtml)
-
-By default, the `STAR` mapper is run. You can specify the tool to use as follows:
-
-```bash
---aligner 'STAR'
-```
-
-### `--counts`
-
-The raw count table for all samples can be generated using one of the following tool:
-- [`STAR`](https://github.com/alexdobin/STAR). Require `--aligner 'STAR'`. Default value.
-- [`featureCounts`](http://bioinf.wehi.edu.au/featureCounts/)
-- [`HTSeqCounts`](https://htseq.readthedocs.io/en/release_0.11.1/count.html)
-
-You can specify one of these tools using:
-```bash
---counts 'featureCounts`
-```
-
 ## Reference genomes
 
 The pipeline config files come bundled with paths to the genomes reference files. 
@@ -194,12 +253,18 @@ The syntax for this reference configuration is as follows:
 params {
   genomes {
     'hg19' {
-      star     = '<path to the STAR index files>'
-      bowtiee2 = '<path to the bowtie index files>'
-      hisat2   = '<path to the HiSat2 index files>'
-      rrna     = '<path to bowtie1 mapping on rRNA reference>'
-      bed12    = '<path to Bed12 annotation file>'
-      gtf      = '<path to GTF annotation file>'
+      fasta            = '<path to genome fasta file for identito monitoring>'
+      fastaFai         = '<path to genome index file for identito monitoring>'
+      bowtie2          = '<path to the bowtie2 index files>' 
+      star             = '<path to the STAR index files>'
+      hisat2           = '<path to the HiSat2 index files>'
+      salmon           = '<path to the Salmon index files>'
+      rrna             = '<path to bowtie1 mapping on rRNA reference>'
+      bed12            = '<path to Bed12 annotation file>'
+      gtf              = '<path to GTF annotation file>'
+      transcriptsFasta = '<path to fasta transcriptome file for pseudo-alignment>'
+      gencode          = '<boolean - is the annotation file based on Gencode ?'
+      polym            = '<path to bed file for identito monitoring>'
     }
     // Any number of additional genomes, key is used with --genome
   }
@@ -207,17 +272,93 @@ params {
 ```
 
 Note that these paths can be updated on command line using the following parameters:
-- `--star_index` - Path to STAR index
-- `--hisat2_index` - Path to HiSAT2 index
-- `--tophat2_index` - Path to TopHat2 index
+- `--bowtie2Index` - Path to bowtie2 index
+- `--starIndex` - Path to STAR index
+- `--hisat2Index` - Path to HiSAT2 index
+- `--salmonIndex` - Path to Salmon index
 - `--gtf` - Path to GTF file
+- `--gencode` - Specify that the GTF file is from Gencode
 - `--bed12` - Path to gene bed12 file
+- `--transcriptsFasta` - Path to transcriptome in fasta format
 - `--saveAlignedIntermediates` - Save the BAM files from the Aligment step  - not done by default
 
-## Tools parameters
+## Alignment
 
-The `conf/tools.conf` configuration file can be used to specify some of the tools options.
-Note that these options can also be genome dependent. So far, only the `STAR` options can be changed from an organism to another.
+### `--bowtieOpts`
+
+Change default bowtie1 mapping options for rRNA cleaning. See the `nextflow.config` file for details.
+
+### `--hisat2Opts`
+
+Change default Hisat2 mapping option. See the `nextflow.config` file for details.
+
+### `--starOpts`
+ 
+Change default STAR mapping options for mapping.
+By default STAR is run with the following options
+
+```
+--outSAMmultNmax 1 --outFilterMismatchNmax 999 --outFilterMismatchNoverLmax 0.04 --outSAMprimaryFlag OneBestScore \
+--outMultimapperOrder Random --outSAMattributes All
+```
+
+In other words, it means that only one alignment will be reported in the output, randomly chosen from the top scoring alignments (in case of multiple alignments).
+The allowed number of mismatches is indexed on the read length (0.04 * read length). 
+And all common SAM attributes will be added.
+
+Note that the default STAR options can vary from an organism to another. 
+For instance, for Human data, the pipeline adds the ENCODE recommanded options to the default ones 
+
+```
+--outFilterType BySJout --outFilterMultimapNmax 20 --alignSJoverhangMin 8 --alignSJDBoverhangMin 1 --outFilterMismatchNmax 999 \
+--outFilterMismatchNoverLmax 0.04 --alignIntronMin 20 --alignIntronMax 1000000 --alignMatesGapMax 1000000
+```
+
+See the `nextflow.config` file for details.
+
+### `--starTwoPass`
+
+Run the STAR aligner in two pass mode with the `--twopassMode Basic` option
+
+
+## Counts
+
+### `--htseqOpts`
+
+Change default HTSeq options. See the `nextflow.config` file for details.
+
+### `--featurecountsOpts`
+
+Change default featureCounts options. See the `nextflow.config` file for details.
+
+### `--salmonQuantOpts`
+
+Change default options for Salmon quantification from either BAM file or FASTQ files. See the `nextflow.config` file for details.
+
+## Reference-guided Transcriptome Assembly
+
+### `--denovo`
+
+Specify which tools to use for reference-guided transcriptome assembly. Several tools can be specified (comma separated)
+
+```
+--denovo 'scallop,stringtie'
+```
+
+### `--scallopOpts`
+
+Change default scallop options. See the `nextflow.config` file for details.
+
+### `--stringtieOps`
+
+Change default stringtie options. See the `nextflow.config` file for details.			
+
+
+## Profiles
+
+Use this parameter to choose a configuration profile. Profiles can give configuration presets for different compute environments. 
+Note that multiple profiles can be loaded, for example: `-profile docker` - the order of arguments is important!
+Look at the [Profiles documentation](profiles.md) for details.
 
 ## Job resources
 
@@ -232,27 +373,26 @@ For most of the steps in the pipeline, if the job exits with an error code of `1
 
 The pipeline is made with a few *skip* options that allow to skip optional steps in the workflow.
 The following options can be used:
-- `--skip_qc` - Skip all QC steps apart from MultiQC
-- `--skip_rrna` - Skip rRNA mapping
-- `--skip_fastqc` - Skip FastQC
-- '--skip_genebody_coverage' - Skip genebody coverage step
-- `--skip_saturation` - Skip Saturation qc
-- `--skip_dupradar` - Skip dupRadar (and Picard MarkDups)
-- `--skip_readdist` - Skip read distribution steps
-- `--skip_expan` - Skip exploratory analysis
-- `--skip_multiqc` - Skip MultiQC
-				
+- `--skipQC` - Skip all QC steps apart from MultiQC
+- `--skipRrna` - Skip rRNA mapping
+- `--skipFastqc` - Skip FastQC
+- `--skipQualimap` - Skip genebody coverage step
+- `--skipSaturation` - Skip Saturation qc
+- `--skipDupradar` - Skip dupRadar (and Picard MarkDups)
+- `--skipExpan` - Skip exploratory analysis
+- `--skipBigwig` - Do not generate bigwig files
+- `--skipIdentito` - Skip identito monitoring
+- `--skipMultiqc` - Skip MultiQC
+- `--skipSoftVersions` - Skip software versions reporting
+			
+			
 ### `--metadata`
 
 Specify a two-columns (tab-delimited) metadata file to diplay in the final Multiqc report.
 
-### `--outdir`
+### `--outDir`
 
 The output directory where the results will be saved.
-
-### `--email`
-
-Set this parameter to your e-mail address to get a summary e-mail with details of the run sent to you when the workflow exits. If set in your user config file (`~/.nextflow/config`) then you don't need to specify this on the command line for every run.
 
 ### `-name`
 
@@ -277,21 +417,21 @@ Specify the path to a specific config file (this is a core NextFlow command).
 
 Note - you can use this to override pipeline defaults.
 
-### `--max_memory`
+### `--maxMemory`
 
 Use to set a top-limit for the default memory requirement for each process.
 Should be a string in the format integer-unit. eg. `--max_memory '8.GB'`
 
-### `--max_time`
+### `--maxTime`
 
 Use to set a top-limit for the default time requirement for each process.
 Should be a string in the format integer-unit. eg. `--max_time '2.h'`
 
-### `--max_cpus`
+### `--maxCpus`
 
 Use to set a top-limit for the default CPU requirement for each process.
 Should be a string in the format integer-unit. eg. `--max_cpus 1`
 
-### `--multiqc_config`
+### `--multiqcConfig`
 
 Specify a path to a custom MultiQC configuration file.
