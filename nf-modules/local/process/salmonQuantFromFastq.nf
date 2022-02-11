@@ -8,7 +8,7 @@ process salmonQuantFromFastq {
   tag "$prefix"
   label "salmon"
   label "medCpu"
-  label "highMem"
+  label "extraMem"
 
   input:
   tuple val(prefix), path(reads), val(strandness)

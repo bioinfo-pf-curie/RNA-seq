@@ -506,6 +506,8 @@ workflow {
       chCountsTpm = salmonQuantFromFastqFlow.out.tpmGene
       chCountsMqc = salmonQuantFromFastqFlow.out.results
       chVersions = chVersions.mix(salmonQuantFromFastqFlow.out.versions)
+      chAlignedBam = channel.empty()
+      chBamPassed = channel.empty()
     }
 
 
