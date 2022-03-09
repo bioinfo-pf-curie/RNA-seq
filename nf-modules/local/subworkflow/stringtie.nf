@@ -9,15 +9,14 @@ include { gffcompare } from '../process/gffcompare'
 workflow stringtieFlow {
 
   take:
-  bam // Channel [val(prefix), path(bam), path(bai)]
-  strandness // Channel val(strandness)
+  bam // Channel [val(meta), path(bam), path(bai)]
   gtf // Channel path(gtf)
 
   main:
   chVersions = Channel.empty()
 
   stringtie(
-    bam.join(strandness),
+    bam,
     gtf.collect(),
   )
   chVersions = chVersions.mix(stringtie.out.versions)
@@ -29,7 +28,7 @@ workflow stringtieFlow {
   chVersions = chVersions.mix(stringtieMerge.out.versions)
 
   gffcompare(
-    stringtieMerge.out.mergedGtf, 
+    stringtieMerge.out.mergedGtf.map{it->[[], it]}, 
     gtf.collect()
   )
   chVersions = chVersions.mix(gffcompare.out.versions)

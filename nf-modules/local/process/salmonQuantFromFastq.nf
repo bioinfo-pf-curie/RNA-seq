@@ -1,17 +1,15 @@
 /*
  * Salmon quant from Fastq file
- * External parameters :
- * @ params.singleEnd : is the data single-end ?
  */
 
 process salmonQuantFromFastq {
-  tag "$prefix"
+  tag "${meta.id}"
   label "salmon"
   label "medCpu"
   label "extraMem"
 
   input:
-  tuple val(prefix), path(reads), val(strandness)
+  tuple val(meta), path(reads)
   path  index
   path  gtf
 
@@ -21,13 +19,14 @@ process salmonQuantFromFastq {
 
   script:
   def args = task.ext.args ?: ''
-  strandOpts = params.singleEnd ? 'U' : 'IU'
-  if (strandness == 'forward') {
-    strandOpts = params.singleEnd ? 'SF' : 'ISF'
-  } else if (strandness == 'reverse') {
-    strandOpts = params.singleEnd ? 'SR' : 'ISR'
+  def strandOpts = meta.singleEnd ? 'U' : 'IU'
+  if (meta.strandness == 'forward') {
+    strandOpts = meta.singleEnd ? 'SF' : 'ISF'
+  } else if (meta.strandness == 'reverse') {
+    strandOpts = meta.singleEnd ? 'SR' : 'ISR'
   }
-  inputReads = params.singleEnd ? "-r $reads" : "-1 ${reads[0]} -2 ${reads[1]}"
+  def inputReads = meta.singleEnd ? "-r $reads" : "-1 ${reads[0]} -2 ${reads[1]}"
+  prefix = task.ext.prefix ?: "${meta.id}"
   """
   echo \$(salmon --version 2>&1) > versions.txt
   salmon quant \\

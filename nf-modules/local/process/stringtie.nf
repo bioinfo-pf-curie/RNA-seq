@@ -4,30 +4,31 @@
  */
 
 process stringtie {
-  tag "$prefix"
+  tag "${meta.id}"
   label 'stringtie'
   label 'medCpu'
   label 'medMem'
 
   input:
-  tuple val(prefix), path(bam), path(bai), val(strandness) // Channel [prefix, bam, bai, strandness]
+  tuple val(meta), path(bam), path(bai)
   path(gtf)
 
   output:
-  tuple val(prefix), path("*.coverage.gtf")   , emit: coverageGtf
-  tuple val(prefix), path("*.transcripts.gtf"), emit: transcriptGtf
-  tuple val(prefix), path("*.abundance.txt")  , emit: abundance
-  tuple val(prefix), path("*.ballgown")       , emit: ballgown
-  path  "versions.txt"                        , emit: versions
+  tuple val(meta), path("*.coverage.gtf")   , emit: coverageGtf
+  tuple val(meta), path("*.transcripts.gtf"), emit: transcriptGtf
+  tuple val(meta), path("*.abundance.txt")  , emit: abundance
+  tuple val(meta), path("*.ballgown")       , emit: ballgown
+  path  "versions.txt"                      , emit: versions
 
   script:
   def args = task.ext.args ?: ''
   def strandOpts = ''
-  if (strandness == 'forward') {
+  if (meta.strandness == 'forward') {
       strandOpts = '--fr'
-  } else if (strandness == 'reverse') {
+  } else if (meta.strandness == 'reverse') {
       strandOpts = '--rf'
   }
+  def prefix = task.ext.prefix ?: "${meta.id}"
   """
   stringtie \\
     $bam \\

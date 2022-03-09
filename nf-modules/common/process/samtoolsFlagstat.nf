@@ -3,23 +3,23 @@
  */
 
 process samtoolsFlagstat {
-  tag "$prefix"
+  tag "${meta.id}"
   label 'samtools'
   label 'minCpu'
   label 'lowMem'
  
   input:
-  tuple val(prefix), path (bam)
+  tuple val(meta), path (bam)
 
   output:
-  tuple val(prefix), path("*flagstats"), emit: stats
+  tuple val(meta), path("*flagstats"), emit: stats
   path("versions.txt") , emit: versions
 
   script:
-  
+  def prefix = task.ext.prefix ?: "${bam.baseName}"  
   """
   echo \$(samtools --version | head -1) > versions.txt
-  samtools flagstat ${bam} > ${bam.baseName}.flagstats
+  samtools flagstat ${bam} > ${prefix}.flagstats
   """
 }
     

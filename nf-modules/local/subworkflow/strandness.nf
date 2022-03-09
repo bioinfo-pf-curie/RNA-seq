@@ -9,7 +9,7 @@ include { rseqc } from '../process/rseqc'
 workflow strandnessFlow {
 
   take:
-  reads // Channel [prefix, [reads]]
+  reads // Channel [meta, [reads]]
   bed12 // Channel path(bed12)
   bowtie2Index // Channel path(bowtie2Index)
 

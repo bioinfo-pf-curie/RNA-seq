@@ -3,26 +3,27 @@
  */
 
 process starAlign {
-  tag "$prefix"
+  tag "${meta.id}"
   label 'star'
   label 'highCpu'
   label 'extraMem'
 
   input:
-  tuple val(prefix), path(reads)
+  tuple val(meta), path(reads)
   path index
   path gtf
 
   output:
-  tuple val(prefix), path('*Aligned.out.bam'), emit: bam
-  tuple val(prefix), path("*ReadsPerGene.out.tab"), optional: true, emit: counts
+  tuple val(meta), path('*Aligned.out.bam'), emit: bam
+  tuple val(meta), path("*ReadsPerGene.out.tab"), optional: true, emit: counts
   path("*out.tab"), optional: true, emit: countsLogs
-  tuple val(prefix), path("*Aligned.toTranscriptome.out.bam"), optional: true, emit: transcriptsBam
+  tuple val(meta), path("*Aligned.toTranscriptome.out.bam"), optional: true, emit: transcriptsBam
   path ("*out"), emit: logs
   path ("versions.txt"), emit: versions
 
   script:
   def args = task.ext.args ?: ''
+  def prefix = task.ext.prefix ?: "${meta.id}"
   """
   echo "STAR "\$(STAR --version 2>&1) > versions.txt
   STAR --genomeDir $index \\

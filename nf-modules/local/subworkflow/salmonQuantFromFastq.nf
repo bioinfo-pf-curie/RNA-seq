@@ -10,8 +10,7 @@ include { mergeCounts} from '../process/mergeCounts'
 workflow salmonQuantFromFastqFlow {
 
   take:
-  reads // Channel [val(prefix), reads]
-  strandness // Channel val(strandness)
+  reads // Channel [val(meta), reads]
   index // Channel path(salmonIndex)
   gtf // Channel path(gtf)
 
@@ -19,7 +18,7 @@ workflow salmonQuantFromFastqFlow {
   chVersions = Channel.empty()
 
   salmonQuantFromFastq(
-    reads.join(strandness),
+    reads,
     index.collect(),
     gtf.collect(),
   )

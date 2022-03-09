@@ -8,12 +8,13 @@ process saveStrandness {
   label 'minMem'
   
   input:
-  tuple val(prefix), path(reads)
+  tuple val(meta), path(reads)
 
   output:
   path "*.txt", emit: savedStrandness
 
   script:
+  def prefix = task.ext.prefix ?: "${meta.id}"
   """
   echo ${params.stranded} > ${prefix}_strandness.txt
   """

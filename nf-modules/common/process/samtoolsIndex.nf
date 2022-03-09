@@ -3,16 +3,16 @@
  */
 
 process samtoolsIndex {
-  tag "$prefix"
+  tag "${meta.id}"
   label 'samtools'
   label 'minCpu'
   label 'lowMem'
  
   input:
-  tuple val(prefix), path (bam)
+  tuple val(meta), path (bam)
 
   output:
-  tuple val(prefix), path("*bam.bai"), emit: bai
+  tuple val(meta), path("*bam.bai"), emit: bai
   path("versions.txt") , emit: versions
 
   script:

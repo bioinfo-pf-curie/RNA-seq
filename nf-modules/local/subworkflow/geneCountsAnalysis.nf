@@ -19,7 +19,6 @@ workflow geneCountsAnalysisFlow {
   main:
   chVersions = Channel.empty()
 
-
   geneSaturation(
     counts.collect()
   )

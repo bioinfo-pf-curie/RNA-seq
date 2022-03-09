@@ -9,7 +9,6 @@ workflow featureCountsFlow {
 
   take:
   bam // Channel [val(prefix), path(bam), path(bai)]
-  strandness // Channel val(strandness)
   gtf // Channel path(gtf)
 
   main:
@@ -17,17 +16,16 @@ workflow featureCountsFlow {
   chVersions = Channel.empty()
 
   featureCounts(
-    bam.join(strandness),
+    bam,
     gtf.collect(),
   )
   chVersions = chVersions.mix(featureCounts.out.versions)
 
   // merge and order counts and strand
   featureCounts.out.counts
-    .join(strandness)
     .multiMap { it ->
       counts: it[1]
-      strand: it[2]
+      strand: it[0].strandness
    }.set{chCountsAndStrand}
 
   mergeCounts(

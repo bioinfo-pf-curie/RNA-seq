@@ -3,22 +3,23 @@
  */
 
 process htseqCounts {
-  tag "${prefix}"
+  tag "${meta.id}"
   label 'htseq'
   label 'medCpu'
   label 'medMem'
   
   input:
-  tuple val(prefix), path(bam), path(bai), val(strandness)
+  tuple val(meta), path(bam), path(bai), val(strandness)
   path gtf
 
   output: 
-  tuple val(prefix), path("${prefix}_counts.csv"), emit: counts
-  path("${prefix}_counts.csv"), emit: logs
+  tuple val(meta), path("*_counts.csv"), emit: counts
+  path("*_counts.csv"), emit: logs
   path("versions.txt"), emit: versions 
 
   script:
   def args   = task.ext.args ?: ''
+  def prefix = task.ext.prefix ?: "${meta.id}"
   def strandedOpt = '-s no' 
   if (strandness == 'forward'){
       strandedOpt= '-s yes'

@@ -4,15 +4,14 @@
 
 include { makeHisatSplicesites } from '../process/makeHisatSplicesites'
 include { hisat2Align } from '../process/hisat2Align'
-include { samtoolsSort } from '../process/samtoolsSort'
-include { samtoolsIndex } from '../process/samtoolsIndex'
-include { samtoolsFlagstat } from '../process/samtoolsFlagstat'
+include { samtoolsSort } from '../../common/process/samtoolsSort'
+include { samtoolsIndex } from '../../common/process/samtoolsIndex'
+include { samtoolsFlagstat } from '../../common/process/samtoolsFlagstat'
 
 workflow mappingHisat2Flow {
 
   take:
   reads
-  strandness
   index
   gtf
 
@@ -25,7 +24,7 @@ workflow mappingHisat2Flow {
   chVersions = chVersions.mix(makeHisatSplicesites.out.versions)
 
   hisat2Align(
-    reads.join(strandness),
+    reads,
     index.collect(),
     makeHisatSplicesites.out.alignmentSplicesites.collect(),
   )

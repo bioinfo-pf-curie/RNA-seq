@@ -10,17 +10,15 @@ include { mergeCounts} from '../process/mergeCounts'
 workflow salmonQuantFromBamFlow {
 
   take:
-  bam // Channel [val(prefix), path(bam), path(bai)]
-  strandness // Channel val(strandness)
+  bam // Channel [val(meta), path(bam), path(bai)]
   trsFasta // Channel path(transcriptsFasta)
   gtf // Channel path(gtf)
 
   main:
-  //tool = Channel.value("featureCounts")
   chVersions = Channel.empty()
 
   salmonQuantFromBam(
-    bam.join(strandness),
+    bam,
     trsFasta.collect(),
     gtf.collect(),
   )

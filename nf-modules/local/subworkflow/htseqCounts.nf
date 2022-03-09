@@ -8,8 +8,7 @@ include { mergeCounts} from '../process/mergeCounts'
 workflow htseqCountsFlow {
 
   take:
-  bam // Channel [val(prefix), path(bam), path(bai)]
-  strandness // Channel(strandness)
+  bam // Channel [val(meta), path(bam), path(bai)]
   gtf // Channel path(gtf)
 
   main:
@@ -17,17 +16,16 @@ workflow htseqCountsFlow {
   chVersions = Channel.empty()
  
   htseqCounts(
-    bam.join(strandness),
+    bam,
     gtf.collect()
   )
   chVersions = chVersions.mix(htseqCounts.out.versions)
 
   // Merge and order counts
   htseqCounts.out.counts
-    .join(strandness)
     .multiMap { it ->
       counts: it[1]
-      strand: it[2]
+      strand: it[0].strandness
    }.set{chCountsAndStrand}
 
   mergeCounts(

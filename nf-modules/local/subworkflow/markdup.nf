@@ -2,15 +2,14 @@
  * MarkDuplicates
  */
 
-include { markDuplicates } from '../process/markDuplicates'
-include { samtoolsIndex } from '../process/samtoolsIndex'
+include { markDuplicates } from '../../common/process/markDuplicates'
+include { samtoolsIndex } from '../../common/process/samtoolsIndex'
 include { dupradar } from '../process/dupradar'
 
 workflow markdupFlow {
 
   take:
   bam
-  strandness
   gtf
 
   main:
@@ -28,7 +27,7 @@ workflow markdupFlow {
 
   if (!params.skipDupradar){
     dupradar (
-      markDuplicates.out.bam.join(strandness),
+      markDuplicates.out.bam,
       gtf.collect(),
     )
     chDupradarResults = dupradar.out.results

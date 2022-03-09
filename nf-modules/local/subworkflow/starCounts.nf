@@ -10,7 +10,6 @@ workflow starCountsFlow {
   starBams
   starCounts // Channel path(starCounts)
   starCountsLogs // Channel path(starCountsLogs)
-  strandness // Channel val(strandness)
   gtf // Channel path(gtf)
 
   main:
@@ -30,10 +29,9 @@ workflow starCountsFlow {
 
   // Merge and order counts
   chStarCounts
-    .join(strandness)
     .multiMap { it ->
       counts: it[1]
-      strand: it[2]
+      strand: it[0].strandness
    }.set{chCountsAndStrand}
 
   mergeCounts(

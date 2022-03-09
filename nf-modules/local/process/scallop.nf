@@ -4,26 +4,27 @@
  */
 
 process scallop {
-  tag "$prefix"
+  tag "${meta.id}"
   label 'scallop'
   label 'lowCpu'
   label 'highMem'
 
   input:
-  tuple val(prefix), path(bam), path(bai), val(strandness) // Channel [prefix, bam, bai, strandness]
+  tuple val(meta), path(bam), path(bai)
 
   output:
-  tuple val(prefix), path("*Transcripts.gtf"), emit: transcriptGtf
-  path  "versions.txt"                       , emit: versions
+  tuple val(meta), path("*Transcripts.gtf"), emit: transcriptGtf
+  path  "versions.txt"                     , emit: versions
 
   script:
   def args = task.ext.args ?: ''
   def strandOpts = '--library_type unstranded'
-  if (strandness == 'forward') {
+  if (meta.strandness == 'forward') {
     strandOpts = '--library_type second'
-  } else if (strandness == 'reverse') {
+  } else if (meta.strandness == 'reverse') {
     strandOpts = '--library_type first'
   }
+  def prefix = task.ext.prefix ?: "${meta.id}"
   """
   scallop \\
     -i ${bam} \\

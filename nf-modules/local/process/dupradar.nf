@@ -1,31 +1,30 @@
 /*
  * DupRadar for duplicates assessment
- * External parameters :
- * @ params.singleEnd : is data single-end sequencing ?
  */
 
 process dupradar {
-  tag "${prefix}"
+  tag "${meta.id}"
   label 'dupradar'
   label 'minCpu'
   label 'lowMem'
 
   input:
-  tuple val(prefix), path(bam), val(strandness)
+  tuple val(meta), path(bam)
   path gtf
 
   output:
-  path "${prefix}*.{pdf,txt}", emit : results
+  path "${bam.baseName}*.{pdf,txt}", emit : results
   path("versions.txt"), emit: versions
 
   script: 
   def dupradarDirection = 0
-  if (strandness == 'forward'){
+  if (meta.strandness == 'forward'){
       dupradarDirection = 1
-  } else if ((strandness == 'reverse')){
+  } else if ((meta.strandness == 'reverse')){
       dupradarDirection = 2
   }
-  def paired = params.singleEnd ? 'single' : 'paired'
+  def paired = meta.singleEnd ? 'single' : 'paired'
+  def prefix = task.ext.prefix ?: "${meta.id}"
   """
   echo \$(R --version | awk 'NR==1{print \$1,\$3}') > versions.txt
   dupRadar.r ${bam} ${gtf} ${dupradarDirection} ${paired} ${task.cpus}

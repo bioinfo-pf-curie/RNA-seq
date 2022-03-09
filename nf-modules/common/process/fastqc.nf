@@ -1,24 +1,23 @@
 /*
  * FastQC - Quality controls on raw reads
- * External parameters :
- * @ params.singleEnd :	is data	single-end sequencing ?
  */
 
 process fastqc {
-  tag "${prefix}"
+  tag "${meta.id}"
   label 'fastqc'
   label 'medCpu'
   label 'lowMem'
 
   input:
-  tuple val(prefix), path(reads)
+  tuple val(meta), path(reads)
 
   output:
   path("*_fastqc.{zip,html}"), emit: results
   path("versions.txt")       , emit: versions
 
   script:
-  if (params.singleEnd){
+  def prefix = task.ext.prefix ?: "${meta.id}"
+  if (meta.singleEnd){
     """
     echo \$(fastqc --version) > versions.txt
     [ ! -f  ${prefix}.fastq.gz ] && ln -s $reads ${prefix}.fastq.gz

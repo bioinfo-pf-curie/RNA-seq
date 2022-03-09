@@ -3,14 +3,14 @@
  */
 
 include { starAlign } from '../process/starAlign'
-include { samtoolsSort } from '../process/samtoolsSort'
-include { samtoolsIndex } from '../process/samtoolsIndex'
-include { samtoolsFlagstat } from '../process/samtoolsFlagstat'
+include { samtoolsSort } from '../../common/process/samtoolsSort'
+include { samtoolsIndex } from '../../common/process/samtoolsIndex'
+include { samtoolsFlagstat } from '../../common/process/samtoolsFlagstat'
 
 workflow mappingStarFlow {
 
   take:
-  reads // Channel [val(prefix), [reads]]
+  reads // Channel [val(meta), [reads]]
   index // Channel path(index)
   gtf // Channel path(gtf)
 

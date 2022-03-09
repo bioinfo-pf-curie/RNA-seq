@@ -13,7 +13,7 @@ process stringtieMerge {
   path(gtf)
 
   output:
-  tuple val("stringtieMerge"), path("mergedTranscripts.gtf"), emit: mergedGtf
+  path("mergedTranscripts.gtf"), emit: mergedGtf
   path("versions.txt"), emit: versions
 
   script:

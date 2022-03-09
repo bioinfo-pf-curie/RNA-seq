@@ -3,20 +3,21 @@
  */
 
 process markDuplicates {
-  tag "${prefix}"
+  tag "${meta.id}"
   label 'picard'
   label 'minCpu'
   label 'medMem'
 
   input:
-  tuple val(prefix), path(bam), path(bai)
+  tuple val(meta), path(bam), path(bai)
 
   output:
-  tuple val(prefix), path('*markDups.bam'), emit: bam
+  tuple val(meta), path('*markDups.bam'), emit: bam
   path('*markDups_metrics.txt'), emit: metrics
   path('versions.txt'), emit: versions
 
   script:
+  def prefix = task.ext.prefix ?: "${meta.id}"
   def javaArgs = task.ext.args ?: ''
   markdupMemOption = "\"-Xms" +  (task.memory.toGiga() / 2).trunc() + "g -Xmx" + (task.memory.toGiga() - 1) + "g\""
   """

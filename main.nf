@@ -33,6 +33,7 @@ customRunName = NFTools.checkRunName(workflow.runName, params.name)
 // Custom functions/variables
 mqcReport = []
 include {checkAlignmentPercent} from './lib/functions'
+include {combineStrandness} from './lib/functions'
 
 /*
 ===================================
@@ -281,13 +282,13 @@ include { stringtieFlow } from './nf-modules/local/subworkflow/stringtie'
 include { scallopFlow } from './nf-modules/local/subworkflow/scallop'
 
 // Processes
-include { getSoftwareVersions } from './nf-modules/local/process/getSoftwareVersions'
+include { getSoftwareVersions } from './nf-modules/common/process/getSoftwareVersions'
 include { multiqc } from './nf-modules/local/process/multiqc'
-include { outputDocumentation } from './nf-modules/local/process/outputDocumentation'
+include { outputDocumentation } from './nf-modules/common/process/outputDocumentation'
 include { bigWig } from './nf-modules/local/process/bigWig'
-include { qualimap } from './nf-modules/local/process/qualimap'
-include { preseq } from './nf-modules/local/process/preseq'
-include { fastqc } from './nf-modules/local/process/fastqc'
+include { qualimap } from './nf-modules/common/process/qualimap'
+include { preseq } from './nf-modules/common/process/preseq'
+include { fastqc } from './nf-modules/common/process/fastqc'
 include { rRNAMapping } from './nf-modules/local/process/rRNAMapping'
 
 /*
@@ -342,6 +343,9 @@ workflow {
     )
     chVersions = chVersions.mix(strandnessFlow.out.versions)
 
+    // Combine reads and strandness information
+    chRawReads = combineStrandness(chRawReads, strandnessFlow.out.strandnessResults)
+
     //*****************************************
     // ALIGNMENT-BASED ANALYSIS
 
@@ -378,7 +382,6 @@ workflow {
       if (params.aligner == "hisat2"){
         mappingHisat2Flow(
           chFilteredReads,
-	  strandnessFlow.out.strandnessResults,
           chHisat2Index,
           chGtf
         )
@@ -391,14 +394,15 @@ workflow {
 
       // Filter removes all 'aligned' channels that fail the check
       chAlignedFlagstat.join(chAlignedBam).join(chAlignedBai)
-        .filter { prefix, logs, bam, bai -> checkAlignmentPercent(prefix, logs) }
-        .map { prefix, logs, bam, bai -> [ prefix, bam, bai ] }
+        .filter { meta, logs, bam, bai -> checkAlignmentPercent(meta, logs) }
+        .map { meta, logs, bam, bai -> [ meta, bam, bai ] }
+        .view()
         .set { chBamPassed }
 
       // PROCESS : bigwig file
       if (!params.skipBigwig){
         bigWig(
-          chBamPassed.join(strandnessFlow.out.strandnessResults)
+          chBamPassed
         )
         chVersions = chVersions.mix(bigWig.out.versions)
       }
@@ -406,7 +410,7 @@ workflow {
       // PROCESS : Qualimap
       if (!params.skipQC && !params.skipQualimap){
         qualimap(
-          chBamPassed.join(strandnessFlow.out.strandnessResults),
+          chBamPassed,
           chGtf.collect()
         )
 	chQualimapMqc = qualimap.out.results.collect()
@@ -425,7 +429,6 @@ workflow {
       // SUBWORKFLOW: Duplicates
       markdupFlow(
         chBamPassed,
-	strandnessFlow.out.strandnessResults,
         chGtf.collect()
       )
       chMarkDupMqc = markdupFlow.out.picardMetrics.collect()
@@ -448,7 +451,6 @@ workflow {
       if(params.counts == 'featureCounts'){
         featureCountsFlow(
           chBamPassed,
-	  strandnessFlow.out.strandnessResults,
           chGtf.collect()
         )
         chCounts = featureCountsFlow.out.counts
@@ -458,7 +460,6 @@ workflow {
       } else if (params.counts == 'HTseqCounts'){
         htseqCountsFlow (
           chBamPassed,
-	  strandnessFlow.out.strandnessResults,
           chGtf.collect()
         )
         chCounts = htseqCountsFlow.out.counts
@@ -470,7 +471,6 @@ workflow {
 	  chBamPassed,
 	  mappingStarFlow.out.counts,
 	  mappingStarFlow.out.countsLogs,
-	  strandnessFlow.out.strandnessResults,
           chGtf.collect()
         )
         chCounts = starCountsFlow.out.counts
@@ -480,7 +480,6 @@ workflow {
       } else if (params.counts == 'salmon'){
         salmonQuantFromBamFlow (
           mappingStarFlow.out.transcriptsBam,
-	  strandnessFlow.out.strandnessResults, 
 	  chTranscriptsFasta,
 	  chGtf
         )
@@ -498,7 +497,6 @@ workflow {
     if (params.pseudoAligner == "salmon"){
       salmonQuantFromFastqFlow (
         chRawReads,
-	strandnessFlow.out.strandnessResults,
 	chSalmonIndex,
 	chGtf
       )
@@ -535,7 +533,6 @@ workflow {
     if ("stringtie" in denovoTools){
       stringtieFlow(
         chBamPassed,
-	strandnessFlow.out.strandnessResults,
         chGtf.collect()
       )
       chVersions = chVersions.mix(stringtieFlow.out.versions)
@@ -545,7 +542,6 @@ workflow {
     if ("scallop" in denovoTools){
       scallopFlow(
         chBamPassed,
-	strandnessFlow.out.strandnessResults,
 	chGtf.collect()
       )
       chVersions = chVersions.mix(scallopFlow.out.versions)

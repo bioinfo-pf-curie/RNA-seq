@@ -3,26 +3,27 @@
  */
 
 process samtoolsSort {
-  tag "$prefix"
+  tag "${meta.id}"
   label 'samtools'
   label 'medCpu'
   label 'medMem'
  
   input:
-  tuple val(prefix), path (bam)
+  tuple val(meta), path (bam)
 
   output:
-  tuple val(prefix), path ("*_sorted.bam"), emit: bam
+  tuple val(meta), path ("*_sorted.bam"), emit: bam
   path("versions.txt") , emit: versions
 
   script:
   def args = task.ext.args ?: ''
+  def prefix = task.ext.prefix ?: "${bam.baseName}"
   """
   echo \$(samtools --version | head -1 ) > versions.txt
   samtools sort \\
     ${args} \\
     -@  ${task.cpus}  \\
-    -o ${bam.baseName}_sorted.bam  \\
+    -o ${prefix}_sorted.bam  \\
     ${bam}
   """
 }

@@ -20,3 +20,20 @@ def checkAlignmentPercent(prefix, logs) {
       return true
   }
 }
+
+
+
+def combineStrandness(input, strandness){
+
+  def idx = input.toList().size()
+
+  input
+    .combine(strandness)
+    .filter{it[0].id == it[2]}
+    .map{ it ->
+      meta = it[0]
+      meta.strandness = it[3]
+      return [meta, it[1]]
+    }.view()
+
+}

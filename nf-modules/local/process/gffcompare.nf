@@ -3,27 +3,28 @@
  */
 
 process gffcompare {
-    label 'gffcompare'
-    label 'minCpu'
-    label 'medMem'
+  label 'gffcompare'
+  label 'minCpu'
+  label 'medMem'
 
-    input:
-    tuple val(prefix), path(denovoGtf)
-    path(refGtf)
+  input:
+  tuple val(meta), path(denovoGtf)
+  path(refGtf)
 
-    output:
-    tuple val(prefix), path("gffcompare_${prefix}*"), emit: results
-    path("*.stats"), emit: mqc
-    path("*combined.gtf"), optional: true, emit: combinedGtf
-    path("versions.txt"), emit: versions
+  output:
+  tuple val(meta), path("gffcompare_*"), emit: results
+  path("*.stats"), emit: mqc
+  path("*combined.gtf"), optional: true, emit: combinedGtf
+  path("versions.txt"), emit: versions
 
-    script:
-    """
-    gffcompare \\
-      -r ${refGtf} \\
-      -o gffcompare_${prefix} \\
-      ${denovoGtf}
+  script:
+  def prefix = task.ext.prefix ?: "${meta.id}"
+  """
+  gffcompare \\
+    -r ${refGtf} \\
+    -o gffcompare_${prefix} \\
+    ${denovoGtf}
 
-    echo \$(gffcompare --version 2>&1) > versions.txt
-    """
+  echo \$(gffcompare --version 2>&1) > versions.txt
+  """
 }

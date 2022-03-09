@@ -8,15 +8,14 @@ include { gffcompare } from '../process/gffcompare'
 workflow scallopFlow {
 
   take:
-  bam // Channel [val(prefix), path(bam), path(bai)]
-  strandness // Channel val(strandness)
+  bam // Channel [val(meta), path(bam), path(bai)]
   gtf // Channel path(gtf)
 
   main:
   chVersions = Channel.empty()
 
   scallop(
-    bam.join(strandness)
+    bam
   )
   chVersions = chVersions.mix(scallop.out.versions)
 
