@@ -396,7 +396,6 @@ workflow {
       chAlignedFlagstat.join(chAlignedBam).join(chAlignedBai)
         .filter { meta, logs, bam, bai -> checkAlignmentPercent(meta, logs) }
         .map { meta, logs, bam, bai -> [ meta, bam, bai ] }
-        .view()
         .set { chBamPassed }
 
       // PROCESS : bigwig file
