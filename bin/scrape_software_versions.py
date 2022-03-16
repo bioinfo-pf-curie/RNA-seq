@@ -9,13 +9,13 @@ args = parser.parse_args()
 versions = {}
 with open(args.input) as f:
     for line in f:
-        (key, val) = line.split()
-        if key in versions.keys():
-            if val != versions[str(key)]:
-                versions[str(key)] = versions[str(key)] + " - " + val
-        else:
-            versions[str(key)] = val
-            
+        if line.strip():
+            (key, val) = line.split()
+            if key in versions.keys():
+                if val != versions[str(key)]:
+                    versions[str(key)] = versions[str(key)] + " - " + val
+            else:
+                versions[str(key)] = val
 
 # Dump to YAML
 print ('''
