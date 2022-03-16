@@ -2,7 +2,7 @@
  * STAR Workflow
  */
 
-include { starAlign } from '../process/starAlign'
+include { starAlign } from '../../common/process/starAlign'
 include { samtoolsSort } from '../../common/process/samtoolsSort'
 include { samtoolsIndex } from '../../common/process/samtoolsIndex'
 include { samtoolsFlagstat } from '../../common/process/samtoolsFlagstat'

@@ -2,7 +2,7 @@
  * FeatureCounts workflow
  */
 
-include { featureCounts } from '../process/featureCounts'
+include { featureCounts } from '../../common/process/featureCounts'
 include { mergeCounts} from '../process/mergeCounts'
 
 workflow featureCountsFlow {
@@ -16,8 +16,7 @@ workflow featureCountsFlow {
   chVersions = Channel.empty()
 
   featureCounts(
-    bam,
-    gtf.collect(),
+    bam.combine(gtf)
   )
   chVersions = chVersions.mix(featureCounts.out.versions)
 
