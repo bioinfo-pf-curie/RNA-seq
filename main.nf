@@ -285,7 +285,7 @@ include { scallopFlow } from './nf-modules/local/subworkflow/scallop'
 include { getSoftwareVersions } from './nf-modules/common/process/getSoftwareVersions'
 include { multiqc } from './nf-modules/local/process/multiqc'
 include { outputDocumentation } from './nf-modules/common/process/outputDocumentation'
-include { bigWig } from './nf-modules/local/process/bigWig'
+include { deepToolsBamCoverage } from './nf-modules/common/process/deepToolsBamCoverage'
 include { qualimap } from './nf-modules/common/process/qualimap'
 include { preseq } from './nf-modules/common/process/preseq'
 include { fastqc } from './nf-modules/common/process/fastqc'
@@ -400,10 +400,12 @@ workflow {
 
       // PROCESS : bigwig file
       if (!params.skipBigwig){
-        bigWig(
-          chBamPassed
+        deepToolsBamCoverage(
+          chBamPassed.map{it->[it[0],it[1],it[2],null]},
+	  Channel.empty().collect().ifEmpty([]),
+	  Channel.empty().collect().ifEmpty([])
         )
-        chVersions = chVersions.mix(bigWig.out.versions)
+        chVersions = chVersions.mix(deepToolsBamCoverage.out.versions)
       }
 
       // PROCESS : Qualimap
