@@ -65,10 +65,10 @@ params.gencode = NFTools.getGenomeAttribute(params, 'gencode')
 
 // Stage config files
 chMultiqcConfig = Channel.fromPath(params.multiqcConfig)
-chOutputDocs = Channel.fromPath("$baseDir/docs/output.md")
-chOutputDocsImages = file("$baseDir/docs/images/", checkIfExists: true)
-chPcaHeader = Channel.fromPath("$baseDir/assets/pcaHeader.txt")
-chHeatmapHeader = Channel.fromPath("$baseDir/assets/heatmapHeader.txt")
+chOutputDocs = Channel.fromPath("$projectDir/docs/output.md")
+chOutputDocsImages = file("$projectDir/docs/images/", checkIfExists: true)
+chPcaHeader = Channel.fromPath("$projectDir/assets/pcaHeader.txt")
+chHeatmapHeader = Channel.fromPath("$projectDir/assets/heatmapHeader.txt")
 
 // Tools
 denovoTools = params.denovo ? params.denovo.split(',').collect{it.trim().toLowerCase()} : []
