@@ -16,7 +16,6 @@ with open(args.input) as f:
                     versions[str(key)] = versions[str(key)] + " - " + val
             else:
                 versions[str(key)] = val
-            
 
 # Dump to YAML
 print ('''
