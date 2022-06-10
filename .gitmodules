@@ -1,4 +1,4 @@
 [submodule "geniac"]
 path = geniac
-url = ../../geniac.git
+url = ../../bioinfo-guidelines/geniac.git
 branch = release
