@@ -1,0 +1,26 @@
+variables:
+  GIT_SUBMODULE_STRATEGY: "recursive"
+
+image: "${CI_REGISTRY}/bioinfo-containers/deploy-geniac:master"
+
+stages:
+  - check           # check that requirements are met
+
+before_script:
+  - set -euo pipefail
+
+#############################
+# Perform preliminary check #
+#############################
+
+geniac_lint:
+  # launch geniac lint
+  stage: check
+  script:
+    - echo "Geniac lint"
+    - source /opt/etc/bashrc # needed to activate the geniac conda env
+    - geniac --version
+    - geniac lint ${CI_PROJECT_DIR}
+  tags:
+    - rancher
+
