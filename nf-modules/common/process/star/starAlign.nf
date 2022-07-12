@@ -21,6 +21,9 @@ process starAlign {
   path("*out.tab"), optional: true, emit: countsLogs
   tuple val(meta), path("*Aligned.toTranscriptome.out.bam"), optional: true, emit: transcriptsBam
 
+  when:
+  task.ext.when == null || task.ext.when
+
   script:
   def args = task.ext.args ?: ''
   def prefix = task.ext.prefix ?: "${meta.id}"

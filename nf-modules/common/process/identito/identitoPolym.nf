@@ -1,5 +1,5 @@
 /*
- * Identito Monitoring - call variants on a list of known polyms
+ * BQSR - detects systematic errors made by the sequencing machine
  */
 
 process identitoPolym {
@@ -16,7 +16,7 @@ process identitoPolym {
 
   output:
   path("*_matrix.tsv"), emit: polyms
-  path("versions.txt"), emit: versions 
+  path("versions.txt"), emit: versions
 
   script:
   def prefix = task.ext.prefix ?: "${meta.id}"
@@ -30,4 +30,3 @@ process identitoPolym {
   apComputePolym.R ${prefix}_bcftools.tsv ${prefix}_matrix.tsv ${prefix} ${polyms}
   """
 }
-

@@ -20,4 +20,3 @@ process identitoCombine {
   (head -1 "${matrix[0]}"; tail -n +2 -q *matrix.tsv) > identito_polym.tsv
   """
 }
-

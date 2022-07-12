@@ -16,6 +16,9 @@ process markDuplicates {
   path('*markDups_metrics.txt'), emit: metrics
   path('versions.txt'), emit: versions
 
+  when:
+  task.ext.when == null || task.ext.when
+
   script:
   def prefix = task.ext.prefix ?: "${meta.id}"
   def javaArgs = task.ext.args ?: ''
