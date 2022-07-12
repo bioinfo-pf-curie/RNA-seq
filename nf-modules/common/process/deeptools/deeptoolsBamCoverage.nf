@@ -2,7 +2,7 @@
  * BigWig tracks from BAM file
  */
 
-process deepToolsBamCoverage {
+process deeptoolsBamCoverage {
   tag "${meta.id}"
   label 'deeptools'
   label 'medCpu'
@@ -16,6 +16,9 @@ process deepToolsBamCoverage {
   output:
   tuple val(meta), path('*.bigwig'), emit: bigwig
   path("versions.txt"), emit: versions
+
+  when:
+  task.ext.when == null || task.ext.when
 
   script:
   blacklistOpts = blacklistBed.size() ? "--blackListFileName ${blacklistBed}" : ""

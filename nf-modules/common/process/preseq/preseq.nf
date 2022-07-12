@@ -17,6 +17,9 @@ process preseq {
   path("*ccurve.txt"), emit: results
   path("versions.txt"), emit: versions
 
+  when:
+  task.ext.when == null || task.ext.when
+
   script:
   def defectMode = task.attempt > 1 ? '-D' : ''
   def peOpts = meta.singleEnd ? '' : '-pe'

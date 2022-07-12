@@ -14,6 +14,9 @@ process getSoftwareVersions{
   output:
   path 'software_versions_mqc.yaml', emit: versionsYaml
 
+  when:
+  task.ext.when == null || task.ext.when
+
   script:
   """
   echo "Pipeline $workflow.manifest.version" > all_versions.txt

@@ -2,7 +2,7 @@
  * Qualimap - quality controls on RNA-seq BAM file
  */
 
-process qualimap {
+process qualimapRNAseq {
   tag "${meta.id}"
   label 'qualimap'
   label 'minCpu'
@@ -15,6 +15,9 @@ process qualimap {
   output:
   path ("${prefix}"), emit: results
   path ("versions.txt"), emit: versions
+
+  when:
+  task.ext.when == null || task.ext.when
 
   script:
   def peOpts = meta.singleEnd ? '' : '-pe'
