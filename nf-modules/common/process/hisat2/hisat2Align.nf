@@ -18,8 +18,11 @@ process hisat2Align {
   path "*hisat2_summary.txt"     , emit: logs
   path ("versions.txt")                   , emit: versions
 
+  when:
+  task.ext.when == null || task.ext.when
+
   script:
-  def args   = task.ext.args ?: ''
+  def args = task.ext.args ?: ''
   indexBase = hs2Index[0].toString() - ~/.\d.ht2/
   def strandOpts = ''
   if (meta.strandness=='forward'){

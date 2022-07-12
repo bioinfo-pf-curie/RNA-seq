@@ -14,6 +14,9 @@ process makeHisatSplicesites {
   path "${gtf.baseName}.hisat2SpliceSites.txt", emit: alignmentSplicesites
   path ("versions.txt"), emit: versions
 
+  when:
+  task.ext.when == null || task.ext.when
+
   script:
   """
   echo \$(hisat2 --version | awk 'NR==1{print "hisat2 "\$3}') > versions.txt
