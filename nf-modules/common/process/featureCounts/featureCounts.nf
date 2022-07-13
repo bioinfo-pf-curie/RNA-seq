@@ -3,7 +3,7 @@
  */
 
 process featureCounts{
-  label 'featureCounts'
+  label 'featurecounts'
   label 'medCpu'
   label 'lowMem'
 
