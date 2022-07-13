@@ -4,7 +4,7 @@
 
 include { markDuplicates } from '../../common/process/picard/markDuplicates'
 include { samtoolsIndex } from '../../common/process/samtools/samtoolsIndex'
-include { dupradar } from '../../common/process/dupradar/dupradar'
+include { dupradar } from '../../local/process/dupradar'
 
 workflow markdupFlow {
 

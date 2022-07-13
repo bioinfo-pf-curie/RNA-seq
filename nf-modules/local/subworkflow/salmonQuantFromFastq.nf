@@ -20,7 +20,7 @@ workflow salmonQuantFromFastqFlow {
   salmonQuantFromFastq(
     reads,
     index.collect(),
-    Channel.empty([]),
+    Channel.value([]),
     gtf.collect(),
   )
   chVersions = chVersions.mix(salmonQuantFromFastq.out.versions)

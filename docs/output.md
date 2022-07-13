@@ -6,6 +6,35 @@ This document describes the output produced by the pipeline. Most of the plots a
 The pipeline is built using [Nextflow](https://www.nextflow.io/) and processes RNA-seq from raw sequencing reads to count table for downstream analysis.
 Briefly, the overall quality of raw sequencing data is first checked using [FastQC](#fastqc). Reads are then aligned on a [ribosomal RNAs database](#rrna-mapping) and on the [reference genome](#genome-mapping). Additional controls on aligned data are performed to infer [strandness](#strandness), [complexity](#complexity-curves), [gene-based saturation](#gene-based-saturation), [read distribution](#read-distribution) or [duplication level](#dupradar). The aligned data are then used to generate a final [count matrix](#counts) with all genes and all samples. A first-level analysis is run, including the [number of expressed genes](#expressed-number), their [functional classes](#expressed-genes-types) and an exploratory analysis ([correlation](#correlation), [PCA](#pca)). The [identito monitoring](#identito) is also available for Human data.
 
+
+## Trimming
+
+The raw data trimming can be performed with [TrimGalore](https://github.com/FelixKrueger/TrimGalore) if the `--trimming` option is specified.
+By default, `TrimGalore` should be able to automatically detect the Illumna 3' adapter. If more advance trimming parameter are required, plese use the option `--trimmingOpts`.  
+The trimmed fastq files are then usd for downstream analysis but are not exported by default. Use the `--saveIntermediates` parameters to export them.
+
+**Output directory: `trimming`**
+
+* `sample_trimmed_R[1,2].gz`
+  * trimmed Reads [1,2]. Note that the final name of the output file can vary according to the number of trimming steps wich is performed. The name of the output files usually reflects the last trimming step performed. 
+* `logs/`
+  * logs files
+  
+
+## PDX
+
+If the `--pdx` option is specified, the pipeline will run `xengsort` to separate Human and Mouse reads in distinct fastq files.
+
+**Output directory: `xengsort`**
+
+* `*graft*fastq.gz`
+  * Graft fastq files (i.e *human* data)
+* `*host*fastq.gz`
+  * Host fastq files (i.e *mouse* data)
+* `logs/`
+  * logs files
+	  
+	  
 ## FastQC
 [FastQC](http://www.bioinformatics.babraham.ac.uk/projects/fastqc/) gives general quality metrics about your reads. It provides information about the quality score distribution across your reads, the per base sequence content (%T/A/G/C). You get information about adapter contamination and other overrepresented sequences.
 
@@ -142,10 +171,13 @@ In addition to library complexity, we use a custom R script to infer the library
 
 ![MultiQC - Genes saturation](images/genesaturation.png)
 
+
 ## Counts
 
+### STAR/FeatureCounts/HTSeq
+
 Several tools can be used to generate a raw counts table showing the number of reads per genes and per samples.
-By default, the STAR mapper allows to align and to counts reads per gene. Addition tools such as `featureCounts` or `HTSeqCounts` are still commonly used.
+The STAR mapper allows to align and to counts reads per gene. Other tools such as `featureCounts`, `HTSeqCounts` are also available.
 For details about these tools, see the [featureCounts help page](http://bioinf.wehi.edu.au/featureCounts/) or the [HTSeqCounts help page](https://htseq.readthedocs.io/en/release_0.11.1/count.html).
 
 According to the tool used, MultiQC should report the number of reads assigned to a gene features. A high fraction of non assigned reads usually means that many reads do not overlap coding regions.
@@ -165,13 +197,47 @@ For furhter information about TPM calculation, see the [RNAseq blog page](https:
 * `tablecounts_tpm.csv`
   * The TPM normalized value for all samples and all genes
 
+### Salmon
+
+`Salmon` can also be used to quantify transcripts abundance from bam files. In addition to quantify at the transcript level, this method tends to become a standard 
+in the field and several studies have shown that it can be more accurate than standard counting approaches.
+
+When running `salmon`, several counts files are generated :
+
+* at the transcript level:
+  * salmon.merged.salmon.transcript_counts.tsv
+  * salmon.merged.salmon.transcript_tpm.tsv
+  
+* at the gene level (using the `txImport` R package):
+  * salmon.merged.salmon.gene_counts.tsv
+  * salmon.merged.salmon.gene_tpm.tsv
+  * salmon.merged.salmon.gene_counts_scaled.tsv
+  * salmon.merged.salmon.gene_counts_length_scaled.tsv  
+
+When working at the gene level and for downstream differential analysis, it is highly recommanded to use *gene_counts_length_scaled* table.
+This counts matrix is estimated from the TPM counts which are scaled up for both library size and effective gene size.
+Compared to other measures, the *gene_counts_length_scaled* allows to deal with differences in transcript usage between the samples by using the
+average transcript length between samples.
+
+>**NB:** For 3' tagged RNA-seq, correcting the counts for gene length will induce a bias in the analysis. In this case, it is recommanded to used the original counts matrix (gene_counts.tsv). TPM values cannot be interpretated in this context.
+
+
+## PseudoCounts
+
+Pseudocounts methods allow to directly estimate transcripts abundance from raw fastq files.
+
+### Salmon
+
+The output is the same than for counts abundance estimated from bam files.
+
+**Output directory: `results/pseudoCounts`**
 
 ## Expressed Genes Types
 
 We also use a custom R script to count overlaps with different classes of genes. This gives a good idea of where aligned reads are ending up.
 Note that only expressed genes (TPM>1) are considered.
 
-**Output directory: `results/read_distribution`**
+**Output directory: `results/getCountsPerGeneType`**
 
 * `counts_genetype.txt`
   * A single file showing the number of genes classes for all the samples

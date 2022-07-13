@@ -7,27 +7,13 @@ if (length(args) != 1) {
   stop("Usage: exploratory_analysis.r <raw_counts_table>", call.=FALSE)
 }
 
-rawCounts <- args[1]
-##tpmCounts <- args[2]
-
-# Load / install required packages
-if (!require("DESeq2")){
-    source("http://bioconductor.org/biocLite.R")
-    biocLite("DESeq2", suppressUpdates=TRUE)
-    library("DESeq2")
-}
-if (!require("edgeR")){
-    source("http://bioconductor.org/biocLite.R")
-    biocLite("edgeR", suppressUpdates=TRUE)
-    library("edgeR")
-}
-if (!require("gplots")) {
-    install.packages("gplots", dependencies=TRUE, repos='http://cloud.r-project.org/')
-    library("gplots")
-}
-
+stopifnot(require(DESeq2))
+stopifnot(require(edgeR))
+stopifnot(require(gplots))
 
 ## Load a raw count table from a csv file
+rawCounts <- args[1]
+
 if (grepl(".tsv$", rawCounts)){
     d <- read.table(rawCounts, row.names=1, check.names=FALSE)
 }else if (grepl(".csv$", rawCounts)){

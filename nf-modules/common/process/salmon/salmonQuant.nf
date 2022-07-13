@@ -6,7 +6,7 @@ process salmonQuant {
   tag "${meta.id}"
   label "salmon"
   label "medCpu"
-  label "medMem"
+  label "extraMem"
 
   input:
   tuple val(meta), path(reads) // bam or fastq files
@@ -27,7 +27,7 @@ process salmonQuant {
   
   def reference = "--index $index"
   def inputReads = meta.singleEnd ? "-r $reads" : "-1 ${reads[0]} -2 ${reads[1]}"
-  if (reads.getExtension() == "bam"){
+  if (reads[0].getExtension() == "bam"){
     inputReads = "-a $reads"
     reference = "-t ${transcriptsFasta}"
   }
@@ -41,9 +41,9 @@ process salmonQuant {
   """
   echo \$(salmon --version 2>&1) > versions.txt
   salmon quant \\
+    --libType=$strandOpts \\
     ${inputReads} \\
     ${reference} \\
-    --libType=$strandOpts \\
     --threads ${task.cpus} \\
     --geneMap ${gtf} \\
     ${args} \\

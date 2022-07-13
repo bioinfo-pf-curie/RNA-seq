@@ -249,7 +249,7 @@ workflow {
         chRawReads
       )
       chRawReads=trimGalore.out.fastq
-      chTrimmingMqc=trimGalore.out.logs
+      chTrimmingMqc=trimGalore.out.logs.map{it->it[1]}
       chVersions = chVersions.mix(trimGalore.out.versions)
     }
 
@@ -452,7 +452,7 @@ workflow {
     // COUNTS-BASED QC
  
     // SUBWORKFLOW: gene counts qc
-    if (!params.skipGeneCountsAnalysis && params.counts && (params.aligner || params.pseudoAligner)){
+    if (!params.skipGeneCountsAnalysis && (params.counts || params.pseudoAligner)){
       geneCountsAnalysisFlow(
         chCounts,
         chCountsTpm,
@@ -521,8 +521,8 @@ workflow {
         chSplan.collect(),
         chMetadata.ifEmpty([]),
         chMultiqcConfig.ifEmpty([]),
-        chTrimmingMqc.ifEmpty([]),
-        chXengsortMqc.ifEmpty([]),
+        chTrimmingMqc.collect().ifEmpty([]),
+        chXengsortMqc.collect().ifEmpty([]),
         chFastqcMqc.ifEmpty([]),
         chrRNAMappingMqc.ifEmpty([]),
         chAlignedMqc.collect().ifEmpty([]),

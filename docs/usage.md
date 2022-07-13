@@ -18,6 +18,9 @@
 * [Reference genomes](#reference-genomes)
     * [`--genome`](#--genome)
 	* [`--genomeAnnotationPath`](#--genomeAnnotationPath)
+* [Preprocessing](#preprocessing)
+    * [`--trimming`](#--trimming)
+	* [`--pdx`](#--pdx)
 * [Alignment](#aligment)
 	* [`--bowtieOpts`](#--bowtieOpts)
     * [`--hisat2Opts`](#--hisat2Opts)
@@ -281,6 +284,22 @@ Note that these paths can be updated on command line using the following paramet
 - `--bed12` - Path to gene bed12 file
 - `--transcriptsFasta` - Path to transcriptome in fasta format
 - `--saveAlignedIntermediates` - Save the BAM files from the Aligment step  - not done by default
+
+## Preprocessing
+
+### `--trimming`
+
+The raw data trimming can be performed with [TrimGalore](https://github.com/FelixKrueger/TrimGalore) if the `--trimming` option is specified.
+By default, `TrimGalore` should be able to automatically detect the Illumna 3' adapter. If more advance trimming parameter are required, plese use the option `--trimmingOpts`.
+The trimmed fastq files are then used for downstream analysis but are not exported by default. Use the `--saveIntermediates` parameters to export them.
+
+### `--pdx`
+
+In the context of Mouse xenograft samples, it is strongly recommanded to distinguish Mouse from Human reads in order to avoid data misalignment.
+To do so, we implemented the [`xengsort`](https://gitlab.com/genomeinformatics/xengsort) tool (`--pdx`) which generates in output distinct fastq files for both genomes.
+These new fastq files will then be used for downstream alignment and analysis.
+
+According to the `--genome` option specified, the analysis will be either performed from the Human or from the Mouse fastq files.
 
 ## Alignment
 
