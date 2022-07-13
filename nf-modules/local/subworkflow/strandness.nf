@@ -3,8 +3,8 @@
  */
 
 include { saveStrandness } from '../process/saveStrandness'
-include { rseqcPrep } from '../process/rseqcPrep'
-include { rseqc } from '../process/rseqc'
+include { bowtie2 } from '../../common/process/bowtie2/bowtie2'
+include { rseqc } from '../../common/process/rseqc/rseqc'
 
 workflow strandnessFlow {
 
@@ -36,14 +36,14 @@ workflow strandnessFlow {
 
   // auto detection of strandness status
   if (params.stranded == 'auto' && params.bed12){
-    rseqcPrep(
+    bowtie2(
       reads,
       bowtie2Index.collect()
     )
-    chVersions = chVersions.mix(rseqcPrep.out.versions)
+    chVersions = chVersions.mix(bowtie2.out.versions)
 
     rseqc(
-      rseqcPrep.out.bamRseqc,
+      bowtie2.out.bam,
       bed12.collect()
     )
     chVersions = chVersions.mix(rseqc.out.versions)

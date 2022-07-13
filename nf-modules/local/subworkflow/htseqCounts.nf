@@ -2,7 +2,7 @@
  * HTSeq Workflow
  */
 
-include { htseqCounts } from '../process/htseqCounts'
+include { htseqCounts } from '../../common/process/htseq/htseqCounts'
 include { mergeCounts} from '../process/mergeCounts'
 
 workflow htseqCountsFlow {

@@ -1,8 +1,8 @@
 /* 
- * FeatureCounts workflow
+ * SamlonQuantFromBam workflow
  */
 
-include { salmonQuantFromBam } from '../process/salmonQuantFromBam'
+include { salmonQuant as salmonQuantFromBam } from '../../common/process/salmon/salmonQuant'
 include { salmonTx2gene } from '../process/salmonTx2gene'
 include { salmonTxImport } from '../process/salmonTxImport'
 include { mergeCounts} from '../process/mergeCounts'
@@ -19,6 +19,7 @@ workflow salmonQuantFromBamFlow {
 
   salmonQuantFromBam(
     bam,
+    Channel.value([]),
     trsFasta.collect(),
     gtf.collect(),
   )

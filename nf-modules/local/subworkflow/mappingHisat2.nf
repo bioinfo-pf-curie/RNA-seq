@@ -2,11 +2,11 @@
  * HiSat2 Worflow
  */
 
-include { makeHisatSplicesites } from '../process/makeHisatSplicesites'
-include { hisat2Align } from '../process/hisat2Align'
-include { samtoolsSort } from '../../common/process/samtoolsSort'
-include { samtoolsIndex } from '../../common/process/samtoolsIndex'
-include { samtoolsFlagstat } from '../../common/process/samtoolsFlagstat'
+include { makeHisatSplicesites } from '../../common/process/hisat2/makeHisatSplicesites'
+include { hisat2Align } from '../../common/process/hisat2/hisat2Align'
+include { samtoolsSort } from '../../common/process/samtools/samtoolsSort'
+include { samtoolsIndex } from '../../common/process/samtools/samtoolsIndex'
+include { samtoolsFlagstat } from '../../common/process/samtools/samtoolsFlagstat'
 
 workflow mappingHisat2Flow {
 

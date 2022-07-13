@@ -2,10 +2,10 @@
  * STAR Workflow
  */
 
-include { starAlign } from '../../common/process/starAlign'
-include { samtoolsSort } from '../../common/process/samtoolsSort'
-include { samtoolsIndex } from '../../common/process/samtoolsIndex'
-include { samtoolsFlagstat } from '../../common/process/samtoolsFlagstat'
+include { starAlign } from '../../common/process/star/starAlign'
+include { samtoolsSort } from '../../common/process/samtools/samtoolsSort'
+include { samtoolsIndex } from '../../common/process/samtools/samtoolsIndex'
+include { samtoolsFlagstat } from '../../common/process/samtools/samtoolsFlagstat'
 
 workflow mappingStarFlow {
 

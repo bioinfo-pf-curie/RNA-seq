@@ -107,13 +107,13 @@ Then regarding the differences / benefits of running `salmon` in alignment mode 
 One of the main interest of `salmon` is its ability to estimate the abundance at both genes and (known) transcripts levels.  
 If you are interested in isoform analysis, it could also be useful to run `STAR` in a two-pass mode. Here, the idea is to run a first alignment with usual parameters, 
 then collect the junctions detected and use them as "annotated" junctions for the second mapping pass.  
-In addition, all default tools' parameters cannot be updated on the command line. As an example here, we would like to add the `--numBootstraps` parameters which is
+In addition, all default tools' parameters can be updated on the command line. As an example here, we would like to update the `--numBootstraps` parameters which is
 required to run tools such as `sleuth` for differential analysis as the isoform levels.
 
 The typical command line to estimate both known isoform and gene abundances with `salmon` would be ;
 
 ```bash
-nextflow run main.nf --reads '*_R{1,2}.fastq.gz' --aligner 'star' --starTwoPass --counts 'salmon' --salmonQuantOpts '--numBootstraps 100' -profile 'singularity,cluster'
+nextflow run main.nf --reads '*_R{1,2}.fastq.gz' --aligner 'star' --starTwoPass --counts 'salmon' --salmonQuantOpts '--numBootstraps 200' -profile 'singularity,cluster'
 ```
 
 ### For reference-guided de-novo assembly

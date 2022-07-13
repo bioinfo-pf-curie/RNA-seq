@@ -190,9 +190,9 @@
     }, 
 
     {
-      "name": "saveAlignedIntermediates",
-      "label": "Save aligned intermediates",
-      "usage": "Save intermediates alignment files",
+      "name": "saveIntermediates",
+      "label": "Save fastq or bams intermediates",
+      "usage": "Save fastq or bams intermediates",
       "type": "boolean",
       "nargs": 0,
       "choices": [],

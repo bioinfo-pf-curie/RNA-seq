@@ -2,7 +2,7 @@
  * FeatureCounts workflow
  */
 
-include { featureCounts } from '../../common/process/featureCounts'
+include { featureCounts } from '../../common/process/featureCounts/featureCounts'
 include { mergeCounts} from '../process/mergeCounts'
 
 workflow featureCountsFlow {

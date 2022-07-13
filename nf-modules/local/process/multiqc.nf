@@ -12,6 +12,8 @@ process multiqc {
   path splan
   path metadata
   path multiqcConfig
+  path ('trimming/*')
+  path ('xengsort/*')
   path ('fastqc/*')
   path ('rrna/*')
   path ('alignment/*')

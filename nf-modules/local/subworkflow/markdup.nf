@@ -2,9 +2,9 @@
  * MarkDuplicates
  */
 
-include { markDuplicates } from '../../common/process/markDuplicates'
-include { samtoolsIndex } from '../../common/process/samtoolsIndex'
-include { dupradar } from '../process/dupradar'
+include { markDuplicates } from '../../common/process/picard/markDuplicates'
+include { samtoolsIndex } from '../../common/process/samtools/samtoolsIndex'
+include { dupradar } from '../../common/process/dupradar/dupradar'
 
 workflow markdupFlow {
 

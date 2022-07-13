@@ -1,4 +1,14 @@
 ***************************************
+version-4.1.0
+
+NEW FEATURES
+   - New '--trimming' option (trimgalore)
+   - New '--pdx' option (xengsort)
+
+SIGNIFICANT USER-VISIBLE CHANGES
+   - Update default `--salmonQuantOpts` value
+
+***************************************
 version-4.0.1
 
 NEW FEATURES

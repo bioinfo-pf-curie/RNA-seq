@@ -1,14 +1,22 @@
-# You can use this file to create a conda environment for this pipeline:
+# You can use t1is file to create a conda environment for this pipeline:
 #   conda env create -f environment.yml
-name: rnaseq-4.0.0
+name: rnaseq-4.1.0
 channels:
   - bioconda
   - conda-forge
   - defaults
 dependencies:
   - python=3.7.10=hffdb5ce_100_cpython
+  - conda-forge::pip=22.1.2=pyhd8ed1ab_0
   - conda-forge::pymdown-extensions=7.1
+  - conda-forge::numpy=1.21.6=py37h976b520_0
+  - conda-forge::numba=0.53.1=py37hb11d6e1_1
+  - h5py=3.6.0=py37ha0f2276_0
+  - conda-forge::pytest=7.1.2=py37h89c1867_0
+  - bioconda::sra-tools=2.11.0=pl5321ha49a11a_3
+
   - bioconda::fastqc=0.11.9=hdfd78af_1
+  - bioconda::trim-galore=0.6.7=hdfd78af_0
   - bioconda::multiqc=1.11=pyhdfd78af_0
   - bioconda::samtools=1.12=h9aed4be_1
   - bioconda::bcftools=1.12=h45bccc9_1
@@ -47,4 +55,7 @@ dependencies:
   - bioconda::bioconductor-edger=3.32.1=r40h399db7b_0
   - bioconda::bioconductor-deseq2=1.30.1=r40h399db7b_0
   - bioconda::bioconductor-tximport=1.18.0=r40hdfd78af_1
+
+  - pip:
+    - xengsort-cubic==1.1.0
 

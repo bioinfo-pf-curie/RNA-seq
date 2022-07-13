@@ -2,9 +2,9 @@
  * Stringtie workflow
  */
 
-include { stringtie } from '../process/stringtie'
-include { stringtieMerge } from '../process/stringtieMerge'
-include { gffcompare } from '../process/gffcompare'
+include { stringtie } from '../../common/process/stringtie/stringtie'
+include { stringtieMerge } from '../../common/process/stringtie/stringtieMerge'
+include { gffcompare } from '../../common/process/gffcompare/gffcompare'
 
 workflow stringtieFlow {
 

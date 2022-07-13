@@ -62,6 +62,7 @@ params.fastaFai = NFTools.getGenomeAttribute(params, 'fastaFai')
 params.polym = NFTools.getGenomeAttribute(params, 'polym')
 params.salmonIndex = NFTools.getGenomeAttribute(params, 'salmon')
 params.gencode = NFTools.getGenomeAttribute(params, 'gencode')
+params.pdxIndex = NFTools.getGenomeAttribute(params, 'xengsort', genome='pdx')
 
 // Stage config files
 chMultiqcConfig = Channel.fromPath(params.multiqcConfig)
@@ -90,11 +91,21 @@ if (params.pseudoAligner && params.aligner){
 if (params.counts == 'star' && params.aligner != 'star'){
   exit 1, "Cannot run STAR counts without STAR aligner. Please check the '--aligner' and '--counts' parameters."
 }
+
 if (params.stranded == 'auto' && !params.bed12){  
   exit 1, "Strandness detection is not possible without gene bed file. Please specify a stranded option: 'reverse', 'forward', 'no'"
 }
+
 if ((params.reads && params.samplePlan) || (params.readPaths && params.samplePlan)){
   exit 1, "Input reads must be defined using either '--reads' or '--samplePlan' parameter. Please choose one way"
+}
+
+if (!params.rrna){
+  log.warn "No rRNA fasta file available - rRNA mapping - will be skipped !"
+}
+
+if (params.pdx && (params.genome != "hg19" && params.genome != "hg38" && params.genome != "mm9" && params.genome != "mm10" && params.genome != "mm39" )){
+  exit 1, "Unexpected reference genome for PDX analysis. Please, specify a Human or Mouse reference genome ('--genome') for PDX analysis."
 }
 
 /*
@@ -103,120 +114,19 @@ if ((params.reads && params.samplePlan) || (params.readPaths && params.samplePla
 ==========================
 */
 
-if( params.starIndex && params.aligner == 'star' ){
-  Channel
-    .fromPath(params.starIndex)
-    .ifEmpty { exit 1, "STAR index not found: ${params.starIndex}" }
-    .set {chStarIndex}
-  chHisat2Index = Channel.empty()
-  chSalmonIndex = Channel.empty()
-}
-else if ( params.hisat2Index && params.aligner == 'hisat2' ){
-  Channel
-    .fromPath("${params.hisat2Index}")
-    .ifEmpty { exit 1, "HISAT2 index not found: ${params.hisat2Index}" }
-    .set{chHisat2Index}
-  chStarIndex = Channel.empty()
-  chSalmonIndex = Channel.empty()
-}
-else if ( params.salmonIndex && params.pseudoAligner == "salmon" ){
-  Channel
-    .fromPath("${params.salmonIndex}")
-    .ifEmpty { exit 1, "Salmon index not found: ${params.salmonIndex}" }
-    .set{chSalmonIndex}
-  chStarIndex = Channel.empty()
-  chHisat2Index = Channel.empty()
-}
-else {
-    exit 1, "No genome index specified!"
-}
-
-if (params.bowtie2Index){
-  Channel
-    .fromPath("${params.bowtie2Index}")
-    .ifEmpty { exit 1, "Bowtie2 index not found: ${params.bowtie2Index}" }
-    .set{chBowtie2Index}
-}else{
-  chBowtie2Index = Channel.empty()
-}
-
-if( params.gtf ){
-  Channel
-    .fromPath(params.gtf)
-    .ifEmpty { exit 1, "GTF annotation file not found: ${params.gtf}" }
-    .set { chGtf }
-}else {
-  log.warn "No GTF annotation specified - dupRadar, table counts - will be skipped !" 
-  Channel
-    .empty()
-    .set { chGtf } 
-}
-
-if( params.transcriptsFasta ){
-  Channel
-    .fromPath(params.transcriptsFasta)
-    .ifEmpty { exit 1, "Transcripts fasta file not found: ${params.transcriptsFasta}" }
-    .set { chTranscriptsFasta }
-}else {
-  chTranscriptsFasta = Channel.empty()
-}
-
-if( params.bed12 ){
-  Channel
-    .fromPath(params.bed12)
-    .ifEmpty { exit 1, "BED12 annotation file not found: ${params.bed12}" }
-    .set { chBedRseqc }
-}else{
-  log.warn "No BED gene annotation specified - strandness detection, gene body coverage, read distribution - will be skipped !"
-  Channel
-    .empty()
-    .set { chBedRseq }
-}
-
-if( params.rrna ){
-  Channel
-    .fromPath(params.rrna)
-    .ifEmpty { exit 1, "rRNA annotation file not found: ${params.rrna}" }
-    .set { chRrnaAnnot }
-}else{
-  log.warn "No rRNA fasta file available - rRNA mapping - will be skipped !"
-  chRrnaAnnot = Channel.empty()
-}
-
-if ( params.metadata ){
-  Channel
-    .fromPath( params.metadata )
-    .ifEmpty { exit 1, "Metadata file not found: ${params.metadata}" }
-    .set { chMetadata }
-}
-
-if ( params.fasta ){
-  Channel
-    .fromPath( params.fasta )
-    .ifEmpty { exit 1, "Genome fasta file not found: ${params.fasta}" }
-    .set { chFasta }
-}else {
-  chFasta = Channel.empty()
-}
-
-if ( params.fastaFai ){
-  Channel
-    .fromPath( params.fastaFai )
-    .ifEmpty { exit 1, "Genome fastaFai file not found: ${params.fastaFai}" }
-    .set { chFastaFai }
-}else {
-  chFastaFai = Channel.empty()
-}
-
-if ( params.polym ){
-  Channel
-    .fromPath( params.polym )
-    .ifEmpty { exit 1, "Polym BED file not found: ${params.polym}" }
-    .set { chPolymBed }
-}else{
-  log.warn "No polymorphisms available - identito monitoring will be skipped !"
-  chPolymBed = Channel.empty()
-}
+chStarIndex          = params.starIndex             ? Channel.fromPath(params.starIndex, checkIfExists: true).collect()              : Channel.empty()
+chHisat2Index        = params.hisat2Index           ? Channel.fromPath(params.hisat2Index, checkIfExists: true).collect()            : Channel.empty()
+chSalmonIndex        = params.salmonIndex           ? Channel.fromPath(params.salmonIndex, checkIfExists: true).collect()            : Channel.empty()
+chBowtie2Index       = params.bowtie2Index          ? Channel.fromPath(params.bowtie2Index, checkIfExists: true).collect()           : Channel.empty()
+chPdxIndex           = params.pdxIndex              ? Channel.fromPath(params.pdxIndex, checkIfExists: true).collect()               : Channel.empty()
+chFasta              = params.fasta                 ? Channel.fromPath(params.fasta, checkIfExists: true).collect()                  : Channel.empty()
+chFastaFai           = params.fastaFai              ? Channel.fromPath(params.fastaFai, checkIfExists: true).collect()               : Channel.empty()
+chGtf                = params.gtf                   ? Channel.fromPath(params.gtf, checkIfExists: true).collect()                    : Channel.empty()
+chTranscriptsFasta   = params.transcriptsFasta      ? Channel.fromPath(params.transcriptsFasta, checkIfExists: true).collect()       : Channel.empty()
+chBedRseqc           = params.bed12                 ? Channel.fromPath(params.bed12, checkIfExists: true).collect()                  : Channel.empty()
+chRrnaAnnot          = params.rrna                  ? Channel.fromPath(params.rrna, checkIfExists: true).collect()                   : Channel.empty()
+chPolymBed           = params.polym                 ? Channel.fromPath(params.polym, checkIfExists: true).collect()                  : Channel.empty()
+chMetadata           = params.metadata              ? Channel.fromPath(params.metadata, checkIfExists: true).collect()               : Channel.empty()
 
 /*
 ===========================
@@ -228,6 +138,7 @@ summary = [
   'Pipeline Release': workflow.revision ?: null,
   'Run Name': customRunName,
   'Inputs' : params.samplePlan ?: params.reads ?: null,
+  'PDX' : params.pdx ?: null,
   'Genome' : params.genome,
   'GTF Annotation' : params.gtf ?: null,
   'Gencode' : params.gencode ? 'yes' : 'no',
@@ -268,11 +179,12 @@ chSplan = NFTools.getSamplePlan(params.samplePlan, params.reads, params.readPath
 */ 
 
 // Workflows
+include { identitoFlow } from './nf-modules/common/subworkflow/identito'
+
 include { strandnessFlow } from './nf-modules/local/subworkflow/strandness'
 include { mappingStarFlow } from './nf-modules/local/subworkflow/mappingStar'
 include { mappingHisat2Flow } from './nf-modules/local/subworkflow/mappingHisat2'
 include { markdupFlow } from './nf-modules/local/subworkflow/markdup'
-include { identitoFlow } from './nf-modules/local/subworkflow/identito'
 include { featureCountsFlow } from './nf-modules/local/subworkflow/featureCounts'
 include { htseqCountsFlow } from './nf-modules/local/subworkflow/htseqCounts'
 include { starCountsFlow } from './nf-modules/local/subworkflow/starCounts'
@@ -283,15 +195,17 @@ include { stringtieFlow } from './nf-modules/local/subworkflow/stringtie'
 include { scallopFlow } from './nf-modules/local/subworkflow/scallop'
 
 // Processes
-include { getSoftwareVersions } from './nf-modules/common/process/getSoftwareVersions'
-include { multiqc } from './nf-modules/local/process/multiqc'
-include { outputDocumentation } from './nf-modules/common/process/outputDocumentation'
-include { deepToolsBamCoverage } from './nf-modules/common/process/deepToolsBamCoverage'
-include { qualimap } from './nf-modules/common/process/qualimap'
-include { preseq } from './nf-modules/common/process/preseq'
-include { fastqc } from './nf-modules/common/process/fastqc'
-include { rRNAMapping } from './nf-modules/local/process/rRNAMapping'
+include { getSoftwareVersions } from './nf-modules/common/process/utils/getSoftwareVersions'
+include { outputDocumentation } from './nf-modules/common/process/utils/outputDocumentation'
+include { trimGalore } from './nf-modules/common/process/trimGalore/trimGalore'
+include { xengsort } from './nf-modules/common/process/xengsort/xengsort'
+include { deeptoolsBamCoverage } from './nf-modules/common/process/deeptools/deeptoolsBamCoverage'
+include { qualimapRNAseq } from './nf-modules/common/process/qualimap/qualimapRNAseq'
+include { preseq } from './nf-modules/common/process/preseq/preseq'
+include { fastqc } from './nf-modules/common/process/fastqc/fastqc'
 
+include { rRNAMapping } from './nf-modules/local/process/rRNAMapping'
+include { multiqc } from './nf-modules/local/process/multiqc'
 /*
 =====================================
             WORKFLOW 
@@ -313,9 +227,11 @@ workflow {
     chDupradarMqc = Channel.empty()
     chIdentitoMqc = Channel.empty() 
     chCountsMqc = Channel.empty()
-    chGeneSatResults=Channel.empty()
-    chGeneTypeResults=Channel.empty()
-    chGeneExpAnResults=Channel.empty()
+    chGeneSatResults = Channel.empty()
+    chGeneTypeResults = Channel.empty()
+    chGeneExpAnResults = Channel.empty()
+    chXengsortMqc = Channel.empty()
+    chTrimmingMqc = Channel.empty()
 
     // Init Channels
     chCounts = Channel.empty()
@@ -326,6 +242,27 @@ workflow {
       chOutputDocs,
       chOutputDocsImages
     )
+
+    // PROCESS: trimming
+    if (params.trimming){
+      trimGalore(
+        chRawReads
+      )
+      chRawReads=trimGalore.out.fastq
+      chTrimmingMqc=trimGalore.out.logs
+      chVersions = chVersions.mix(trimGalore.out.versions)
+    }
+
+    // PROCESS: xengsort
+    if (params.pdx){
+      xengsort(
+        chRawReads,
+        chPdxIndex
+      )
+      chRawReads = params.genome == "hg19" || params.genome == "hg38" ? xengsort.out.fastqHuman : xengsort.out.fastqMouse
+      chXengsortMqc = xengsort.out.logs
+      chVersions = chVersions.mix(xengsort.out.versions)
+    }
 
     // PROCESS: fastqc
     if (!params.skipQC && !params.skipFastqc){
@@ -401,22 +338,22 @@ workflow {
 
       // PROCESS : bigwig file
       if (!params.skipBigwig){
-        deepToolsBamCoverage(
+        deeptoolsBamCoverage(
           chBamPassed.map{it->[it[0],it[1],it[2],null]},
 	  Channel.empty().collect().ifEmpty([]),
 	  Channel.empty().collect().ifEmpty([])
         )
-        chVersions = chVersions.mix(deepToolsBamCoverage.out.versions)
+        chVersions = chVersions.mix(deeptoolsBamCoverage.out.versions)
       }
 
       // PROCESS : Qualimap
       if (!params.skipQC && !params.skipQualimap){
-        qualimap(
+        qualimapRNAseq(
           chBamPassed,
           chGtf.collect()
         )
-	chQualimapMqc = qualimap.out.results.collect()
-        chVersions = chVersions.mix(qualimap.out.versions)
+	chQualimapMqc = qualimapRNAseq.out.results.collect()
+        chVersions = chVersions.mix(qualimapRNAseq.out.versions)
       }
 
       // PROCESS : Saturation curves
@@ -584,6 +521,8 @@ workflow {
         chSplan.collect(),
         chMetadata.ifEmpty([]),
         chMultiqcConfig.ifEmpty([]),
+        chTrimmingMqc.ifEmpty([]),
+        chXengsortMqc.ifEmpty([]),
         chFastqcMqc.ifEmpty([]),
         chrRNAMappingMqc.ifEmpty([]),
         chAlignedMqc.collect().ifEmpty([]),

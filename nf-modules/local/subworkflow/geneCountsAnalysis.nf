@@ -15,7 +15,6 @@ workflow geneCountsAnalysisFlow {
   pcaHeader
   heatmapHeader
 
-
   main:
   chVersions = Channel.empty()
 

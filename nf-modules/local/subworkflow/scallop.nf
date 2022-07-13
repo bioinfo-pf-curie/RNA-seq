@@ -2,8 +2,8 @@
  * Scallop workflow
  */
 
-include { scallop } from '../process/scallop'
-include { gffcompare } from '../process/gffcompare'
+include { scallop } from '../../common/process/scallop/scallop'
+include { gffcompare } from '../../common/process/gffcompare/gffcompare'
 
 workflow scallopFlow {
 

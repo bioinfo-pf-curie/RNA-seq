@@ -2,7 +2,7 @@
  * FeatureCounts workflow
  */
 
-include { salmonQuantFromFastq } from '../process/salmonQuantFromFastq'
+include { salmonQuant as salmonQuantFromFastq } from '../../common/process/salmon/salmonQuant'
 include { salmonTx2gene } from '../process/salmonTx2gene'
 include { salmonTxImport } from '../process/salmonTxImport'
 include { mergeCounts} from '../process/mergeCounts'
@@ -20,6 +20,7 @@ workflow salmonQuantFromFastqFlow {
   salmonQuantFromFastq(
     reads,
     index.collect(),
+    Channel.empty([]),
     gtf.collect(),
   )
   chVersions = chVersions.mix(salmonQuantFromFastq.out.versions)

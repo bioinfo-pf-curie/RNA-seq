@@ -1,0 +1,15 @@
+name: xengsort
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - conda-forge::python=3.7.10=hffdb5ce_100_cpython
+  - conda-forge::pip=22.1.2=pyhd8ed1ab_0
+  - conda-forge::numpy=1.21.6=py37h976b520_0
+  - conda-forge::numba=0.53.1=py37hb11d6e1_1
+  - conda-forge::h5py=3.6.0=py37ha0f2276_0
+  - conda-forge::pytest=7.1.2=py37h89c1867_0
+  - bioconda::sra-tools=2.11.0=pl5321ha49a11a_3
+  - pip:
+    - xengsort-cubic==1.1.0
