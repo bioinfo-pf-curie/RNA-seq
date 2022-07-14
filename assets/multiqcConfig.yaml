@@ -152,7 +152,7 @@ custom_data:
     gene_type:
        file_format: 'csv'
        section_name: 'Expressed Genes'
-       description: 'with a TPM value > 1 are considered. The number of expressed genes per sample was splitted into the 5 most abundant classes following the known gene annotations.'
+       description: 'The number of expressed genes per sample was splitted into the 5 most abundant classes following the known gene annotations.'
        plot_type: 'bargraph'
        pconfig:
             namespace: 'genetype'

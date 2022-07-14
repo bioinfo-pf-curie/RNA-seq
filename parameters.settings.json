@@ -84,6 +84,33 @@
     },
 
     {
+      "name": "trimming",
+      "label": "Trimming",
+      "usage": "Trim adapters with TrimGalore",
+      "type": "boolean",
+      "nargs": 0,
+      "choices": [],
+      "default_value": false,
+      "pattern": "",
+      "render": "check-box",
+      "arity": 0,
+      "group": "Preprocessing"
+    },
+    {
+      "name": "pdx",
+      "label": "pdx",
+      "usage": "Deconvolute host/graft reads for PDX samples",
+      "type": "boolean",
+      "nargs": 0,
+      "choices": [],
+      "default_value": false,
+      "pattern": "",
+      "render": "check-box",
+      "arity": 0,
+      "group": "Preprocessing"
+    },
+
+    {
       "name": "aligner",
       "label": "Mapping",
       "usage": "Tool for reads alignment",
