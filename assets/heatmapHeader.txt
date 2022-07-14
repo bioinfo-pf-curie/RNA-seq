@@ -7,4 +7,4 @@
 #pconfig:
 #    title: 'Pearson Correlation'
 #    xlab: True
-#    reverseColors: True
+#    reverseColors: False
