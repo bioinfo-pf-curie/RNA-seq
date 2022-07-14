@@ -11,6 +11,7 @@ strandedList <- args[4]
 
 stopifnot(require(rtracklayer))
 stopifnot(require(GenomicFeatures))
+stopifnot(require(Biobase))
 
 ##ensembl2symbol
 ## x : a count matrix with gene name as rownames
@@ -174,8 +175,11 @@ if (count_tool == "STAR"){
 }
 
 ## Renome samples
-require(Biobase)
-colnames(counts.exprs) <- gsub(lcSuffix(exprs.in), "", exprs.in)
+if (ncol(counts.exprs)>1){
+    colnames(counts.exprs) <- gsub(lcSuffix(exprs.in), "", exprs.in)
+}else{
+    colnames(counts.exprs) <- exprs.in
+}
 
 ## export count table(s)
 write.csv(cleanEnsembl(counts.exprs), file="tablecounts_raw.csv", quote=FALSE)

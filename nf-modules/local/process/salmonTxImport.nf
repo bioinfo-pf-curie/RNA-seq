@@ -13,12 +13,12 @@ process salmonTxImport {
   path(salmonTx2gene)
 
   output:
-  path "*gene_tpm.tsv"                 , emit: tpmGene
-  path "*gene_counts.tsv"              , emit: countsGene
-  path "*gene_counts_length_scaled.tsv", emit: countsGeneLengthScaled
-  path "*gene_counts_scaled.tsv"       , emit: countsGeneScaled
-  path "*transcript_tpm.tsv"           , emit: tpmTranscript
-  path "*transcript_counts.tsv"        , emit: countsTranscript
+  path "*gene_tpm.csv"                 , emit: tpmGene
+  path "*gene_counts.csv"              , emit: countsGene
+  path "*gene_counts_length_scaled.csv", emit: countsGeneLengthScaled
+  path "*gene_counts_scaled.csv"       , emit: countsGeneScaled
+  path "*transcript_tpm.csv"           , emit: tpmTranscript
+  path "*transcript_counts.csv"        , emit: countsTranscript
   path("versions.txt"), emit: versions
 
   script:

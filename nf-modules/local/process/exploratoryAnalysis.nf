@@ -20,7 +20,7 @@ process exploratoryAnalysis {
   script:
   """
   echo \$(R --version | awk 'NR==1{print \$1,\$3}') > versions.txt
-  numSample=\$(awk -F, 'NR==1{print NF-1}' ${tableRaw})
+  numSample=\$(awk -F, 'NR==2{print NF-1}' ${tableRaw})
   if [[ \$numSample > 1 ]]; then
     exploratory_analysis.r ${tableRaw}
     cat $pcaHeader deseq2_pca_coords_mqc.csv >> tmp_file

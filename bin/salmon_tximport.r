@@ -78,16 +78,16 @@ if (!is.null(tx2gene)){
 }
 
 if(exists("gse")){
-  write.table(assays(gse)[["abundance"]], paste(c(prefix, "gene_tpm.tsv"), collapse="."), sep="\t", quote=FALSE)
-  write.table(assays(gse)[["counts"]], paste(c(prefix, "gene_counts.tsv"), collapse="."), sep="\t", quote=FALSE)
-  write.table(assays(gse.ls)[["abundance"]], paste(c(prefix, "gene_tpm_length_scaled.tsv"), collapse="."), sep="\t", quote=FALSE)
-  write.table(assays(gse.ls)[["counts"]], paste(c(prefix, "gene_counts_length_scaled.tsv"), collapse="."), sep="\t", quote=FALSE)
-  write.table(assays(gse.s)[["abundance"]], paste(c(prefix, "gene_tpm_scaled.tsv"), collapse="."), sep="\t", quote=FALSE)
-  write.table(assays(gse.s)[["counts"]], paste(c(prefix, "gene_counts_scaled.tsv"), collapse="."), sep="\t", quote=FALSE)
+  write.table(assays(gse)[["abundance"]], paste(c(prefix, "gene_tpm.csv"), collapse="."), sep=",", quote=FALSE)
+  write.table(assays(gse)[["counts"]], paste(c(prefix, "gene_counts.csv"), collapse="."), sep=",", quote=FALSE)
+  write.table(assays(gse.ls)[["abundance"]], paste(c(prefix, "gene_tpm_length_scaled.csv"), collapse="."), sep=",", quote=FALSE)
+  write.table(assays(gse.ls)[["counts"]], paste(c(prefix, "gene_counts_length_scaled.csv"), collapse="."), sep=",", quote=FALSE)
+  write.table(assays(gse.s)[["abundance"]], paste(c(prefix, "gene_tpm_scaled.csv"), collapse="."), sep=",", quote=FALSE)
+  write.table(assays(gse.s)[["counts"]], paste(c(prefix, "gene_counts_scaled.csv"), collapse="."), sep=",", quote=FALSE)
 }
 
-write.table(assays(se)[["abundance"]], paste(c(prefix, "transcript_tpm.tsv"), collapse="."), sep="\t", quote=FALSE)
-write.table(assays(se)[["counts"]], paste(c(prefix, "transcript_counts.tsv"), collapse="."), sep="\t", quote=FALSE)
+write.table(assays(se)[["abundance"]], paste(c(prefix, "transcript_tpm.csv"), collapse="."), sep=",", quote=FALSE)
+write.table(assays(se)[["counts"]], paste(c(prefix, "transcript_counts.csv"), collapse="."), sep=",", quote=FALSE)
 
 # Print sessioninfo to standard out
 sessionInfo()

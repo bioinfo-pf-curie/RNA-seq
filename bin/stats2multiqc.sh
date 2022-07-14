@@ -72,50 +72,30 @@ do
     fi
 
     ## All values are in pairs for paired-end data /reads for single-end data
-    if [ $is_pe == "1" ]; then
-	if [ $aligner == "star" ]; then
-	    n_unique=$(grep "Uniquely mapped reads number" alignment/${sample}Log.final.out | cut -d"|" -f 2 | sed -e 's/\t//g')
-	    n_multi=$(grep "Number of reads mapped to multiple loci" alignment/${sample}Log.final.out | cut -d"|" -f 2 | sed -e 's/\t//g')
-	    n_mapped=$(($n_unique + $n_multi))
-	elif [ $aligner == "hisat2" ]; then
-	    n_unique=$(grep " 1 time" alignment/${sample}.hisat2_summary.txt | cut -d: -f 2 | sed -e 's/ //g' | awk -F"(" 'BEGIN{s=0}{s=s+$1}END{print s}')
-	    n_multi=$(grep ">1 time" alignment/${sample}.hisat2_summary.txt | cut -d: -f 2 | sed -e 's/ //g' | awk -F"(" 'BEGIN{s=0}{s=s+$1}END{print s}')
-	    n_mapped=$(($n_unique + $n_multi))
-	elif [ $aligner == "salmon" ]; then
-	    n_mapped=$(grep "num_mapped" counts/SRR1106775_1/aux_info/meta_info.json | cut -f2 -d: | sed -e "s/ \|,//g")
-	    n_unique='NA'
-	    n_multi='NA'
-	fi
-    else
-	if [ $aligner == "star" ]; then
-            n_unique=$(grep "Uniquely mapped reads number" alignment/${sample}Log.final.out | cut -d"|" -f 2 | sed -e 's/\t//g')
-            n_multi=$(grep "Number of reads mapped to multiple loci" alignment/${sample}Log.final.out | cut -d"|" -f 2 | sed -e 's/\t//g')
-            n_mapped=$(($n_unique + $n_multi))
-	elif [ $aligner == "hisat2" ]; then
-	    n_unique=$(grep " 1 time" alignment/${sample}.hisat2_summary.txt | cut -d: -f 2 | sed -e 's/ //g' | awk -F"(" 'BEGIN{s=0}{s=s+$1}END{print s}')
-	    n_multi=$(grep ">1 time" alignment/${sample}.hisat2_summary.txt | cut -d: -f 2 | sed -e 's/ //g' | awk -F"(" 'BEGIN{s=0}{s=s+$1}END{print s}')
-	    n_mapped=$(($n_unique + $n_multi))
-	elif [ $aligner == "salmon" ]; then
-	    n_mapped=$(grep "num_mapped" counts/SRR1106775_1/aux_info/meta_info.json | cut -f2 -d: | sed -e "s/ \|,//g")
-	    n_unique='NA'
-	    n_multi='NA'
-        fi
-    fi
-
-    p_mapped='NA'
-    p_unique='NA'
-    p_multi='NA'
-    if [[ $n_mapped != 'NA' && $n_frag != 'NA' ]]; then
-        p_mapped=$(echo "${n_mapped} ${n_frag}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
-    fi
-    if [ $n_unique != 'NA' ]; then
+    if [ $aligner == "star" ]; then
+	n_unique=$(grep "Uniquely mapped reads number" alignment/${sample}Log.final.out | cut -d"|" -f 2 | sed -e 's/\t//g')
+	n_multi=$(grep "Number of reads mapped to multiple loci" alignment/${sample}Log.final.out | cut -d"|" -f 2 | sed -e 's/\t//g')
+	n_mapped=$(($n_unique + $n_multi))
+	p_mapped=$(echo "${n_mapped} ${n_frag}" | awk ' { printf "%.*f",2,$1*100/$2 } ') 
+	p_unique=$(echo "${n_unique} ${n_frag}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
+	p_multi=$(echo "${n_multi} ${n_frag}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
+	header+=",Number_of_aligned,Percent_of_aligned,Number_of_uniquely_aligned,Percent_uniquely_aligned,Number_of_multiple_aligned,Percent_multiple_aligned"
+	output+=",${n_mapped},${p_mapped},${n_unique},${p_unique},${n_multi},${p_multi}"
+    elif [ $aligner == "hisat2" ]; then
+	n_unique=$(grep " 1 time" alignment/${sample}.hisat2_summary.txt | cut -d: -f 2 | sed -e 's/ //g' | awk -F"(" 'BEGIN{s=0}{s=s+$1}END{print s}')
+	n_multi=$(grep ">1 time" alignment/${sample}.hisat2_summary.txt | cut -d: -f 2 | sed -e 's/ //g' | awk -F"(" 'BEGIN{s=0}{s=s+$1}END{print s}')
+	n_mapped=$(($n_unique + $n_multi))
+	p_mapped=$(echo "${n_mapped} ${n_frag}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
         p_unique=$(echo "${n_unique} ${n_frag}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
-    fi
-    if [ $n_multi != 'NA' ]; then
         p_multi=$(echo "${n_multi} ${n_frag}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
+	header+=",Number_of_aligned,Percent_of_aligned,Number_of_uniquely_aligned,Percent_uniquely_aligned,Number_of_multiple_aligned,Percent_multiple_aligned"
+	output+=",${n_mapped},${p_mapped},${n_unique},${p_unique},${n_multi},${p_multi}"
+    elif [ $aligner == "salmon" ]; then
+	n_mapped=$(grep "num_mapped" counts/${sample}/aux_info/meta_info.json | cut -f2 -d: | sed -e "s/ \|,//g")
+	p_mapped=$(echo "${n_mapped} ${n_frag}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
+	header+=",Number_of_aligned,Percent_of_aligned"
+	output+=",${n_mapped},${p_mapped}"
     fi
-    header+=",Number_of_aligned,Percent_of_aligned,Number_of_uniquely_aligned,Percent_uniquely_aligned,Number_of_multiple_aligned,Percent_multiple_aligned"
-    output+=",${n_mapped},${p_mapped},${n_unique},${p_unique},${n_multi},${p_multi}"
 
     ##n_dup
     if [ -d "picard" ]; then

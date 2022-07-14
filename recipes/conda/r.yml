@@ -5,7 +5,7 @@ channels:
   - defaults
 dependencies:
   - conda-forge::r-base=4.0.3=h349a78a_8
-  - conda-forge::r-dplyr=1.0.5=r40h03ef668_0
+  - conda-forge::r-dplyr=1.0.9=r40h7525677_0
   - conda-forge::r-data.table=1.14.0=r40hcfec24a_0
   - conda-forge::r-gplots=3.1.1=r40hc72bb7e_0
   - bioconda::bioconductor-rtracklayer=1.50.0=r40h7f5ccec_2

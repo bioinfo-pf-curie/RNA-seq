@@ -206,6 +206,7 @@ include { fastqc } from './nf-modules/common/process/fastqc/fastqc'
 
 include { rRNAMapping } from './nf-modules/local/process/rRNAMapping'
 include { multiqc } from './nf-modules/local/process/multiqc'
+
 /*
 =====================================
             WORKFLOW 
@@ -253,25 +254,12 @@ workflow {
       chVersions = chVersions.mix(trimGalore.out.versions)
     }
 
-    // PROCESS: xengsort
-    if (params.pdx){
-      xengsort(
-        chRawReads,
-        chPdxIndex
-      )
-      chRawReads = params.genome == "hg19" || params.genome == "hg38" ? xengsort.out.fastqHuman : xengsort.out.fastqMouse
-      chXengsortMqc = xengsort.out.logs
-      chVersions = chVersions.mix(xengsort.out.versions)
-    }
-
     // PROCESS: fastqc
-    if (!params.skipQC && !params.skipFastqc){
-      fastqc(
-        chRawReads
-      )
-      chFastqcMqc = fastqc.out.results.collect()
-      chVersions = chVersions.mix(fastqc.out.versions)
-    }
+    fastqc(
+      chRawReads
+    )
+    chFastqcMqc = fastqc.out.results.collect()
+    chVersions = chVersions.mix(fastqc.out.versions)
 
     // SUBWORKFLOW: Strandness rseqc
     strandnessFlow(
@@ -283,6 +271,20 @@ workflow {
 
     // Combine reads and strandness information
     chRawReads = combineStrandness(chRawReads, strandnessFlow.out.strandnessResults)
+
+    //***************************************
+    // PDX
+
+    // PROCESS: xengsort
+    if (params.pdx){
+      xengsort(
+        chRawReads,
+        chPdxIndex
+      )
+      chRawReads = params.genome == "hg19" || params.genome == "hg38" ? xengsort.out.fastqHuman : xengsort.out.fastqMouse
+      chXengsortMqc = xengsort.out.logs
+      chVersions = chVersions.mix(xengsort.out.versions)
+    }
 
     //*****************************************
     // ALIGNMENT-BASED ANALYSIS
@@ -422,7 +424,7 @@ workflow {
 	  chTranscriptsFasta,
 	  chGtf
         )
-        chCounts = salmonQuantFromBamFlow.out.countsGene
+        chCounts = salmonQuantFromBamFlow.out.countsGeneLengthScaled
         chCountsTpm = salmonQuantFromBamFlow.out.tpmGene
         chCountsMqc = salmonQuantFromBamFlow.out.results
         chVersions = chVersions.mix(salmonQuantFromBamFlow.out.versions)
@@ -439,7 +441,7 @@ workflow {
 	chSalmonIndex,
 	chGtf
       )
-      chCounts = salmonQuantFromFastqFlow.out.countsGene
+      chCounts = salmonQuantFromFastqFlow.out.countsGeneLengthScaled
       chCountsTpm = salmonQuantFromFastqFlow.out.tpmGene
       chCountsMqc = salmonQuantFromFastqFlow.out.results
       chVersions = chVersions.mix(salmonQuantFromFastqFlow.out.versions)
