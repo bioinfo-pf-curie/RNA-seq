@@ -124,7 +124,7 @@
       "group": "Mandatory arguments"
     },
     {
-      "name": "starOps",
+      "name": "starOpts",
       "label": "STAR options",
       "usage": "Options for STAR mapping",
       "type": "string",
