@@ -34,6 +34,6 @@ def combineStrandness(input, strandness){
       meta = it[0]
       meta.strandness = it[3]
       return [meta, it[1]]
-    }.view()
+    }
 
 }
