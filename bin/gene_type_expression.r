@@ -16,8 +16,6 @@ if (length(args) > 3) { .libPaths( c( args[4], .libPaths() ) ) }
 message("Count table (Arg 1):", counts)
 message("GTF file (Arg 2):", gtf)
 message("Output file (Arg 3):", ofile)
-message("R package loc. (Arg 4: ", ifelse(length(args) > 3, args[4], "Not specified"))
-
 
 stopifnot(require(rtracklayer))
 if (grepl(".tsv$", counts)){
@@ -40,6 +38,15 @@ my_genes <- d.gtf[d.gtf$type == "gene"]
 ## remove "." in ENSEMBL Ids
 my_genes$gene_id <- gsub("\\.[0-9]+$","",my_genes$gene_id)
 rownames(df) <- gsub("\\.[0-9]+$","",rownames(df))
+
+## Droso samples
+if (!is.element("gene_type", colnames(elementMetadata(my_genes))) && is.element("gene_biotype", colnames(elementMetadata(my_genes)))){
+    md <- elementMetadata(my_genes)
+    cn <- colnames(md)
+    cn[which(cn=="gene_biotype")] <- "gene_type"
+    colnames(md) <- cn
+    elementMetadata(my_genes) <- md
+}
 
 if (length(my_genes) > 0 && is.element("gene_type", colnames(elementMetadata(my_genes)))){
    mcols(my_genes) <- mcols(my_genes)[c("gene_id", "gene_type","gene_name")]

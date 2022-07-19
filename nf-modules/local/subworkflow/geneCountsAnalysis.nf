@@ -24,14 +24,13 @@ workflow geneCountsAnalysisFlow {
   chVersions = chVersions.mix(geneSaturation.out.versions)
 
   getCountsPerGeneType(
-    tpm.collect(),
+    counts.collect(),
     gtf.collect()
   )
   chVersions = chVersions.mix(getCountsPerGeneType.out.versions)
 
   exploratoryAnalysis(
     counts.collect(),
-    tpm.collect(),
     pcaHeader,
     heatmapHeader 
   )

@@ -8,8 +8,7 @@ process exploratoryAnalysis {
   label 'lowMem'
 
   input:
-  path tableRaw 
-  path tableTpm
+  path counts
   path pcaHeader
   path heatmapHeader
 
@@ -20,9 +19,9 @@ process exploratoryAnalysis {
   script:
   """
   echo \$(R --version | awk 'NR==1{print \$1,\$3}') > versions.txt
-  numSample=\$(awk -F, 'NR==2{print NF-1}' ${tableRaw})
+  numSample=\$(awk -F, 'NR==2{print NF-1}' ${counts})
   if [[ \$numSample > 1 ]]; then
-    exploratory_analysis.r ${tableRaw}
+    exploratory_analysis.r ${counts}
     cat $pcaHeader deseq2_pca_coords_mqc.csv >> tmp_file
     mv tmp_file deseq2_pca_coords_mqc.csv
     cat $heatmapHeader vst_sample_cor_mqc.csv >> tmp_file

@@ -11,6 +11,7 @@ SIGNIFICANT USER-VISIBLE CHANGES
 
 BUG
    - Fix bugs when only one sample is processed (#161)
+   - Fix bug in gene type element for Droso genome
 
 ***************************************
 version-4.0.1
