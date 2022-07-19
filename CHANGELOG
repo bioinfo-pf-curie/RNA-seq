@@ -8,6 +8,7 @@ NEW FEATURES
 SIGNIFICANT USER-VISIBLE CHANGES
    - Update default `--salmonQuantOpts` value
    - revert the heatmap legend scalone on the report (#157)
+   - TPM table are no longer used in any analysis
 
 BUG
    - Fix bugs when only one sample is processed (#161)
