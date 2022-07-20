@@ -387,16 +387,18 @@ Available Profiles
               def inputFile1 = returnFile(row[2], params)
               def inputFile2 = 'null'
 
-              if ((!singleEnd) && (hasExtension(inputFile1, 'fastq.gz') || hasExtension(inputFile1, 'fq.gz') || hasExtension(inputFile1, 'fastq'))) {
-                checkNumberOfItem(row, 4, params)
-                inputFile2 = returnFile(row[3], params)
-                if (!hasExtension(inputFile2, 'fastq.gz') && !hasExtension(inputFile2, 'fq.gz') && !hasExtension(inputFile2, 'fastq')) {
-                  Nextflow.exit(1, "File: ${inputFile2} has a wrong extension. See --help for more information")
-                }
+              if (hasExtension(inputFile1, 'fastq.gz') || hasExtension(inputFile1, 'fq.gz') || hasExtension(inputFile1, 'fastq')) {
+	        if (!singleEnd){
+                  checkNumberOfItem(row, 4, params)
+                  inputFile2 = returnFile(row[3], params)
+                  if (!hasExtension(inputFile2, 'fastq.gz') && !hasExtension(inputFile2, 'fq.gz') && !hasExtension(inputFile2, 'fastq')) {
+                    Nextflow.exit(1, "File: ${inputFile2} has an unexpected extension. See --help for more information")
+                  }
+      		}
               } else if (hasExtension(inputFile1, 'bam')) {
                 checkNumberOfItem(row, 3, params)
               } else {
-                log.warn "No recognisable extention for input file: ${inputFile1}"
+                Nextflow.exit(1, "File: ${inputFile1} has an unexpected extension. See --help for more information")
               }
 	      
 	      if (singleEnd) {
