@@ -56,11 +56,10 @@ Usage:
 
 The typical command for running the pipeline is as follows:
 
-nextflow run main.nf --reads PATH --samplePlan PATH --profile STRING --genome STRING
+nextflow run main.nf --reads PATH --samplePlan PATH -profile STRING --genome STRING
 
 MANDATORY ARGUMENTS:
     --genome        STRING                                                                            Name of the reference genome.
-    --profile       STRING [conda, cluster, docker, multiconda, conda, path, multipath, singularity]  Configuration profile to use. Can use multiple (comma separated).
     --reads         PATH                                                                              Path to input data (must be surrounded with quotes)
     --samplePlan    PATH                                                                              Path to sample plan (csv format) with raw reads (if `--reads` is not specified)
     --aligner       STRING [star, hisat2]                                                             Tool for reads alignment
