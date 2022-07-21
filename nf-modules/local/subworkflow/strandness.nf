@@ -18,7 +18,6 @@ workflow strandnessFlow {
 
   // if --stranded option is specified by the user
   if (params.stranded == 'reverse' || params.stranded == 'no' || params.stranded == 'yes'){
-
     // save it in a text file for MultiQC report
     saveStrandness(
       reads
@@ -26,9 +25,9 @@ workflow strandnessFlow {
 
     // emit a channel with strandness information
     reads
-      .map { file ->
+      .map { meta, reads ->
          def key = params.stranded
-         return tuple(key)
+         return [meta.id, key]
       }
       .set { strandnessResults }
     strandnessOutputFiles = saveStrandness.out.savedStrandness
@@ -49,12 +48,10 @@ workflow strandnessFlow {
     chVersions = chVersions.mix(rseqc.out.versions)
     strandnessResults = rseqc.out.strandnessResults.splitCsv()
     strandnessOutputFiles = rseqc.out.rseqcResults
-  } else {
-    exit 1, "Cannot detect strandness without a bed12 annotation file. Please use the --stranded option."
   }
       
   emit:
-  strandnessResults
-  strandnessOutputFiles
+  strand = strandnessResults
+  logs = strandnessOutputFiles
   versions = chVersions
 }

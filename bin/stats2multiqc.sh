@@ -72,7 +72,7 @@ do
     fi
 
     ## All values are in pairs for paired-end data /reads for single-end data
-    if [ $aligner == "star" ]; then
+    if [[ $aligner == "star" && -e alignment/${sample}Log.final.out ]]; then
 	n_unique=$(grep "Uniquely mapped reads number" alignment/${sample}Log.final.out | cut -d"|" -f 2 | sed -e 's/\t//g')
 	n_multi=$(grep "Number of reads mapped to multiple loci" alignment/${sample}Log.final.out | cut -d"|" -f 2 | sed -e 's/\t//g')
 	n_mapped=$(($n_unique + $n_multi))
@@ -81,7 +81,7 @@ do
 	p_multi=$(echo "${n_multi} ${n_frag}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
 	header+=",Number_of_aligned,Percent_of_aligned,Number_of_uniquely_aligned,Percent_uniquely_aligned,Number_of_multiple_aligned,Percent_multiple_aligned"
 	output+=",${n_mapped},${p_mapped},${n_unique},${p_unique},${n_multi},${p_multi}"
-    elif [ $aligner == "hisat2" ]; then
+    elif [[ $aligner == "hisat2" && -e alignment/${sample}.hisat2_summary.txt ]]; then
 	n_unique=$(grep " 1 time" alignment/${sample}.hisat2_summary.txt | cut -d: -f 2 | sed -e 's/ //g' | awk -F"(" 'BEGIN{s=0}{s=s+$1}END{print s}')
 	n_multi=$(grep ">1 time" alignment/${sample}.hisat2_summary.txt | cut -d: -f 2 | sed -e 's/ //g' | awk -F"(" 'BEGIN{s=0}{s=s+$1}END{print s}')
 	n_mapped=$(($n_unique + $n_multi))
@@ -90,7 +90,7 @@ do
         p_multi=$(echo "${n_multi} ${n_frag}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
 	header+=",Number_of_aligned,Percent_of_aligned,Number_of_uniquely_aligned,Percent_uniquely_aligned,Number_of_multiple_aligned,Percent_multiple_aligned"
 	output+=",${n_mapped},${p_mapped},${n_unique},${p_unique},${n_multi},${p_multi}"
-    elif [ $aligner == "salmon" ]; then
+    elif [[ $aligner == "salmon" && -e counts/${sample}/aux_info/meta_info.json ]]; then
 	n_mapped=$(grep "num_mapped" counts/${sample}/aux_info/meta_info.json | cut -f2 -d: | sed -e "s/ \|,//g")
 	p_mapped=$(echo "${n_mapped} ${n_frag}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
 	header+=",Number_of_aligned,Percent_of_aligned"

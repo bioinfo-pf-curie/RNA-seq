@@ -270,7 +270,7 @@ workflow {
     chVersions = chVersions.mix(strandnessFlow.out.versions)
 
     // Combine reads and strandness information
-    chRawReads = combineStrandness(chRawReads, strandnessFlow.out.strandnessResults)
+    chRawReads = combineStrandness(chRawReads, strandnessFlow.out.strand)
 
     //***************************************
     // PDX
@@ -505,7 +505,7 @@ workflow {
         .flatMap{ it -> it[0] + ": Poor alignment rate. Sample discarded !"}
         .set{chWarnMapping}
 
-      strandnessFlow.out.strandnessResults
+      strandnessFlow.out.strand
         .map{it[1]}
         .unique()
 	.count()
@@ -528,7 +528,7 @@ workflow {
         chFastqcMqc.ifEmpty([]),
         chrRNAMappingMqc.ifEmpty([]),
         chAlignedMqc.collect().ifEmpty([]),
-        strandnessFlow.out.strandnessOutputFiles.collect().ifEmpty([]),
+        strandnessFlow.out.logs.collect().ifEmpty([]),
         chQualimapMqc.ifEmpty([]),
         chPreseqMqc.ifEmpty([]),
         chIdentitoMqc.ifEmpty([]),
