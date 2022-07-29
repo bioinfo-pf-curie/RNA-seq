@@ -4,6 +4,6 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - bioconda::rseqc=4.0.0=py37h73a75cf_1
+  - bioconda::rseqc=4.0.0=py39hbf8eff0_2
   - conda-forge::bc=1.07.1=h7f98852_0
 
