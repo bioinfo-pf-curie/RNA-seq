@@ -1,4 +1,10 @@
 ***************************************
+version-4.0.2
+
+BUG FXES
+  - Issue in makeCountTable and Ensembl ids cleaning for DanRer11
+
+***************************************
 version-4.0.1
 
 NEW FEATURES
