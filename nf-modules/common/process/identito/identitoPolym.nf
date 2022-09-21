@@ -27,6 +27,6 @@ process identitoPolym {
 
   bcftools mpileup -R ${polyms} -f ${fasta} -x -A -B -q 20 -I -Q 0 -d 1000 --annotate FORMAT/DP,FORMAT/AD ${bam[0]} > ${prefix}_bcftools.vcf
   SnpSift extractFields -e "."  -s ";" ${prefix}_bcftools.vcf CHROM POS REF ALT GEN[*].DP GEN[*].AD > ${prefix}_bcftools.tsv
-  computePolym.R ${prefix}_bcftools.tsv ${prefix}_matrix.tsv ${prefix} ${polyms}
+  apComputePolym.R ${prefix}_bcftools.tsv ${prefix}_matrix.tsv ${prefix} ${polyms}
   """
 }

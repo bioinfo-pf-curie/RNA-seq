@@ -22,8 +22,7 @@ process mergeCounts {
   script:
   """
   echo \$(R --version | awk 'NR==1{print \$1,\$3}') > versions.txt
-  echo -e ${inputCounts} | tr " " "\n" > listofcounts.tsv
-  echo -n "${strandness}" | sed -e "s/\\[//" -e "s/\\]//" -e "s/,//g" | tr " " "\n" > listofstrandness.tsv
-  makeCountTable.r listofcounts.tsv ${gtf} ${tool} listofstrandness.tsv
+  echo -n "${strandness}" | sed -e "s/\\[//" -e "s/\\]//" -e "s/,//g" | tr " " "\n" > samplelist.tsv
+  makeCountTable.r samplelist.tsv ${gtf} ${tool}
   """
 }

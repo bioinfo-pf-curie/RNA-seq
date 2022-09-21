@@ -10,10 +10,17 @@ SIGNIFICANT USER-VISIBLE CHANGES
    - revert the heatmap legend scalone on the report (#157)
    - TPM table are no longer used in any analysis
 
-BUG
+BUG FIXES
+   - Rewrite parse_rseq_output script to avoid using `bc`
    - Fix bugs when only one sample is processed (#161)
    - Fix bug in gene type element for Droso genome
    - Fix bug when --stranded is forced (#162)
+
+***************************************
+version-4.0.2
+
+BUG FIXES
+  - Issue in makeCountTable and Ensembl Id cleaning for DanRer11
 
 ***************************************
 version-4.0.1

@@ -18,62 +18,46 @@ rseq_output_file=$1
 parse_rseqc_output()
 {
     rseqout=$1
-    ret="undetermined"
+    #ret="undetermined"
 
-    if [ ! -e $rseqout ]; then
-        die "File $rseqout was not find ! Exit"
+    if [[ -z $rseqout || ! -e $rseqout ]]; then
+        echo "ERROR - input was not find ! Exit"
+	exit 1
     fi
 
-    ##PE
+    nb_fail=$(grep "failed" $rseqout | awk -F": " '{print $2}')
+    if (( $(echo "$nb_fail 0.5" | awk '{print ($1 > $2)}') )); then
+	ret="undetermined";
+	echo "$ret"
+    fi
+
     if [[ $(grep -c "PairEnd" $rseqout) -ne 0 ]]; then
-	nb_fail=$(grep "failed" $rseqout | awk -F": " '{print $2}')
-	nb_fs=$(echo "$nb_fail > 0.5" | bc -l)
-	if [[ "$nb_fs" -eq "1" ]]; then 
-	    ret="undetermined"; 
-	else
-	    nb_fr=$(grep "1++" $rseqout | awk -F": " '{print $2}') ## fr-secondstrand = yes = forward
-	    nb_rf=$(grep "2++" $rseqout | awk -F": " '{print $2}') ## fr-firststrand = reverse
-
-	    if [[ ! -z $nb_fr && ! -z $nb_rf ]]; then
-		nb_yes=$(echo "$nb_fr - $nb_rf > 0.5" | bc -l)
-		nb_rev=$(echo "$nb_fr - $nb_rf < -0.5" | bc -l)
-		
-		if [[ "$nb_rev" -eq "1" ]];then
-		    ret="reverse"
-		elif [[ "$nb_yes" -eq "1" ]];then
-		    ret="forward"
-		else
-		    ret="no"
-		fi
-	    fi
-	fi
+	nb_ss=$(grep "1++" $rseqout | awk -F": " '{print $2}') ## fr-secondstrand = yes = forward
+	nb_ds=$(grep "2++" $rseqout | awk -F": " '{print $2}') ## fr-firststrand = reverse
     else
-    ##SE
-	nb_fail=$(grep "failed" $rseqout | awk -F": " '{print $2}')
-        nb_fs=$(echo "$nb_fail > 0.5" | bc -l)
-        if [[ "$nb_fs" -eq "1" ]]; then 
-	    ret="undetermined"; 
-	else
-
-            nb_ss=$(grep "++" $rseqout | awk -F": " '{print $2}') ## fr-secondstrand = yes = forward
-            nb_ds=$(grep "+-" $rseqout | awk -F": " '{print $2}') ## fr-firststrand = reverse
-
-            if [[ ! -z $nb_ss && ! -z $nb_ds ]]; then
-		nb_yes=$(echo "$nb_ss - $nb_ds > 0.5" | bc -l)
-		nb_rev=$(echo "$nb_ss - $nb_ds < -0.5" | bc -l)
+	nb_ss=$(grep "++" $rseqout | awk -F": " '{print $2}') ## fr-secondstrand = yes = forward
+	nb_ds=$(grep "+-" $rseqout | awk -F": " '{print $2}') ## fr-firststrand = reverse
+    fi
 	
-		if [[ "$nb_rev" -eq "1" ]]; then
-		    ret="reverse"
-		elif [[ "$nb_yes" -eq "1" ]];then
-		    ret="forward"
-		else
-		    ret="no"
-		fi
-	    fi
+
+    if [[ ! -z $nb_ss && ! -z $nb_ds ]]; then
+	nb_diff=$(echo "$nb_ss $nb_ds" | awk '{print ($1 - $2)}')
+		
+	if (( $(echo "$nb_diff 0.5" | awk '{print ($1 > $2)}') )); then
+	    ret="forward"
+	elif (( $(echo "$nb_diff -0.5" | awk '{print ($1 < $2)}') )); then
+	    ret="reverse"
+	else
+	    ret="no"
 	fi
     fi
-    
-    echo -n "$ret"
+
+    if [ ! -z ${ret} ]; then
+	echo "$ret"
+    else
+	echo "ERROR - unknown data type !"
+	exit 1
+    fi
 }
 
 parse_rseqc_output $rseq_output_file

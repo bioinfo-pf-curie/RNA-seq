@@ -1,13 +1,12 @@
 #!/usr/bin/env Rscript
 # Command line argument processing
 args <- commandArgs(trailingOnly=TRUE)
-if (length(args) != 4) {
-  stop("Usage: makeCountTable.r <inputList> <gtf> <count_tool> <stranded>", call.=FALSE)
+if (length(args) != 3) {
+  stop("Usage: makeCountTable.r <sample_plan> <gtf> <count_tool>", call.=FALSE)
 }
-inputFiles <- args[1]
+samplePlan <- args[1]
 gtf <- args[2]
 count_tool <- toupper(args[3])
-strandedList <- args[4]
 
 stopifnot(require(rtracklayer))
 stopifnot(require(GenomicFeatures))
@@ -77,9 +76,17 @@ ensembl2symbol <- function(x, gtf.in, lab.in="gene_id", lab.out="gene_name", ann
 
 cleanEnsembl <- function(x){
     if (is.vector(x)){
-        x <- gsub("\\.[0-9]*$", "", x)
+        if (length(grep("^ENS",x)) > 0){
+            x <- gsub("\\.[0-9]*$", "", x)
+        }else{
+            warning("No ENSEMBL ids detected")
+        }
     }else if (is.matrix(x) || is.data.frame(x)){
-        rownames(x) <- gsub("\\.[0-9]*$", "", rownames(x))
+        if (length(grep("^ENS",rownames(x))) > 0){
+            rownames(x) <- gsub("\\.[0-9]*$", "", rownames(x))
+        }else{
+            warning("No ENSEMBL ids detected")
+        }
     }
     x
 }
@@ -133,8 +140,10 @@ getExonicGeneSize <- function(gtf.in){
 
 ##################################################################
 
-exprs.in <- as.vector(read.table(inputFiles, header=FALSE)[,1])
-stranded.list <- as.vector(read.table(strandedList, header=FALSE)[,1])
+splan <- read.table(samplePlan, header=FALSE)
+samples.name <- splan[,1]
+exprs.in <- splan[,2]
+stranded.list <- splan[,3]
 
 if (count_tool == "STAR"){
 
@@ -175,11 +184,12 @@ if (count_tool == "STAR"){
 }
 
 ## Renome samples
-if (ncol(counts.exprs)>1){
-    colnames(counts.exprs) <- gsub(lcSuffix(exprs.in), "", exprs.in)
-}else{
-    colnames(counts.exprs) <- exprs.in
-}
+colnames(counts.exprs) <- samples.name
+#if (ncol(counts.exprs)>1){
+#    colnames(counts.exprs) <- gsub(lcSuffix(exprs.in), "", exprs.in)
+#}else{
+#    colnames(counts.exprs) <- exprs.in
+#}
 
 ## export count table(s)
 write.csv(cleanEnsembl(counts.exprs), file="tablecounts_raw.csv", quote=FALSE)

@@ -5,7 +5,6 @@
 include { salmonQuant as salmonQuantFromBam } from '../../common/process/salmon/salmonQuant'
 include { salmonTx2gene } from '../process/salmonTx2gene'
 include { salmonTxImport } from '../process/salmonTxImport'
-include { mergeCounts} from '../process/mergeCounts'
 
 workflow salmonQuantFromBamFlow {
 

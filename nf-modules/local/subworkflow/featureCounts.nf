@@ -24,7 +24,7 @@ workflow featureCountsFlow {
   featureCounts.out.counts
     .multiMap { it ->
       counts: it[1]
-      strand: it[0].strandness
+      strand: it[0].id + "\t" + it[1] + "\t" + it[0].strandness
    }.set{chCountsAndStrand}
 
   mergeCounts(
