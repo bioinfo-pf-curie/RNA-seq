@@ -34,8 +34,12 @@ d.gtf <- rtracklayer::import(gtf)
 my_genes <- d.gtf[d.gtf$type == "gene"]
 
 ## remove "." in ENSEMBL Ids
-my_genes$gene_id <- gsub("\\.[0-9]+$","",my_genes$gene_id)
-rownames(counts.tpm) <- gsub("\\.[0-9]+$","",rownames(counts.tpm))
+if (length(grep("^ENS", my_genes$gene_id)) > 0){
+    my_genes$gene_id <- gsub("\\.[0-9]+$","",my_genes$gene_id)
+}
+if (length(grep("^ENS", rownames(counts.tpm))) > 0){
+    rownames(counts.tpm) <- gsub("\\.[0-9]+$","",rownames(counts.tpm))
+}
 
 if (length(my_genes) > 0 && is.element("gene_type", colnames(elementMetadata(my_genes)))){
    mcols(my_genes) <- mcols(my_genes)[c("gene_id", "gene_type","gene_name")]
