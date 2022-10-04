@@ -17,10 +17,16 @@ BUG FIXES
    - Fix bug when --stranded is forced (#162)
 
 ***************************************
+version-4.0.3
+
+NEW FEATURES
+  - Add rheMac10 annotations
+
+***************************************
 version-4.0.2
 
-BUG FIXES
-  - Issue in makeCountTable and Ensembl Id cleaning for DanRer11
+BUG FXES
+  - Issue in makeCountTable and Ensembl ids cleaning for DanRer11
 
 ***************************************
 version-4.0.1
