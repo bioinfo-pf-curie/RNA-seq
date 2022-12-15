@@ -187,7 +187,7 @@ Here are a few examples of how to set the profile option. See the [full document
 A sample plan is a csv file (comma separated) that list all samples with their biological IDs, **with no header**.
 
 
-SAMPLE_ID | SAMPLE_NAME | PATH_TO_R1_FASTQ | [PATH_TO_R2_FASTQ]
+SAMPLE_ID,SAMPLE_NAME,PATH_TO_R1_FASTQ,[PATH_TO_R2_FASTQ]
 
 
 ### Full Documentation
