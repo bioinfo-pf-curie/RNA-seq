@@ -36,21 +36,32 @@ do
 	header+=",Number_of_frag,Percent_trimmed"
 	output+=",${n_frag},${p_trimmed}"
     else
-	##n_frag from (pseudo)alignment stats
-	n_frag='NA'
-	if [ -d "rrna" ]; then
-	    n_frag=$(grep "reads processed" rrna/${sample}.log | cut -d: -f 2 | sed -e 's/ //')
-	elif [ $aligner == "star" ]; then
-	    n_frag=$(grep "Number of input reads" alignment/${sample}Log.final.out | cut -d"|" -f 2 | sed -e 's/\t//g')
-	elif [[ $aligner == "hisat2" && $is_pe == "1" ]]; then
-	    n_frag=$(grep "Total pairs" alignment/${sample}.hisat2_summary.txt | cut -d: -f2 | sed -e 's/ //g')
-	elif [[ $aligner == "hisat2" && $is_pe == "0" ]]; then
-	    n_frag=$(grep "Total reads" alignment/${sample}.hisat2_summary.txt | cut -d: -f2 | sed -e 's/ //g')
-	elif [[ $aligner == "salmon" ]]; then
-	    n_frag=$(grep "num_processed" counts/${sample}/aux_info/meta_info.json | cut -f2 -d: | sed -e "s/ \|,//g")
+	##PDX
+	if [[ -e xengsort/${sample}_xengsort.log ]]; then
+	    n_frag=$(awk -F"\t"  '$0!~"#" && $0!~"prefix"{s=$2+$3+$4+$5+$6; print s}' xengsort/${sample}_xengsort.log)
+            n_host=$(awk -F"\t"  '$0!~"#" && $0!~"prefix"{print $2}' xengsort/${sample}_xengsort.log)
+            p_host=$(echo "${n_host} ${n_frag}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
+            n_graft=$(awk -F"\t"  '$0!~"#" && $0!~"prefix"{print $3}' xengsort/${sample}_xengsort.log)
+            p_graft=$(echo "${n_graft} ${n_frag}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
+            header+=",Number_of_frag,Number_pdx_host,Percent_pdx_host,Number_pdx_graft,Percent_pdx_graft"
+            output+=",${n_frag},${n_host},${p_host},${n_graft},${p_graft}"
+	else
+	    ##n_frag from (pseudo)alignment stats
+	    n_frag='NA'
+	    if [ -d "rrna" ]; then
+		n_frag=$(grep "reads processed" rrna/${sample}.log | cut -d: -f 2 | sed -e 's/ //')
+	    elif [ $aligner == "star" ]; then
+		n_frag=$(grep "Number of input reads" alignment/${sample}Log.final.out | cut -d"|" -f 2 | sed -e 's/\t//g')
+	    elif [[ $aligner == "hisat2" && $is_pe == "1" ]]; then
+		n_frag=$(grep "Total pairs" alignment/${sample}.hisat2_summary.txt | cut -d: -f2 | sed -e 's/ //g')
+	    elif [[ $aligner == "hisat2" && $is_pe == "0" ]]; then
+		n_frag=$(grep "Total reads" alignment/${sample}.hisat2_summary.txt | cut -d: -f2 | sed -e 's/ //g')
+	    elif [[ $aligner == "salmon" ]]; then
+		n_frag=$(grep "num_processed" counts/${sample}/aux_info/meta_info.json | cut -f2 -d: | sed -e "s/ \|,//g")
+	    fi
+	    header+=",Number_of_frag"
+	    output+=",${n_frag}"
 	fi
-	header+=",Number_of_frag"
-	output+=",${n_frag}"
     fi
 
     ##PDX
