@@ -47,7 +47,7 @@ custom_data:
               placement: 4000
             Number_pdx_graft:
               title: 'PDX Graft'
-              format: '{:.0f}'
+              format: '{:,.0f}'
               hidden: true
               placement: 4500
             Percent_pdx_graft:
@@ -59,7 +59,7 @@ custom_data:
               placement: 4600
             Number_pdx_host:
               title: 'PDX Host'
-              format: '{:.0f}'
+              format: '{:,.0f}'
               hidden: true
               placement: 4700
             Percent_pdx_host:
@@ -291,24 +291,46 @@ remove_sections :
 report_section_order:
   stats:
     order: -1
+  cutadapt:
+    order: -10
   xengsort:
-    order: -2
+    order: -20
+  fastqc:
+    order: -30
+  bowtie1:
+    order: -40
+  star:
+    order: -50
+  hisat2:
+    order: -60
+  qualimap:
+    order: -70
+  rseqc:
+    order: -80
+  preseq:
+    order: -90
   gene_saturation:
-    order: -400
+    order: -100
   gene_type:
-    order: -500
+    order: -110
   DupRadar:
-    order: -600 
+    order: -120 
   identitoPolym:
-    order: -700
+    order: -130
+  featureCounts:
+    order: -140
+  htseq:
+    order: -150
+  salmon:
+    order: -160
   sample-pca:
-    order: -800
+    order: -170
   sample-correlation:
-    order: -900
+    order: -180
   software_versions:
-    order: -2000
+    order: -1000
   summary:
-    order: -3000
+    order: -2000
 
 table_columns_visible:
   FastQC:
