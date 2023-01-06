@@ -3,7 +3,7 @@
  */
 
 process mergeCounts {
-  label 'rnaseqr'
+  label 'r'
   label 'minCpu'
   label 'medMem'
 
