@@ -1,4 +1,4 @@
-name: rnaseqr
+name: r
 channels:
   - conda-forge
   - bioconda
