@@ -126,10 +126,12 @@ do
     fi
 
     ## Preseq
+    header+=",Percent_saturation"
     if [ -e preseq/${sample}_extrap_ccurve.txt ]; then
 	p_sat=$(awk -v nbreads=${n_mapped} 'BEGIN{p=0} NR>1 && $1>nbreads && nbreads>p{val=$2} {p=$1; x=$2} END{printf "%.*f",2,val/x*100}' preseq/${sample}_extrap_ccurve.txt)
-	header+=",Percent_saturation"
 	output+=",${p_sat}"
+    else
+	output+=",NA"
     fi
 
     if [ $n_header == 0 ]; then
