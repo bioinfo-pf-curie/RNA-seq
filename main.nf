@@ -135,9 +135,9 @@ chMetadata           = params.metadata              ? Channel.fromPath(params.me
 */
 
 summary = [
-  'Pipeline' : manifest.name ?: null,
-  'Version': manifest.version ?: null,
-  'DOI': manifest.doi ?: null,
+  'Pipeline' : workflow.manifest.name ?: null,
+  'Version': workflow.manifest.version ?: null,
+  'DOI': workflow.manifest.doi ?: null,
   'Run Name': customRunName,
   'Inputs' : params.samplePlan ?: params.reads ?: null,
   'PDX' : params.pdx ?: null,
