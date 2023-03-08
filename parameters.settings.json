@@ -510,9 +510,9 @@
       "group": "Skip options"
     },
     {
-      "name": "skipDupradar",
-      "label": "Skip dupradar",
-      "usage": "Disable duplicates analysis with DupRadar",
+      "name": "skipMarkDup",
+      "label": "Skip duplicates",
+      "usage": "Disable duplicates analysis with Picard/DupRadar",
       "type": "boolean",
       "nargs": 0,
       "choices": [],

@@ -25,16 +25,12 @@ workflow markdupFlow {
   )
   chVersions = chVersions.mix(samtoolsIndex.out.versions)
 
-  if (!params.skipDupradar){
-    dupradar (
-      markDuplicates.out.bam,
-      gtf.collect(),
-    )
-    chDupradarResults = dupradar.out.results
-    chVersions = chVersions.mix(dupradar.out.versions)
-  }else{
-    chDupradarResults = Channel.empty()
-  }
+  dupradar (
+    markDuplicates.out.bam,
+    gtf.collect(),
+  )
+  chDupradarResults = dupradar.out.results
+  chVersions = chVersions.mix(dupradar.out.versions)
 
   emit:
   bam = markDuplicates.out.bam.join(samtoolsIndex.out.bai)

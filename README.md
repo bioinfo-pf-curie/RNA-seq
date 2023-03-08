@@ -110,7 +110,7 @@ REFERENCES:
 
 SKIP OPTIONS:
     --skipBigWig                       Disable bigwig generation with Deeptools
-    --skipDupradar                     Disable duplicates analysis with DupRadar
+    --skipMarkDup                      Disable duplicates analysis with Picard/DupRadar
     --skipFastqc                       Disable Fastqc
     --skipGeneCountsAnalysis           Disable exporatory analysis of genes count
     --skipIdentito                     Disable Identito

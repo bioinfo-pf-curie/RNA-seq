@@ -1,4 +1,10 @@
 ***************************************
+version-4.1.1
+
+SIGNIFICANT USER-VISIBLE CHANGES
+   - `--skipDupRadar` is now replaced by `--skipMarkDup` to disable all duplicates processing
+
+***************************************
 version-4.1.0
 
 NEW FEATURES
