@@ -14,7 +14,6 @@ NEW FEATURES
 SIGNIFICANT USER-VISIBLE CHANGES
    - Update default `--salmonQuantOpts` value
    - revert the heatmap legend scalone on the report (#157)
-   - TPM table are no longer used in any analysis
 
 BUG FIXES
    - Rewrite parse_rseq_output script to avoid using `bc`
