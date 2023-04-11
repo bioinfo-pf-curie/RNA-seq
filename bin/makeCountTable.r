@@ -76,13 +76,13 @@ ensembl2symbol <- function(x, gtf.in, lab.in="gene_id", lab.out="gene_name", ann
 
 cleanEnsembl <- function(x){
     if (is.vector(x)){
-        if (length(grep("^ENS",x)) > 0){
+        if (length(grep("^ENS[GT]",x)) > 0){
             x <- gsub("\\.[0-9]*$", "", x)
         }else{
             warning("No ENSEMBL ids detected")
         }
     }else if (is.matrix(x) || is.data.frame(x)){
-        if (length(grep("^ENS",rownames(x))) > 0){
+        if (length(grep("^ENS[GT]",rownames(x))) > 0){
             rownames(x) <- gsub("\\.[0-9]*$", "", rownames(x))
         }else{
             warning("No ENSEMBL ids detected")
