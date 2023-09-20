@@ -1,26 +1,355 @@
+# /!\ Except the NEXTFLOW_VERSION, the other variables must not be modified /!\
+
 variables:
   GIT_SUBMODULE_STRATEGY: "recursive"
+  GIT_STRATEGY: "clone"
+  VAULT_ADDR: "https://vault.curie.fr"
+  ROLE_PREFIX: "cubicpipes"
+  IS_NF_CORE: ""
+  #IS_NF_CORE: "_4nf-core" # for nf-core pipeline, use the corresponding template
+  # CLUSTER_NAME: "calcsub"                       # for calcsub
+  # CLUSTER_SUBMIT: "qsub -I -x"                  # /usr/local/bin/podman run -it --net cni-podman1 -v /local/users/newpipelines/profiles:/data/profiles -v /run/user/7886/podman/podman.sock:/run/user/0/podman/podman.sock mmonrunfor calcsub
+  # DEPLOY_OPTION: ""                             # for calcsub
+  CLUSTER_NAME: "abacus"                      # for abacus
+  CLUSTER_SUBMIT: "srun /bin/bash"   # for abacus
+  DIR_ANALYSIS_PIPELINE_MODULE: "."
+  DIR_DEPLOY_MODULE: "modules/deploy"
+  DIR_DEPLOY_PACKAGE: "/opt/deploy"
+  #DIR_DEPLOY_PACKAGE: "deploy-geniac"
+  DIR_TMP_ON_CLUSTER: "dir_tmp_4_deploy" # This will be a folder created in the HOME of the user app on the cluster
+  DEPLOY_DOCKER_IMAGE: "${CI_REGISTRY}/bioinfo-containers/deploy-geniac:master"
+  PIPELINE_NAME: "cubicpipes"
+  DIR_BIOINFO_PIPELINE: "/mnt/beegfs/RECHERCHE/u900pf-bioinfo/common/pipelines/"
+  OPTEST: ""
+  NEXTFLOW_VERSION: "22.10.6" # Modify this variable whenever needed
 
-image: "${CI_REGISTRY}/bioinfo-containers/deploy-geniac:master"
+image: ${DEPLOY_DOCKER_IMAGE}
 
 stages:
-  - check           # check that requirements are met
+  - detect_env      # detect the environment for the deployment
+  - set_env         # set environment variables passed to other jobs
+  - check           # check that requirements are met before starting the deployement
+  - generate_ci_yml # generate ci yml files from templates
+  - sif             # generate sif images
+  - deploy          # deploy the pipeline
+  - test            # run the pipeline on the cluster using a test dataset
+  - post            # clean directories
 
 before_script:
   - set -euo pipefail
+
+
+################################################################
+# Detect which environment will be used to deploy the pipeline #
+################################################################
+
+# In this section, rules are defined to detect whether the deployment must be done in {dev,valid,prod}.
+# It also detects whether an operational testing must be launched (in this case, the ci must be started from the master branch).
+# Rules have to be defined carefully, otherwise, it is possible that none of a go_4_{dev,valid,prod} is defined
+# This would cause to jump directly to the next stage
+# without any deploy.env file created.
+#
+# Technical information:
+# - It is important to know that variable ${CI_BUILDS_DIR} corresponds to the folder /builds inside the gitlab-runner
+# - The /builds folder is actually a binding on the storage cluster Isilon on /data/tmp/builds
+# - This allows to share contents between one ci job to another, especially when the content is big (otherwise, the artifact system must be preferred)
+# - The gitlab-runner uses podman, once a job is started, an podman image is created and  used for the job. Once the job is completed, the image is closed (and everything that was done inside just disappears)
+
+
+
+go_4_dev:
+  stage: detect_env
+  script:
+    - env
+    - echo "Deploy in dev"
+    - mkdir -p ${CI_BUILDS_DIR}/${CI_PROJECT_PATH_SLUG}/${CI_COMMIT_REF_SLUG}
+    - echo "DEPLOY_ENV=dev" > ${CI_BUILDS_DIR}/${CI_PROJECT_PATH_SLUG}/${CI_COMMIT_REF_SLUG}/deploy.env # This file needs to be kept. It is deleted by subsequent jobs if it stays in ${CI_PROJECT_DIR}
+    - echo "CUBIC_PIPE=${CI_PROJECT_NAME}" >> ${CI_BUILDS_DIR}/${CI_PROJECT_PATH_SLUG}/${CI_COMMIT_REF_SLUG}/deploy.env # This file needs to be kept. It is deleted by subsequent jobs if it stays in ${CI_PROJECT_DIR}
+    - cat ${CI_BUILDS_DIR}/${CI_PROJECT_PATH_SLUG}/${CI_COMMIT_REF_SLUG}/deploy.env # This file needs to be kept. It is deleted by subsequent jobs if it stays in ${CI_PROJECT_DIR}
+  rules:
+    - if: '$CI_COMMIT_TAG == null'
+      when: manual # need to have manual for each if
+
+go_4_prod:
+  stage: detect_env
+  script:
+    - env
+    - echo "Deploy in prod"
+    - mkdir -p ${CI_BUILDS_DIR}/${CI_PROJECT_PATH_SLUG}/${CI_COMMIT_REF_SLUG}
+    - echo "DEPLOY_ENV=prod" > ${CI_BUILDS_DIR}/${CI_PROJECT_PATH_SLUG}/${CI_COMMIT_REF_SLUG}/deploy.env # This file needs to be kept. It is deleted by subsequent jobs if it stays in ${CI_PROJECT_DIR}
+    - echo "CUBIC_PIPE=${CI_PROJECT_NAME}_${CI_COMMIT_TAG}" >> ${CI_BUILDS_DIR}/${CI_PROJECT_PATH_SLUG}/${CI_COMMIT_REF_SLUG}/deploy.env # This file needs to be kept. It is deleted by subsequent jobs if it stays in ${CI_PROJECT_DIR}
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /v[0-9]*\.[0-9]*\.[0-9]*/'
+      when: manual # need to have manual for each if
+
+no_go:
+  stage: detect_env
+  script:
+    - env
+    - echo "Tag pattern or branch not allowed for deployment"
+    - exit 1
+  rules:
+    - if: '$CI_COMMIT_TAG != null && $CI_COMMIT_TAG !~ /v[0-9]*\.[0-9]*\.[0-9]*/'
+      when: manual # need to have manual for each if
+
+
+#########################################################
+# Create an artifact to export variables for other jobs #
+#########################################################
+
+export_var:
+  # This job sets the environment variables:
+  # - some variables are directly set in this job,
+  # - other are retrieved fron the pipeline.conf and deploy.conf files
+  #   defined for the analysis pipeline.
+  # Some sed commands are required to make the deploy.env file compliant with the
+  # dotenv artifact format (no export, no comments, no variable set multiple times).
+  # It creates the deploy.env artifact.
+  stage: set_env
+  script:
+    - echo "Create deploy.env artifact"
+    - |
+      mkdir -p ${CI_BUILDS_DIR}/${CI_PROJECT_PATH_SLUG}/${CI_COMMIT_REF_SLUG}/build_4_gitlab # mkdir needed to avoid the next rm to fail
+      rm -rf ${CI_BUILDS_DIR}/${CI_PROJECT_PATH_SLUG}/${CI_COMMIT_REF_SLUG}/build_4_gitlab*  # remove all previous builds (just in case the clean job failed or not performed on a previous gitlab-ci)
+      echo "DIR_TMP_IN_RUNNER=${CI_BUILDS_DIR}/${CI_PROJECT_PATH_SLUG}/${CI_COMMIT_REF_SLUG}/build_4_gitlab_$(date +%Y%m%d%H%M%S)_$RANDOM" >> ${CI_BUILDS_DIR}/${CI_PROJECT_PATH_SLUG}/${CI_COMMIT_REF_SLUG}/deploy.env
+      echo "PIPELINE_NAME=cubicpipes" >> ${CI_BUILDS_DIR}/${CI_PROJECT_PATH_SLUG}/${CI_COMMIT_REF_SLUG}/deploy.env
+      echo "PIPELINE_GROUP=cubicpipes" >> ${CI_BUILDS_DIR}/${CI_PROJECT_PATH_SLUG}/${CI_COMMIT_REF_SLUG}/deploy.env
+      sed -e 's/^[ ]*export[ ]*//g' -e '/^#/d' -e '/^$/d' -e 's/"//g' -e 's/[ ]*#.*//g' ${DIR_DEPLOY_PACKAGE}/conf/deploy.conf >> ${CI_BUILDS_DIR}/${CI_PROJECT_PATH_SLUG}/${CI_COMMIT_REF_SLUG}/deploy.env
+      if [[ ${CLUSTER_NAME} == "calcsub" ]]; then sed -e '/DIR_BIOINFO_PIPELINE_CALCSUB/!d' -e 's/_CALCSUB//g' ${CI_BUILDS_DIR}/${CI_PROJECT_PATH_SLUG}/${CI_COMMIT_REF_SLUG}/deploy.env >> ${CI_BUILDS_DIR}/${CI_PROJECT_PATH_SLUG}/${CI_COMMIT_REF_SLUG}/deploy.env; fi
+      if [[ ${CLUSTER_NAME} == "abacus" ]]; then sed -e '/DIR_BIOINFO_PIPELINE_ABACUS/!d' -e 's/_ABACUS//g' ${CI_BUILDS_DIR}/${CI_PROJECT_PATH_SLUG}/${CI_COMMIT_REF_SLUG}/deploy.env >> ${CI_BUILDS_DIR}/${CI_PROJECT_PATH_SLUG}/${CI_COMMIT_REF_SLUG}/deploy.env; fi
+      sed -i -e "s|/$||g" ${CI_BUILDS_DIR}/${CI_PROJECT_PATH_SLUG}/${CI_COMMIT_REF_SLUG}/deploy.env
+      sed -i -e "/PATH=/d" ${CI_BUILDS_DIR}/${CI_PROJECT_PATH_SLUG}/${CI_COMMIT_REF_SLUG}/deploy.env
+      mv ${CI_BUILDS_DIR}/${CI_PROJECT_PATH_SLUG}/${CI_COMMIT_REF_SLUG}/deploy.env ${CI_PROJECT_DIR} # files for artifacts need to be located in ${CI_PROJECT_DIR}
+      cat deploy.env
+  artifacts:
+    reports:
+      dotenv: deploy.env
+
+signature_deffiles:
+  # This job computes a signature of the singularity recipes and their dependencies.
+  # This is needed to figure out whether we have to rebuild the singularity images
+  # (even if the commit id of the submodule changed it migth not be necessary to rebuild the containers).
+  stage: set_env
+  script:
+    - |
+      echo "Build signature of the singularity recipes and their dependencies"
+      mkdir -p ${DIR_TMP_IN_RUNNER} # mkdir needed to avoid the next rm to fail
+      rm -rf ${DIR_TMP_IN_RUNNER}/* # remove all previous builds
+      cd ${DIR_TMP_IN_RUNNER}/
+      export DIR_INSTALL=${DIR_TMP_IN_RUNNER}/install
+      mkdir -p ${DIR_INSTALL}
+    - cd ${DIR_TMP_IN_RUNNER}
+    - |
+      # Use geniac from the docker image (the geniac submodule inside the analysis pipeline is actually not needed)
+      if [[ -d ${CI_PROJECT_DIR}/${DIR_ANALYSIS_PIPELINE_MODULE}/geniac ]]; then rm -rf ${CI_PROJECT_DIR}/${DIR_ANALYSIS_PIPELINE_MODULE}/geniac; fi
+      mkdir -p ${CI_PROJECT_DIR}/${DIR_ANALYSIS_PIPELINE_MODULE}/geniac
+      cp -r /opt/geniac/* ${CI_PROJECT_DIR}/${DIR_ANALYSIS_PIPELINE_MODULE}/geniac
+      echo "Use geniac $(cat /opt/geniac/version)"
+    - |
+      if [[ ${IS_NF_CORE} == "" ]]; then
+      cmake ${CI_PROJECT_DIR}/${DIR_ANALYSIS_PIPELINE_MODULE}/geniac -DCMAKE_INSTALL_PREFIX=${DIR_INSTALL} -Dap_check_config_file_from_source=OFF -Dap_install_singularity_recipes=ON -Dap_install_singularity_images=OFF -Dap_docker_registry=registrygitlab.curie.fr/bioinfo-containers/geniac/
+      make
+      cd ${CI_PROJECT_DIR}
+      bash ${DIR_DEPLOY_PACKAGE}/utils/signature-deffiles.sh ${DIR_TMP_IN_RUNNER}/workDir/results/singularity/deffiles ${CI_PROJECT_DIR}/${DIR_ANALYSIS_PIPELINE_MODULE} > ${CI_PROJECT_DIR}/sha256-deffiles.env
+      else
+      cd ${CI_PROJECT_DIR}
+      echo "SHA256_DEFFILES=${CI_COMMIT_ID}" > ${CI_PROJECT_DIR}/sha256-deffiles.env
+      fi
+    - cat ${CI_PROJECT_DIR}/sha256-deffiles.env
+  needs:
+    - job: export_var
+      artifacts: true
+  artifacts:
+    reports:
+      dotenv: sha256-deffiles.env
 
 #############################
 # Perform preliminary check #
 #############################
 
 geniac_lint:
-  # launch geniac lint
+  # This jobs launches geniac lint on the analysis pipeline repo
   stage: check
   script:
     - echo "Geniac lint"
     - source /opt/etc/bashrc # needed to activate the geniac conda env
     - geniac --version
     - geniac lint ${CI_PROJECT_DIR}
-  tags:
-    - rancher
+  rules:
+    - if: '$IS_NF_CORE == ""'
+
+
+###############################################################
+# Detect if the singularity images have already been deployed #
+###############################################################
+
+check_sif_version:
+  # This job launches the script ${DIR_DEPLOY_PACKAGE}/utils/test-sif-exist.bash on the cluster:
+  # - it detects whether the expected version of the singularity images have been deployed
+  #   (since we don't want to rebuild the images if the sumodule for the data_analysis pipeline did not change)
+  # It works as follows: 
+  # - a file is created with a named after the value of the SHA256_DEFFILES variable which concatenates (this is done in the job deploy_sif from the template gitlab-ci_build_sif.yml):
+  #     * the apptainer version used to build the container
+  #     * a md5 signature based on several files that are used by geniac to build the recipes
+  # - the creation date of this file + all the sif files are forced to be the same
+  # - the script ${DIR_DEPLOY_PACKAGE}/utils/test-sif-exist.bash tests the consistency of filenames and creation dates
+  # This job creates the dotenv artifact build-sif.env which contains the environment variable BUILD_SIF (either true or false).
+  # The variable BUILD_SIF is used by the job ci_4_sif.
+  stage: check
+  script:
+    - echo "Test if the singularity images are available and their version"
+    - env
+    - |
+      export VAULT_SERVICE="${CLUSTER_NAME}"
+      bash ${DIR_DEPLOY_PACKAGE}/utils/set-vault-token-4-gitlab-ci.sh # set the vault token
+      source variables.sh
+    - ssh -p ${SSH_PORT} ${USERSSH}@${SERVER_NAME} "mkdir -p ${DEPLOY_HOME}/${DIR_TMP_ON_CLUSTER}"
+    - scp -P ${SSH_PORT} ${DIR_DEPLOY_PACKAGE}/utils/test-sif-exist.bash ${USERSSH}@${SERVER_NAME}:${DEPLOY_HOME}/${DIR_TMP_ON_CLUSTER}
+    - ssh -p ${SSH_PORT} ${USERSSH}@${SERVER_NAME} "bash ${DEPLOY_HOME}/${DIR_TMP_ON_CLUSTER}/test-sif-exist.bash ${DEPLOY_HOME}/singularity/images ${SHA256_DEFFILES} ${DEPLOY_HOME}/${DIR_TMP_ON_CLUSTER}/test-sif-exist-${SHA256_DEFFILES}.log" 
+    - scp -P ${SSH_PORT} ${USERSSH}@${SERVER_NAME}:${DEPLOY_HOME}/${DIR_TMP_ON_CLUSTER}/test-sif-exist-${SHA256_DEFFILES}.log ${CI_PROJECT_DIR}/build-sif.env
+    - cat ${CI_PROJECT_DIR}/build-sif.env
+  needs:
+    - job: export_var
+      artifacts: true
+    - job: signature_deffiles
+      artifacts: true 
+  artifacts:
+    reports:
+      dotenv: build-sif.env
+  variables:
+    DEPLOY_HOME: "${DIR_BIOINFO_PIPELINE}/${PIPELINE_NAME}/${DEPLOY_ENV}/${CUBIC_PIPE}"
+    DIR_TMP_ON_CLUSTER: "dir_tmp_4_deploy" # This will be a folder created in the HOME of the user app on the cluster
+
+
+###########################################################
+# Generate custom ci yml files based on the configuration #
+###########################################################
+
+ci_4_sif:
+  # This job uses the dotenv artifact from the check_sif_version job, reads the content of the
+  # environment variable BUILD_SIF to decide whether the singularity images must be built or not.
+  # Depending on the value, it uses one on the template gitlab-ci_sif_ok.yml or gitlab-ci_build_sif.yml.
+  stage: generate_ci_yml
+  script:
+    - env
+    - |
+      if [[ ${BUILD_SIF} == "true" ]]; then
+      echo "singularity images must be built"
+      cp ${DIR_DEPLOY_PACKAGE}/templates/gitlab-ci_build_sif${IS_NF_CORE}.yml gitlab-ci_singularity.yml
+      sed -i -e "s/%SHA256_DEFFILES%/${SHA256_DEFFILES}/g" gitlab-ci_singularity.yml
+      sed -i -e "s/%CLUSTER_NAME%/${CLUSTER_NAME}/g" gitlab-ci_singularity.yml
+      sed -i -e "s/%DEPLOY_ENV%/${DEPLOY_ENV}/g" gitlab-ci_singularity.yml
+      sed -i -e "s|%DIR_TMP_IN_RUNNER%|${DIR_TMP_IN_RUNNER}|g" gitlab-ci_singularity.yml
+      sed -i -e "s|%DIR_BIOINFO_PIPELINE%|${DIR_BIOINFO_PIPELINE}|g" gitlab-ci_singularity.yml
+      sed -i -e "s/%PIPELINE_NAME%/${PIPELINE_NAME}/g" gitlab-ci_singularity.yml
+      sed -i -e "s|DEPLOY_HOME:.*|DEPLOY_HOME: ${DEPLOY_HOME}|g" gitlab-ci_singularity.yml
+      else
+      echo "singularity images already exist"
+      cp ${DIR_DEPLOY_PACKAGE}/templates/gitlab-ci_sif_ok.yml gitlab-ci_singularity.yml
+      fi
+  artifacts:
+    paths:
+      - gitlab-ci_singularity.yml
+  needs:
+    - job: export_var
+      artifacts: true
+    - job: signature_deffiles
+      artifacts: true 
+    - job: check_sif_version
+      artifacts: true
+  variables:
+    DEPLOY_HOME: "${DIR_BIOINFO_PIPELINE_ABACUS}/${PIPELINE_NAME}/${DEPLOY_ENV}/${CUBIC_PIPE}"
+
+ci_4_deploy:
+  # This job uses the dotenv artifact from the check_sif_version job, reads the content of the
+  # environment variable BUILD_SIF to decide whether the singularity images must be built or not.
+  # Depending on the value, it uses one on the template gitlab-ci_sif_ok.yml or gitlab-ci_build_sif.yml.
+  stage: generate_ci_yml
+  script:
+    - env
+    - |
+      cp ${DIR_DEPLOY_PACKAGE}/templates/data-analysis/gitlab-ci_deploy_pipeline.yml gitlab-ci_deploy_pipeline.yml
+  artifacts:
+    paths:
+      - gitlab-ci_deploy_pipeline.yml
+
+sif:
+  # This job deploys the singularity images (if needed)
+  stage: sif
+  trigger:
+    include:
+      - artifact: gitlab-ci_singularity.yml
+        job: ci_4_sif
+    strategy: depend # wait for the child pipeline to be completed
+
+sync_sif_calcsub:
+  stage: deploy
+  script:
+    - env
+    - echo "Sync  sif on calcsub"
+    - |
+      export VAULT_SERVICE="${CLUSTER_NAME}"
+      bash ${DIR_DEPLOY_PACKAGE}/utils/set-vault-token-4-gitlab-ci.sh # set the vault token
+      source variables.sh
+    - |
+      echo "#! /bin/bash" > sync-calcsub.sh
+      echo "rsync -avz  --delete-excluded  -e \"ssh -o 'UserKnownHostsFile=/dev/null' -o 'StrictHostKeyChecking=no'\" ${USERSSH}@abacus:${DEPLOY_HOME_ABACUS}/singularity/images/ ${DEPLOY_HOME_CALCSUB}/singularity/images/" >> sync-calcsub.sh
+    - chmod +x sync-calcsub.sh
+    - cat sync-calcsub.sh
+    - ssh -p ${SSH_PORT} ${USERSSH}@${SERVER_NAME} "mkdir -p ${DEPLOY_HOME_CALCSUB}/singularity/images"
+    - scp -P ${SSH_PORT} sync-calcsub.sh ${USERSSH}@${SERVER_NAME}:${DEPLOY_HOME_CALCSUB}/sync-calcsub-${CI_JOB_ID}.sh
+    - ssh -q ${USERSSH}@${CLUSTER_NAME}.curie.fr "${CLUSTER_SUBMIT} -x ${DEPLOY_HOME_CALCSUB}/sync-calcsub-${CI_JOB_ID}.sh"
+    - ssh -q ${USERSSH}@${CLUSTER_NAME}.curie.fr "rm -rf ${DEPLOY_HOME_CALCSUB}/sync-calcsub-${CI_JOB_ID}.sh"
+  variables:
+    CLUSTER_NAME: "calcsub"
+    CLUSTER_SUBMIT: "qsub -I -x"
+    DEPLOY_HOME_ABACUS: "${DIR_BIOINFO_PIPELINE_ABACUS}/${PIPELINE_NAME}/${DEPLOY_ENV}/${CUBIC_PIPE}"
+    DEPLOY_HOME_CALCSUB: "${DIR_BIOINFO_PIPELINE_CALCSUB}/${PIPELINE_NAME}/${DEPLOY_ENV}/${CUBIC_PIPE}"
+
+deploy_abacus:
+  # This job deploys the singularity images (if needed)
+  stage: deploy
+  trigger:
+    include:
+      - artifact: gitlab-ci_deploy_pipeline.yml
+        job: ci_4_deploy
+    strategy: depend # wait for the child pipeline to be completed
+  variables:
+    AP_NF_EXECUTOR: "slurm"
+    APPS_PATH: "/mnt/beegfs/common/apps"
+    CLUSTER_NAME: "abacus"
+    CLUSTER_SUBMIT: "srun /bin/bash"   # for abacus
+    DEPLOY_ENV: "${DEPLOY_ENV}"
+    DEPLOY_HOME: "${DIR_BIOINFO_PIPELINE_ABACUS}/${PIPELINE_NAME}/${DEPLOY_ENV}/${CUBIC_PIPE}"
+    DIR_ANNOTATION: "${DIR_ANNOTATION_ABACUS}"
+    DIR_TMP_ON_CLUSTER: "dir_tmp_4_deploy" # This will be a folder created in the HOME of the user app on the cluster
+    NEXTFLOW_OPTIONS: ""
+    OUT_DIR: "${DIR_BIOINFO_PIPELINE_ABACUS}/${PIPELINE_NAME}/${DEPLOY_ENV}/${CUBIC_PIPE}/${DIR_TMP_ON_CLUSTER}/results-${CI_JOB_NAME}-${CI_JOB_ID}"
+    DIR_TMP_IN_RUNNER: "${DIR_TMP_IN_RUNNER}"
+
+
+deploy_calcsub:
+  # This job deploys the singularity images (if needed)
+  stage: deploy
+  trigger:
+    include:
+      - artifact: gitlab-ci_deploy_pipeline.yml
+        job: ci_4_deploy
+    strategy: depend # wait for the child pipeline to be completed
+  variables:
+    AP_NF_EXECUTOR: "pbs"
+    APPS_PATH: "/bioinfo/local/build/Centos"
+    CLUSTER_NAME: "calcsub"
+    CLUSTER_SUBMIT: "qsub -I -x"   # for calcsub
+    DEPLOY_ENV: "${DEPLOY_ENV}"
+    DEPLOY_HOME: "${DIR_BIOINFO_PIPELINE_CALCSUB}/${PIPELINE_NAME}/${DEPLOY_ENV}/${CUBIC_PIPE}"
+    DIR_ANNOTATION: "${DIR_ANNOTATION_CALCSUB}"
+    DIR_TMP_ON_CLUSTER: "dir_tmp_4_deploy" # This will be a folder created in the HOME of the user app on the cluster
+    NEXTFLOW_OPTIONS: "-process.clusterOptions '-v PATH'"
+    OUT_DIR: "${DIR_BIOINFO_PIPELINE_CALCSUB}/${PIPELINE_NAME}/${DEPLOY_ENV}/${CUBIC_PIPE}/${DIR_TMP_ON_CLUSTER}/results-${CI_JOB_NAME}-${CI_JOB_ID}"
+    DIR_TMP_IN_RUNNER: "${DIR_TMP_IN_RUNNER}"
+  needs:
+    - job: sync_sif_calcsub
+    - job: export_var
+      artifacts: true
 
