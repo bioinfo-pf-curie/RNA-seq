@@ -110,7 +110,7 @@ REFERENCES:
 
 SKIP OPTIONS:
     --skipBigWig                       Disable bigwig generation with Deeptools
-    --skipDupradar                     Disable duplicates analysis with DupRadar
+    --skipMarkDup                      Disable duplicates analysis with Picard/DupRadar
     --skipFastqc                       Disable Fastqc
     --skipGeneCountsAnalysis           Disable exporatory analysis of genes count
     --skipIdentito                     Disable Identito
@@ -134,7 +134,7 @@ Available Profiles
   -profile path                        Use the installation path defined for all tools. Use `--globalPath` to define the insallation path
   -profile multipath                   Use the installation paths defined for each tool. Use `--globalPath` to define the insallation path
   -profile docker                      Use the Docker images for each process
-  -profile singularity                 Use the Singularity images for each process. Use `--singularityPath` to define the insallation path
+  -profile singularity                 Use the Singularity images for each process. Use `--singularityImagePath` to define the insallation path
   -profile cluster                     Run the workflow on the cluster, instead of locally
 						  
 ```
@@ -176,7 +176,7 @@ Here are a few examples of how to set the profile option. See the [full document
 -profile path --globalPath INSTALLATION_PATH 
 
 ## Run the pipeline on the cluster, using the Singularity containers
--profile cluster,singularity --singularityPath SINGULARITY_PATH 
+-profile cluster,singularity --singularityImagePath SINGULARITY_IMAGE_PATH 
 
 ## Run the pipeline on the cluster, building a new conda environment
 -profile cluster,conda --condaCacheDir CONDA_CACHE 

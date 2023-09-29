@@ -366,13 +366,15 @@ workflow {
       }
       
       // SUBWORKFLOW: Duplicates
-      markdupFlow(
-        chBamPassed,
-        chGtf.collect()
-      )
-      chMarkDupMqc = markdupFlow.out.picardMetrics.collect()
-      chDupradarMqc = markdupFlow.out.dupradarResults.collect()
-      chVersions = chVersions.mix(markdupFlow.out.versions)
+      if (!params.skipMarkDup){
+        markdupFlow(
+          chBamPassed,
+          chGtf.collect()
+        )
+        chMarkDupMqc = markdupFlow.out.picardMetrics.collect()
+        chDupradarMqc = markdupFlow.out.dupradarResults.collect()
+        chVersions = chVersions.mix(markdupFlow.out.versions)
+      }
 
       // SUBWORKFLOW: Identito - polym and Monitoring
       if (!params.skipIdentito){

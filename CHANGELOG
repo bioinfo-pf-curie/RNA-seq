@@ -1,8 +1,23 @@
 ***************************************
+version-4.2.0
+
+SIGNIFICANT USER-VISIBLE CHANGES
+ - `--skipDupRadar` is now replaced by `--skipMarkDup` to disable all duplicates processing
+
+NEW FEATURES
+  - conda recipe xengsort has been updated to fix broken dependencies when build the conda env
+  - geniac.config:
+      * singularityRunOptions set to empty (as autoMounts is noew set to true) 
+
+BUG FIXES
+ - test.config: set tmpDir to './'
+
+***************************************
 version-4.1.1
 
 NEW FEATURES
   - Add Saccharomyces_pombe/ASM294v2 annotations
+
 
 ***************************************
 version-4.1.0
@@ -14,7 +29,6 @@ NEW FEATURES
 SIGNIFICANT USER-VISIBLE CHANGES
    - Update default `--salmonQuantOpts` value
    - revert the heatmap legend scalone on the report (#157)
-   - TPM table are no longer used in any analysis
 
 BUG FIXES
    - Rewrite parse_rseq_output script to avoid using `bc`
