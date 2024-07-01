@@ -1,15 +1,17 @@
 ***************************************
-version-4.2.0dev
+version-4.2.0
+
+NEW FEATURES
+  - Add 'T2Tv2.0' reference genome
 
 SIGNIFICANT USER-VISIBLE CHANGES
-   - `--skipDupRadar` is now replaced by `--skipMarkDup` to disable all duplicates processing
+  - `--skipDupRadar` is now replaced by `--skipMarkDup` to disable all duplicates processing
 
 ***************************************
 version-4.1.1
 
 NEW FEATURES
   - Add Saccharomyces_pombe/ASM294v2 annotations
-
 
 ***************************************
 version-4.1.0
