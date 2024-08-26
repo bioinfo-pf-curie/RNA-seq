@@ -27,6 +27,8 @@ image: ${DEPLOY_DOCKER_IMAGE}
 
 stages:
   - detect_env      # detect the environment for the deployment
+  - lint            # lint the code with geniac
+  - artifacts       # generate artifacts with recipes and config files
   - set_env         # set environment variables passed to other jobs
   - check           # check that requirements are met before starting the deployement
   - generate_ci_yml # generate ci yml files from templates
@@ -36,6 +38,7 @@ stages:
   - post            # clean directories
 
 before_script:
+  - source /opt/etc/bashrc # needed to activate the geniac conda env
   - set -euo pipefail
 
 
@@ -92,6 +95,47 @@ no_go:
     - if: '$CI_COMMIT_TAG != null && $CI_COMMIT_TAG !~ /v[0-9]*\.[0-9]*\.[0-9]*/'
       when: manual # need to have manual for each if
 
+#############################
+# Perform preliminary check #
+#############################
+
+geniac_lint:
+  # This jobs launches geniac lint on the analysis pipeline repo
+  stage: lint
+  script:
+    - echo "Geniac lint"
+    - geniac --version
+    - geniac lint ${CI_PROJECT_DIR}
+  rules:
+    - if: '$IS_NF_CORE == ""'
+
+######################
+# Generate artifacts #
+######################
+
+geniac_artifacts:
+  # This jobs launches geniac lint on the analysis pipeline repo
+  stage: artifacts
+  script:
+    - echo "Geniac recipes & configs"
+    - geniac --version
+    - mkdir -p ${DIR_TMP_GENIAC_INIT}
+    - rm -rf ${DIR_TMP_GENIAC_INIT} # remove possibly already existing folder
+    - geniac init -w  ${DIR_TMP_GENIAC_INIT} ${CI_PROJECT_DIR}
+    - cd ${DIR_TMP_GENIAC_INIT}
+    - geniac recipes -v
+    - geniac configs -v
+    - mkdir geniac-artifacts
+    - mv recipes configs geniac-artifacts
+    - tar cvf ${CI_PROJECT_DIR}/geniac-artifacts.tar geniac-artifacts/
+  artifacts:
+    paths:
+      - geniac-artifacts.tar
+  rules:
+    - if: '$IS_NF_CORE == ""'
+  variables:
+    DIR_TMP_GENIAC_INIT: " ${CI_BUILDS_DIR}/${CI_PROJECT_PATH_SLUG}/${CI_COMMIT_REF_SLUG}/build_4_gitlab_geniac_init"
+
 
 #########################################################
 # Create an artifact to export variables for other jobs #
@@ -129,7 +173,7 @@ signature_deffiles:
   # This job computes a signature of the singularity recipes and their dependencies.
   # This is needed to figure out whether we have to rebuild the singularity images
   # (even if the commit id of the submodule changed it migth not be necessary to rebuild the containers).
-  stage: set_env
+  stage: check
   script:
     - |
       echo "Build signature of the singularity recipes and their dependencies"
@@ -149,35 +193,19 @@ signature_deffiles:
       if [[ ${IS_NF_CORE} == "" ]]; then
       cmake ${CI_PROJECT_DIR}/${DIR_ANALYSIS_PIPELINE_MODULE}/geniac -DCMAKE_INSTALL_PREFIX=${DIR_INSTALL} -Dap_check_config_file_from_source=OFF -Dap_install_singularity_recipes=ON -Dap_install_singularity_images=OFF -Dap_docker_registry=registrygitlab.curie.fr/bioinfo-containers/geniac/
       make
-      cd ${CI_PROJECT_DIR}
-      bash ${DIR_DEPLOY_PACKAGE}/utils/signature-deffiles.sh ${DIR_TMP_IN_RUNNER}/workDir/results/singularity/deffiles ${CI_PROJECT_DIR}/${DIR_ANALYSIS_PIPELINE_MODULE} > ${CI_PROJECT_DIR}/sha256-deffiles.env
+      cp ${DIR_TMP_IN_RUNNER}/workDir/results/singularity/deffiles/sha256sum ${CI_PROJECT_DIR}
       else
       cd ${CI_PROJECT_DIR}
-      echo "SHA256_DEFFILES=${CI_COMMIT_ID}" > ${CI_PROJECT_DIR}/sha256-deffiles.env
+      AP_SUBMODULE_COMMIT=$(git submodule status ${DIR_ANALYSIS_PIPELINE_MODULE}/ | awk '{print $1}')
+      echo "${AP_SUBMODULE_COMMIT} ${PIPELINE_NAME}" > ${CI_PROJECT_DIR}/sha256sum
       fi
-    - cat ${CI_PROJECT_DIR}/sha256-deffiles.env
+    - cat ${CI_PROJECT_DIR}/sha256sum
   needs:
     - job: export_var
       artifacts: true
   artifacts:
-    reports:
-      dotenv: sha256-deffiles.env
-
-#############################
-# Perform preliminary check #
-#############################
-
-geniac_lint:
-  # This jobs launches geniac lint on the analysis pipeline repo
-  stage: check
-  script:
-    - echo "Geniac lint"
-    - source /opt/etc/bashrc # needed to activate the geniac conda env
-    - geniac --version
-    - geniac lint ${CI_PROJECT_DIR}
-  rules:
-    - if: '$IS_NF_CORE == ""'
-
+    paths:
+      - sha256sum
 
 ###############################################################
 # Detect if the singularity images have already been deployed #
@@ -204,10 +232,17 @@ check_sif_version:
       bash ${DIR_DEPLOY_PACKAGE}/utils/set-vault-token-4-gitlab-ci.sh # set the vault token
       source variables.sh
     - ssh -p ${SSH_PORT} ${USERSSH}@${SERVER_NAME} "mkdir -p ${DEPLOY_HOME}/${DIR_TMP_ON_CLUSTER}"
-    - scp -P ${SSH_PORT} ${DIR_DEPLOY_PACKAGE}/utils/test-sif-exist.bash ${USERSSH}@${SERVER_NAME}:${DEPLOY_HOME}/${DIR_TMP_ON_CLUSTER}
-    - ssh -p ${SSH_PORT} ${USERSSH}@${SERVER_NAME} "bash ${DEPLOY_HOME}/${DIR_TMP_ON_CLUSTER}/test-sif-exist.bash ${DEPLOY_HOME}/singularity/images ${SHA256_DEFFILES} ${DEPLOY_HOME}/${DIR_TMP_ON_CLUSTER}/test-sif-exist-${SHA256_DEFFILES}.log" 
-    - scp -P ${SSH_PORT} ${USERSSH}@${SERVER_NAME}:${DEPLOY_HOME}/${DIR_TMP_ON_CLUSTER}/test-sif-exist-${SHA256_DEFFILES}.log ${CI_PROJECT_DIR}/build-sif.env
+    - scp -P ${SSH_PORT} ${DIR_DEPLOY_PACKAGE}/utils/test-sif-exist.bash sha256sum ${USERSSH}@${SERVER_NAME}:${DEPLOY_HOME}/${DIR_TMP_ON_CLUSTER}
+    - ssh -p ${SSH_PORT} ${USERSSH}@${SERVER_NAME} "mkdir -p ${DEPLOY_HOME}/${DIR_TMP_ON_CLUSTER}"
+    - echo "bash ${DEPLOY_HOME}/${DIR_TMP_ON_CLUSTER}/test-sif-exist.bash ${DEPLOY_HOME}/singularity/images ${DEPLOY_HOME}/${DIR_TMP_ON_CLUSTER}/sha256sum $(apptainer version) ${DEPLOY_HOME}/${DIR_TMP_ON_CLUSTER}/build-sif.txt ${DEPLOY_HOME}/${DIR_TMP_ON_CLUSTER}/remove-sif.txt"
+    - ssh -p ${SSH_PORT} ${USERSSH}@${SERVER_NAME} "bash ${DEPLOY_HOME}/${DIR_TMP_ON_CLUSTER}/test-sif-exist.bash ${DEPLOY_HOME}/singularity/images ${DEPLOY_HOME}/${DIR_TMP_ON_CLUSTER}/sha256sum $(apptainer version) ${DEPLOY_HOME}/${DIR_TMP_ON_CLUSTER}/build-sif.txt ${DEPLOY_HOME}/${DIR_TMP_ON_CLUSTER}/remove-sif.txt"
+    - scp -P ${SSH_PORT} ${USERSSH}@${SERVER_NAME}:${DEPLOY_HOME}/${DIR_TMP_ON_CLUSTER}/build-sif.txt ${CI_PROJECT_DIR}/build-sif.txt
+    - scp -P ${SSH_PORT} ${USERSSH}@${SERVER_NAME}:${DEPLOY_HOME}/${DIR_TMP_ON_CLUSTER}/remove-sif.txt ${CI_PROJECT_DIR}/remove-sif.txt
+    - if [[ -s ${CI_PROJECT_DIR}/build-sif.txt ]]; then echo "BUILD_SIF=true"; else echo "BUILD_SIF=false"; fi > ${CI_PROJECT_DIR}/build-sif.env
+    - if [[ -s ${CI_PROJECT_DIR}/remove-sif.txt ]]; then echo "The following sif files has been remove as they are not needed anymore:"; cat ${CI_PROJECT_DIR}/remove-sif.txt; fi
     - cat ${CI_PROJECT_DIR}/build-sif.env
+    - cat ${CI_PROJECT_DIR}/remove-sif.txt
+    - cat ${CI_PROJECT_DIR}/build-sif.txt
   needs:
     - job: export_var
       artifacts: true
@@ -216,6 +251,9 @@ check_sif_version:
   artifacts:
     reports:
       dotenv: build-sif.env
+    paths:
+      - build-sif.txt
+      - remove-sif.txt
   variables:
     DEPLOY_HOME: "${DIR_BIOINFO_PIPELINE}/${PIPELINE_NAME}/${DEPLOY_ENV}/${CUBIC_PIPE}"
     DIR_TMP_ON_CLUSTER: "dir_tmp_4_deploy" # This will be a folder created in the HOME of the user app on the cluster
@@ -236,17 +274,20 @@ ci_4_sif:
       if [[ ${BUILD_SIF} == "true" ]]; then
       echo "singularity images must be built"
       cp ${DIR_DEPLOY_PACKAGE}/templates/gitlab-ci_build_sif${IS_NF_CORE}.yml gitlab-ci_singularity.yml
-      sed -i -e "s/%SHA256_DEFFILES%/${SHA256_DEFFILES}/g" gitlab-ci_singularity.yml
+      CONTAINER_LIST=$(echo $(<build-sif.txt) | sed 's/ /,/g')
       sed -i -e "s/%CLUSTER_NAME%/${CLUSTER_NAME}/g" gitlab-ci_singularity.yml
       sed -i -e "s/%DEPLOY_ENV%/${DEPLOY_ENV}/g" gitlab-ci_singularity.yml
       sed -i -e "s|%DIR_TMP_IN_RUNNER%|${DIR_TMP_IN_RUNNER}|g" gitlab-ci_singularity.yml
       sed -i -e "s|%DIR_BIOINFO_PIPELINE%|${DIR_BIOINFO_PIPELINE}|g" gitlab-ci_singularity.yml
       sed -i -e "s/%PIPELINE_NAME%/${PIPELINE_NAME}/g" gitlab-ci_singularity.yml
+      sed -i -e "s/%CONTAINER_LIST%/${CONTAINER_LIST}/g" gitlab-ci_singularity.yml
       sed -i -e "s|DEPLOY_HOME:.*|DEPLOY_HOME: ${DEPLOY_HOME}|g" gitlab-ci_singularity.yml
       else
       echo "singularity images already exist"
       cp ${DIR_DEPLOY_PACKAGE}/templates/gitlab-ci_sif_ok.yml gitlab-ci_singularity.yml
       fi
+    - echo "The following container will be build"
+    - cat build-sif.txt
   artifacts:
     paths:
       - gitlab-ci_singularity.yml
@@ -281,6 +322,8 @@ sif:
       - artifact: gitlab-ci_singularity.yml
         job: ci_4_sif
     strategy: depend # wait for the child pipeline to be completed
+    forward:
+      pipeline_variables: true
 
 sync_sif_calcsub:
   stage: deploy
@@ -321,6 +364,7 @@ deploy_abacus:
     CLUSTER_SUBMIT: "srun /bin/bash"   # for abacus
     DEPLOY_ENV: "${DEPLOY_ENV}"
     DEPLOY_HOME: "${DIR_BIOINFO_PIPELINE_ABACUS}/${PIPELINE_NAME}/${DEPLOY_ENV}/${CUBIC_PIPE}"
+    DEPLOY_DOCKER_IMAGE: "${DEPLOY_DOCKER_IMAGE}"
     DIR_ANNOTATION: "${DIR_ANNOTATION_ABACUS}"
     DIR_TMP_ON_CLUSTER: "dir_tmp_4_deploy" # This will be a folder created in the HOME of the user app on the cluster
     NEXTFLOW_OPTIONS: ""
@@ -343,6 +387,7 @@ deploy_calcsub:
     CLUSTER_SUBMIT: "qsub -I -x"   # for calcsub
     DEPLOY_ENV: "${DEPLOY_ENV}"
     DEPLOY_HOME: "${DIR_BIOINFO_PIPELINE_CALCSUB}/${PIPELINE_NAME}/${DEPLOY_ENV}/${CUBIC_PIPE}"
+    DEPLOY_DOCKER_IMAGE: "${DEPLOY_DOCKER_IMAGE}"
     DIR_ANNOTATION: "${DIR_ANNOTATION_CALCSUB}"
     DIR_TMP_ON_CLUSTER: "dir_tmp_4_deploy" # This will be a folder created in the HOME of the user app on the cluster
     NEXTFLOW_OPTIONS: "-process.clusterOptions '-v PATH'"
