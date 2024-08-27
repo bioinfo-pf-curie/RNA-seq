@@ -322,8 +322,6 @@ sif:
       - artifact: gitlab-ci_singularity.yml
         job: ci_4_sif
     strategy: depend # wait for the child pipeline to be completed
-    forward:
-      pipeline_variables: true
 
 sync_sif_calcsub:
   stage: deploy
@@ -364,7 +362,6 @@ deploy_abacus:
     CLUSTER_SUBMIT: "srun /bin/bash"   # for abacus
     DEPLOY_ENV: "${DEPLOY_ENV}"
     DEPLOY_HOME: "${DIR_BIOINFO_PIPELINE_ABACUS}/${PIPELINE_NAME}/${DEPLOY_ENV}/${CUBIC_PIPE}"
-    DEPLOY_DOCKER_IMAGE: "${DEPLOY_DOCKER_IMAGE}"
     DIR_ANNOTATION: "${DIR_ANNOTATION_ABACUS}"
     DIR_TMP_ON_CLUSTER: "dir_tmp_4_deploy" # This will be a folder created in the HOME of the user app on the cluster
     NEXTFLOW_OPTIONS: ""
@@ -387,7 +384,6 @@ deploy_calcsub:
     CLUSTER_SUBMIT: "qsub -I -x"   # for calcsub
     DEPLOY_ENV: "${DEPLOY_ENV}"
     DEPLOY_HOME: "${DIR_BIOINFO_PIPELINE_CALCSUB}/${PIPELINE_NAME}/${DEPLOY_ENV}/${CUBIC_PIPE}"
-    DEPLOY_DOCKER_IMAGE: "${DEPLOY_DOCKER_IMAGE}"
     DIR_ANNOTATION: "${DIR_ANNOTATION_CALCSUB}"
     DIR_TMP_ON_CLUSTER: "dir_tmp_4_deploy" # This will be a folder created in the HOME of the user app on the cluster
     NEXTFLOW_OPTIONS: "-process.clusterOptions '-v PATH'"
