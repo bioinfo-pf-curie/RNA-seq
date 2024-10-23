@@ -135,23 +135,21 @@ chMetadata           = params.metadata              ? Channel.fromPath(params.me
 */
 
 summary = [
-  'Pipeline Release': workflow.revision ?: null,
+  'Pipeline' : workflow.manifest.name ?: null,
+  'Version': workflow.manifest.version ?: null,
+  'DOI': workflow.manifest.doi ?: null,
   'Run Name': customRunName,
   'Inputs' : params.samplePlan ?: params.reads ?: null,
   'PDX' : params.pdx ?: null,
   'Genome' : params.genome,
   'GTF Annotation' : params.gtf ?: null,
-  'Gencode' : params.gencode ? 'yes' : 'no',
   'BED Annotation' : params.bed12 ?: null,
-  'Identito' : params.polym ?: null,
   'Strandedness' : params.stranded,
   'Aligner' : params.aligner ?: null,
-  'Star TwoPass' : params.starTwoPass ?:null,
   'PseudoAligner' : params.pseudoAligner ?: null,
   'Guided Assembly' : params.denovo ?: null,
   'Counts' : params.counts,
   'Max Resources': "${params.maxMemory} memory, ${params.maxCpus} cpus, ${params.maxTime} time per job",
-  'Container': workflow.containerEngine && workflow.container ? "${workflow.containerEngine} - ${workflow.container}" : null,
   'Profile' : workflow.profile,
   'OutDir' : params.outDir,
   'WorkDir': workflow.workDir,
@@ -368,13 +366,15 @@ workflow {
       }
       
       // SUBWORKFLOW: Duplicates
-      markdupFlow(
-        chBamPassed,
-        chGtf.collect()
-      )
-      chMarkDupMqc = markdupFlow.out.picardMetrics.collect()
-      chDupradarMqc = markdupFlow.out.dupradarResults.collect()
-      chVersions = chVersions.mix(markdupFlow.out.versions)
+      if (!params.skipMarkDup){
+        markdupFlow(
+          chBamPassed,
+          chGtf.collect()
+        )
+        chMarkDupMqc = markdupFlow.out.picardMetrics.collect()
+        chDupradarMqc = markdupFlow.out.dupradarResults.collect()
+        chVersions = chVersions.mix(markdupFlow.out.versions)
+      }
 
       // SUBWORKFLOW: Identito - polym and Monitoring
       if (!params.skipIdentito){

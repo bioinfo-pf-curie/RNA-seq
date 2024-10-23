@@ -24,7 +24,7 @@ workflow geneCountsAnalysisFlow {
   chVersions = chVersions.mix(geneSaturation.out.versions)
 
   getCountsPerGeneType(
-    counts.collect(),
+    tpm.collect(),
     gtf.collect()
   )
   chVersions = chVersions.mix(getCountsPerGeneType.out.versions)

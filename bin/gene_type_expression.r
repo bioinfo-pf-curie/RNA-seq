@@ -34,10 +34,10 @@ d.gtf <- rtracklayer::import(gtf)
 my_genes <- d.gtf[d.gtf$type == "gene"]
 
 ## remove "." in ENSEMBL Ids
-if (length(grep("^ENS", my_genes$gene_id)) > 0){
+if (length(grep("^ENS[GT]", my_genes$gene_id)) > 0){
     my_genes$gene_id <- gsub("\\.[0-9]+$","",my_genes$gene_id)
 }
-if (length(grep("^ENS", rownames(counts.tpm))) > 0){
+if (length(grep("^ENS[GT]", rownames(counts.tpm))) > 0){
     rownames(counts.tpm) <- gsub("\\.[0-9]+$","",rownames(counts.tpm))
 }
 
@@ -51,11 +51,11 @@ if (length(my_genes) > 0 && is.element("gene_type", colnames(elementMetadata(my_
 	  c(total=n_ex, dt)
 	}), check.names=FALSE))
 }else{
-    n_items <- 1
-    d2p <-  as.matrix(data.frame(lapply(as.list(counts.tpm), function(x){
-            n_ex <- length(which(x>1))
-            c(total=n_ex)
-            }), check.names=FALSE))
+   n_items <- 1
+   d2p <-  as.matrix(data.frame(lapply(as.list(counts.tpm), function(x){
+           n_ex <- length(which(x>1))
+           c(total=n_ex)
+           }), check.names=FALSE))
 }
 
 ## remove zero values and sort by counts
