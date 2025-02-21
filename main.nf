@@ -195,13 +195,14 @@ include { scallopFlow } from './nf-modules/local/subworkflow/scallop'
 // Processes
 include { getSoftwareVersions } from './nf-modules/common/process/utils/getSoftwareVersions'
 include { outputDocumentation } from './nf-modules/common/process/utils/outputDocumentation'
+include { umitoolsExtract } from './nf-modules/common/process/umitools/umitoolsExtract'
+include { umitoolsDedup } from './nf-modules/common/process/umitools/umitoolsDedup'
 include { trimGalore } from './nf-modules/common/process/trimGalore/trimGalore'
 include { xengsort } from './nf-modules/common/process/xengsort/xengsort'
 include { deeptoolsBamCoverage } from './nf-modules/common/process/deeptools/deeptoolsBamCoverage'
 include { qualimapRNAseq } from './nf-modules/common/process/qualimap/qualimapRNAseq'
 include { preseq } from './nf-modules/common/process/preseq/preseq'
 include { fastqc } from './nf-modules/common/process/fastqc/fastqc'
-
 include { rRNAMapping } from './nf-modules/local/process/rRNAMapping'
 include { multiqc } from './nf-modules/local/process/multiqc'
 
@@ -241,6 +242,15 @@ workflow {
       chOutputDocs,
       chOutputDocsImages
     )
+    
+    // PROCESS: UMI extract
+    if (params.umi){
+       umitoolsExtract(
+         chRawReads
+       )
+       chRawReads=umiExtract.out.fastq
+       chVersions = chVersions.mix(umitoolsExtract.out.versions)
+    }
 
     // PROCESS: trimming
     if (params.trimming){
@@ -336,6 +346,17 @@ workflow {
         .map { meta, logs, bam, bai -> [ meta, bam, bai ] }
         .set { chBamPassed }
 
+
+      // UMIs - dedup
+      if (params.umi){
+        umitoolsDedup(
+	  chBamPassed,
+	  Channel.value(True)
+        )
+	chBamPassed = umitoolsDedup.out.bam
+	chVersions = chVersions.mix(umitoolsDedup.out.versions)
+      }
+      
       // PROCESS : bigwig file
       if (!params.skipBigwig){
         deeptoolsBamCoverage(

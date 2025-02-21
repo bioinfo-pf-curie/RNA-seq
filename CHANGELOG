@@ -1,4 +1,10 @@
 ***************************************
+version-4.3.0
+
+NEW FEATURES
+  - Support UMI with umitools (--umi)
+
+***************************************
 version-4.2.2
 
 NEW FEATURES
