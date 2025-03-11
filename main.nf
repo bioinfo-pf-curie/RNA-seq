@@ -197,6 +197,7 @@ include { getSoftwareVersions } from './nf-modules/common/process/utils/getSoftw
 include { outputDocumentation } from './nf-modules/common/process/utils/outputDocumentation'
 include { umitoolsExtract } from './nf-modules/common/process/umitools/umitoolsExtract'
 include { umitoolsDedup } from './nf-modules/common/process/umitools/umitoolsDedup'
+include { samtoolsIndex } from './nf-modules/common/process/samtools/samtoolsIndex'
 include { trimGalore } from './nf-modules/common/process/trimGalore/trimGalore'
 include { xengsort } from './nf-modules/common/process/xengsort/xengsort'
 include { deeptoolsBamCoverage } from './nf-modules/common/process/deeptools/deeptoolsBamCoverage'
@@ -248,7 +249,7 @@ workflow {
        umitoolsExtract(
          chRawReads
        )
-       chRawReads=umiExtract.out.fastq
+       chRawReads=umitoolsExtract.out.fastq
        chVersions = chVersions.mix(umitoolsExtract.out.versions)
     }
 
@@ -351,10 +352,15 @@ workflow {
       if (params.umi){
         umitoolsDedup(
 	  chBamPassed,
-	  Channel.value(True)
+	  Channel.of(true).collect()
         )
-	chBamPassed = umitoolsDedup.out.bam
-	chVersions = chVersions.mix(umitoolsDedup.out.versions)
+        chVersions = chVersions.mix(umitoolsDedup.out.versions)
+
+        samtoolsIndex(
+          umitoolsDedup.out.bam
+        )
+	chBamPassed = umitoolsDedup.out.bam.join(samtoolsIndex.out.bai)
+	chVersions = chVersions.mix(samtoolsIndex.out.versions)
       }
       
       // PROCESS : bigwig file

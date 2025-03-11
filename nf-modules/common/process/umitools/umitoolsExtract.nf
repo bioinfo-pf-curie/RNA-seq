@@ -1,7 +1,7 @@
 process umitoolsExtract {
     tag "$meta.id"
     label 'umitools'
-    label 'minCup'
+    label 'minCpu'
     label 'medMem'
 
     input:
