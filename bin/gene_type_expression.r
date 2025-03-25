@@ -71,4 +71,4 @@ if (nrow(d2p) > (n_items + 1)){
 }
 
 ## export
-write.csv(t(d2p), file=ofile)
+write.csv(t(d2p), file=ofile, quote=FALSE)

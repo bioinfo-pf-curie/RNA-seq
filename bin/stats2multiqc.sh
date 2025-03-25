@@ -16,7 +16,7 @@ do
     sname=$(awk -F, -v sname=$sample '$1==sname{print $2}' $splan)
 
     ## Strandness
-    strandness=$(cat strandness/${sample}_strandness.txt | awk -F, '{print $2}')
+    strandness=$(cat strandness/${sample}_strandness.txt | awk -F, '{print $NF}')
  
     header="Sample_id,Sample_name,Strandness"
     output="${sample},${sname},${strandness}"
@@ -88,19 +88,19 @@ do
 	n_multi=$(grep "Number of reads mapped to multiple loci" alignment/${sample}Log.final.out | cut -d"|" -f 2 | sed -e 's/\t//g')
 	n_mapped=$(($n_unique + $n_multi))
 	p_mapped=$(echo "${n_mapped} ${n_frag}" | awk ' { printf "%.*f",2,$1*100/$2 } ') 
-	p_unique=$(echo "${n_unique} ${n_frag}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
-	p_multi=$(echo "${n_multi} ${n_frag}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
-	header+=",Number_of_aligned,Percent_of_aligned,Number_of_uniquely_aligned,Percent_uniquely_aligned,Number_of_multiple_aligned,Percent_multiple_aligned"
-	output+=",${n_mapped},${p_mapped},${n_unique},${p_unique},${n_multi},${p_multi}"
+	#p_unique=$(echo "${n_unique} ${n_frag}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
+	#p_multi=$(echo "${n_multi} ${n_frag}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
+	header+=",Number_of_aligned,Percent_of_aligned"
+	output+=",${n_mapped},${p_mapped}"
     elif [[ $aligner == "hisat2" && -e alignment/${sample}.hisat2_summary.txt ]]; then
 	n_unique=$(grep " 1 time" alignment/${sample}.hisat2_summary.txt | cut -d: -f 2 | sed -e 's/ //g' | awk -F"(" 'BEGIN{s=0}{s=s+$1}END{print s}')
 	n_multi=$(grep ">1 time" alignment/${sample}.hisat2_summary.txt | cut -d: -f 2 | sed -e 's/ //g' | awk -F"(" 'BEGIN{s=0}{s=s+$1}END{print s}')
 	n_mapped=$(($n_unique + $n_multi))
 	p_mapped=$(echo "${n_mapped} ${n_frag}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
-        p_unique=$(echo "${n_unique} ${n_frag}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
-        p_multi=$(echo "${n_multi} ${n_frag}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
-	header+=",Number_of_aligned,Percent_of_aligned,Number_of_uniquely_aligned,Percent_uniquely_aligned,Number_of_multiple_aligned,Percent_multiple_aligned"
-	output+=",${n_mapped},${p_mapped},${n_unique},${p_unique},${n_multi},${p_multi}"
+        #p_unique=$(echo "${n_unique} ${n_frag}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
+        #p_multi=$(echo "${n_multi} ${n_frag}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
+	header+=",Number_of_aligned,Percent_of_aligned"
+	output+=",${n_mapped},${p_mapped}"
     elif [[ $aligner == "salmon" && -e counts/${sample}/aux_info/meta_info.json ]]; then
 	n_mapped=$(grep "num_mapped" counts/${sample}/aux_info/meta_info.json | cut -f2 -d: | sed -e "s/ \|,//g")
 	p_mapped=$(echo "${n_mapped} ${n_frag}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
@@ -132,6 +132,13 @@ do
 	output+=",${p_sat}"
     else
 	output+=",NA"
+    fi
+
+    ## Number of detected genes
+    if [ -e genetype/counts_genetype.txt ]; then
+	n_codings=$(awk -F"," -v id=${sample} '$1==id{print $2}' genetype/counts_genetype.txt)
+	header+=",Coding_genes"
+        output+=",${n_codings}"
     fi
 
     if [ $n_header == 0 ]; then
