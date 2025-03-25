@@ -233,6 +233,8 @@ workflow {
     chGeneExpAnResults = Channel.empty()
     chXengsortMqc = Channel.empty()
     chTrimmingMqc = Channel.empty()
+    chUmiExtractMqc = Channel.empty()
+    chUmiDedupMqc = Channel.empty()
 
     // Init Channels
     chCounts = Channel.empty()
@@ -250,6 +252,7 @@ workflow {
          chRawReads
        )
        chRawReads=umitoolsExtract.out.fastq
+       chUmiExtractMqc=umitoolsExtract.out.log.map{it->it[1]}
        chVersions = chVersions.mix(umitoolsExtract.out.versions)
     }
 
@@ -354,6 +357,7 @@ workflow {
 	  chBamPassed,
 	  Channel.of(true).collect()
         )
+        chUmiDedupMqc = umitoolsDedup.out.log.map{it->it[1]}
         chVersions = chVersions.mix(umitoolsDedup.out.versions)
 
         samtoolsIndex(
@@ -551,11 +555,13 @@ workflow {
         chMetadata.ifEmpty([]),
         chMultiqcConfig.ifEmpty([]),
         chTrimmingMqc.collect().ifEmpty([]),
+        chUmiExtractMqc.collect().ifEmpty([]),
         chXengsortMqc.collect().ifEmpty([]),
         chFastqcMqc.ifEmpty([]),
         chrRNAMappingMqc.ifEmpty([]),
         chAlignedMqc.collect().ifEmpty([]),
         strandnessFlow.out.logs.collect().ifEmpty([]),
+        chUmiDedupMqc.collect().ifEmpty([]),
         chQualimapMqc.ifEmpty([]),
         chPreseqMqc.ifEmpty([]),
         chIdentitoMqc.ifEmpty([]),
