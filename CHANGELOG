@@ -1,4 +1,10 @@
 ***************************************
+version-4.2.3
+
+BUG FIXES
+  - Fix bug in FeatureCounts process #191
+
+***************************************
 version-4.2.2
 
 NEW FEATURES
