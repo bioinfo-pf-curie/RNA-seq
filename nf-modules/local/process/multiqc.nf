@@ -13,11 +13,13 @@ process multiqc {
   path metadata
   path multiqcConfig
   path ('trimming/*')
+  path ('umi/*')
   path ('xengsort/*')
   path ('fastqc/*')
   path ('rrna/*')
   path ('alignment/*')
   path ('strandness/*')
+  path ('umi/*')
   path ('qualimap/*')
   path ('preseq/*')
   path ('identito/*')
@@ -46,7 +48,7 @@ process multiqc {
   splanOpts = params.samplePlan ? "--splan ${params.samplePlan}" : ""
   isPE = params.singleEnd ? 0 : 1
     
-  modulesList = "-m custom_content -m preseq -m rseqc -m bowtie1 -m hisat2 -m star -m cutadapt -m fastqc -m qualimap -m salmon -m gffcompare"
+  modulesList = "-m custom_content -m preseq -m rseqc -m bowtie1 -m hisat2 -m star -m cutadapt -m fastqc -m qualimap -m salmon -m gffcompare -m umitools"
   modulesList = params.counts == 'featureCounts' ? "${modulesList} -m featureCounts" : "${modulesList}"  
   modulesList = params.counts == 'HTseqCounts' ? "${modulesList} -m htseq" : "${modulesList}"  
  
