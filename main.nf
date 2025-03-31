@@ -183,6 +183,8 @@ include { strandnessFlow } from './nf-modules/local/subworkflow/strandness'
 include { mappingStarFlow } from './nf-modules/local/subworkflow/mappingStar'
 include { mappingHisat2Flow } from './nf-modules/local/subworkflow/mappingHisat2'
 include { markdupFlow } from './nf-modules/local/subworkflow/markdup'
+include { umitoolsDedupFlow as umitoolsDedupGenomeFlow } from './nf-modules/local/subworkflow/umitoolsDedup'
+include { umitoolsDedupFlow as umitoolsDedupTranscriptomeFlow } from './nf-modules/local/subworkflow/umitoolsDedup'
 include { featureCountsFlow } from './nf-modules/local/subworkflow/featureCounts'
 include { htseqCountsFlow } from './nf-modules/local/subworkflow/htseqCounts'
 include { starCountsFlow } from './nf-modules/local/subworkflow/starCounts'
@@ -196,8 +198,6 @@ include { scallopFlow } from './nf-modules/local/subworkflow/scallop'
 include { getSoftwareVersions } from './nf-modules/common/process/utils/getSoftwareVersions'
 include { outputDocumentation } from './nf-modules/common/process/utils/outputDocumentation'
 include { umitoolsExtract } from './nf-modules/common/process/umitools/umitoolsExtract'
-include { umitoolsDedup } from './nf-modules/common/process/umitools/umitoolsDedup'
-include { samtoolsIndex } from './nf-modules/common/process/samtools/samtoolsIndex'
 include { trimGalore } from './nf-modules/common/process/trimGalore/trimGalore'
 include { xengsort } from './nf-modules/common/process/xengsort/xengsort'
 include { deeptoolsBamCoverage } from './nf-modules/common/process/deeptools/deeptoolsBamCoverage'
@@ -323,8 +323,8 @@ workflow {
           chStarIndex,
           chGtf
         )
-        chAlignedBam = mappingStarFlow.out.bam
-        chAlignedBai = mappingStarFlow.out.bai
+        chGenomeBam = mappingStarFlow.out.genomeBam
+        chTranscriptomeBam = mappingStarFlow.out.transcriptomeBam
         chAlignedMqc = mappingStarFlow.out.logs
         chAlignedFlagstat = mappingStarFlow.out.flagstat
         chVersions = chVersions.mix(mappingStarFlow.out.versions)
@@ -337,40 +337,41 @@ workflow {
           chHisat2Index,
           chGtf
         )
-        chAlignedBam = mappingHisat2Flow.out.bam
-        chAlignedBai = mappingHisat2Flow.out.bai
+        chGenomeBam = mappingHisat2Flow.out.genomeBam
+        chTranscriptomeBam = Channel.empty()
         chAlignedMqc = mappingHisat2Flow.out.logs
         chAlignedFlagstat = mappingHisat2Flow.out.flagstat
         chVersions = chVersions.mix(mappingHisat2Flow.out.versions)
       }
 
       // Filter removes all 'aligned' channels that fail the check
-      chAlignedFlagstat.join(chAlignedBam).join(chAlignedBai)
-        .filter { meta, logs, bam, bai -> checkAlignmentPercent(meta, logs) }
-        .map { meta, logs, bam, bai -> [ meta, bam, bai ] }
-        .set { chBamPassed }
-
+      chGenomePassed = chAlignedFlagstat.join(chGenomeBam)
+        .filter { meta, logs, gbam, gbai -> checkAlignmentPercent(meta, logs) }
+        .map { meta, logs, bam, bai -> [ meta, bam, bai ] }.view()
+	
+     chTranscriptomePassed = chAlignedFlagstat.join(chTranscriptomeBam)
+        .filter { meta, logs, tbam, tbai -> checkAlignmentPercent(meta, logs) }
+        .map { meta, logs, bam, bai -> [ meta, bam, bai ] }.view()
 
       // UMIs - dedup
       if (params.umi){
-        umitoolsDedup(
-	  chBamPassed,
-	  Channel.of(true).collect()
+        umitoolsDedupGenomeFlow(
+	  chGenomePassed
         )
-        chUmiDedupMqc = umitoolsDedup.out.log.map{it->it[1]}
-        chVersions = chVersions.mix(umitoolsDedup.out.versions)
+        chGenomePassed = umitoolsDedupGenomeFlow.out.bam
+        chUmiDedupMqc = umitoolsDedupGenomeFlow.out.logs.map{it->it[1]}
+        chVersions = chVersions.mix(umitoolsDedupGenomeFlow.out.versions)
 
-        samtoolsIndex(
-          umitoolsDedup.out.bam
+        umitoolsDedupTranscriptomeFlow(
+          chTranscriptomePassed
         )
-	chBamPassed = umitoolsDedup.out.bam.join(samtoolsIndex.out.bai)
-	chVersions = chVersions.mix(samtoolsIndex.out.versions)
+	chTranscriptomePassed = umitoolsDedupTranscriptomeFlow.out.bam
       }
       
       // PROCESS : bigwig file
       if (!params.skipBigwig){
         deeptoolsBamCoverage(
-          chBamPassed.map{it->[it[0],it[1],it[2],null]},
+          chGenomePassed.map{it->[it[0],it[1],it[2],null]},
 	  Channel.empty().collect().ifEmpty([]),
 	  Channel.empty().collect().ifEmpty([])
         )
@@ -380,7 +381,7 @@ workflow {
       // PROCESS : Qualimap
       if (!params.skipQC && !params.skipQualimap){
         qualimapRNAseq(
-          chBamPassed,
+          chGenomePassed,
           chGtf.collect()
         )
 	chQualimapMqc = qualimapRNAseq.out.results.collect()
@@ -390,7 +391,7 @@ workflow {
       // PROCESS : Saturation curves
       if (!params.skipQC && !params.skipSaturation){ 
         preseq(
-          chBamPassed
+          chGenomePassed
         )
 	chPreseqMqc = preseq.out.results.collect()
         chVersions = chVersions.mix(preseq.out.versions)
@@ -399,7 +400,7 @@ workflow {
       // SUBWORKFLOW: Duplicates
       if (!params.skipMarkDup){
         markdupFlow(
-          chBamPassed,
+          chGenomePassed,
           chGtf.collect()
         )
         chMarkDupMqc = markdupFlow.out.picardMetrics.collect()
@@ -410,7 +411,7 @@ workflow {
       // SUBWORKFLOW: Identito - polym and Monitoring
       if (!params.skipIdentito){
         identitoFlow(
-          chBamPassed,
+          chGenomePassed,
           chFasta.collect(),
           chFastaFai.collect(),
           chPolymBed.collect()
@@ -422,7 +423,7 @@ workflow {
       // SUBWORKFLOW: Counts
       if(params.counts == 'featureCounts'){
         featureCountsFlow(
-          chBamPassed,
+          chGenomePassed,
           chGtf.collect()
         )
         chCounts = featureCountsFlow.out.counts
@@ -431,7 +432,7 @@ workflow {
         chVersions = chVersions.mix(featureCountsFlow.out.versions)
       } else if (params.counts == 'HTseqCounts'){
         htseqCountsFlow (
-          chBamPassed,
+          chGenomePassed,
           chGtf.collect()
         )
         chCounts = htseqCountsFlow.out.counts
@@ -440,7 +441,7 @@ workflow {
         chVersions = chVersions.mix(htseqCountsFlow.out.versions)
       } else if (params.counts == 'star'){
         starCountsFlow (
-	  chBamPassed,
+	  chGenomePassed,
 	  mappingStarFlow.out.counts,
 	  mappingStarFlow.out.countsLogs,
           chGtf.collect()
@@ -451,7 +452,7 @@ workflow {
         chVersions = chVersions.mix(starCountsFlow.out.versions)
       } else if (params.counts == 'salmon'){
         salmonQuantFromBamFlow (
-          mappingStarFlow.out.transcriptsBam,
+          chTranscriptomePassed,
 	  chTranscriptsFasta,
 	  chGtf
         )
@@ -476,8 +477,8 @@ workflow {
       chCountsTpm = salmonQuantFromFastqFlow.out.tpmGene
       chCountsMqc = salmonQuantFromFastqFlow.out.results
       chVersions = chVersions.mix(salmonQuantFromFastqFlow.out.versions)
-      chAlignedBam = channel.empty()
-      chBamPassed = channel.empty()
+      chGenomeBam = channel.empty()
+      chGenomePassed = channel.empty()
     }
 
 
@@ -504,7 +505,7 @@ workflow {
     chgffCompareMqc = Channel.empty()
     if ("stringtie" in denovoTools){
       stringtieFlow(
-        chBamPassed,
+        chGenomePassed,
         chGtf.collect()
       )
       chVersions = chVersions.mix(stringtieFlow.out.versions)
@@ -513,7 +514,7 @@ workflow {
 
     if ("scallop" in denovoTools){
       scallopFlow(
-        chBamPassed,
+        chGenomePassed,
 	chGtf.collect()
       )
       chVersions = chVersions.mix(scallopFlow.out.versions)
@@ -530,8 +531,8 @@ workflow {
       )
 
       // Warnings
-      chAlignedBam
-        .join(chBamPassed, remainder: true)
+      chGenomeBam
+        .join(chGenomePassed, remainder: true)
         .filter{it -> it[2] == null}
         .flatMap{ it -> it[0] + ": Poor alignment rate. Sample discarded !"}
         .set{chWarnMapping}

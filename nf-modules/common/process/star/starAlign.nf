@@ -19,7 +19,7 @@ process starAlign {
   path ("versions.txt"), emit: versions
   tuple val(meta), path("*ReadsPerGene.out.tab"), optional: true, emit: counts
   path("*out.tab"), optional: true, emit: countsLogs
-  tuple val(meta), path("*Aligned.toTranscriptome.out.bam"), optional: true, emit: transcriptsBam
+  tuple val(meta), path("*Aligned.toTranscriptome.out.bam"), optional: true, emit: transcriptomeBam
 
   when:
   task.ext.when == null || task.ext.when
