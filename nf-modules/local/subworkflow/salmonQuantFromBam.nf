@@ -2,6 +2,7 @@
  * SamlonQuantFromBam workflow
  */
 
+include { samtoolsSort as samtoolsSortSalmon } from '../../common/process/samtools/samtoolsSort'
 include { salmonQuant as salmonQuantFromBam } from '../../common/process/salmon/salmonQuant'
 include { salmonTx2gene } from '../process/salmonTx2gene'
 include { salmonTxImport } from '../process/salmonTxImport'
@@ -16,8 +17,14 @@ workflow salmonQuantFromBamFlow {
   main:
   chVersions = Channel.empty()
 
+  // Name sort BAM before passing to Salmon
+  samtoolsSortSalmon(
+    bam.map{it->[it[0],it[1]]}
+  )
+  chVersions = chVersions.mix(samtoolsSortSalmon.out.versions)
+
   salmonQuantFromBam(
-    bam,
+    samtoolsSortSalmon.out.bam,
     Channel.value([]),
     trsFasta.collect(),
     gtf.collect(),

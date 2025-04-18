@@ -110,6 +110,7 @@ do
 
     ##n_dup
     if [ -d "picard" ]; then
+	header+=",Number_of_duplicates,Percent_duplicates"
 	if ls picard/${sample}*markDups_metrics.txt  1>/dev/null 2>&1; then 
 	    n_dup_pair=$(grep -a2 "## METRICS" picard/${sample}*markDups_metrics.txt | tail -1 | awk -F"\t" '{print $7}')
 	    n_dup_single=$(grep -a2 "## METRICS" picard/${sample}*markDups_metrics.txt | tail -1 | awk -F"\t" '{print $6}')
@@ -120,8 +121,9 @@ do
 		n_dup=$(( $n_dup / 2 ))
 	    fi
 	    p_dup=$(echo "${n_dup} ${n_mapped}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
-	    header+=",Number_of_duplicates,Percent_duplicates"
 	    output+=",${n_dup},${p_dup}"
+	else
+	    output+=",NA,NA" 
 	fi
     fi
 
@@ -136,9 +138,14 @@ do
 
     ## Number of detected genes
     if [ -e genetype/counts_genetype.txt ]; then
+        header+=",Coding_genes"
 	n_codings=$(awk -F"," -v id=${sample} '$1==id{print $2}' genetype/counts_genetype.txt)
-	header+=",Coding_genes"
-        output+=",${n_codings}"
+	if [[ ! -z $n_codings ]]
+	then
+            output+=",${n_codings}"
+	else
+	    output+=",NA"
+	fi
     fi
 
     if [ $n_header == 0 ]; then

@@ -347,11 +347,10 @@ workflow {
       // Filter removes all 'aligned' channels that fail the check
       chGenomePassed = chAlignedFlagstat.join(chGenomeBam)
         .filter { meta, logs, gbam, gbai -> checkAlignmentPercent(meta, logs) }
-        .map { meta, logs, bam, bai -> [ meta, bam, bai ] }.view()
+        .map { meta, logs, gbam, gbai -> [ meta, gbam, gbai ] }
 	
-     chTranscriptomePassed = chAlignedFlagstat.join(chTranscriptomeBam)
-        .filter { meta, logs, tbam, tbai -> checkAlignmentPercent(meta, logs) }
-        .map { meta, logs, bam, bai -> [ meta, bam, bai ] }.view()
+      chTranscriptomePassed = chGenomePassed.join(chTranscriptomeBam)
+        .map { meta, gbam, gbai, tbam, tbai -> [ meta, tbam, tbai ] }
 
       // UMIs - dedup
       if (params.umi){

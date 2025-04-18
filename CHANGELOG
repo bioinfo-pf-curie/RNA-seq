@@ -4,6 +4,15 @@ version-4.3.0
 NEW FEATURES
   - Support UMI with umitools (--umi)
 
+SIGNIFICANT USER-VISIBLE CHANGES
+  - Default trimming options updated to `--trim-n --2colour 20 --length 10`
+
+***************************************
+version-4.2.3
+
+BUG FIXES
+  - Fix bug in FeatureCounts process #191
+
 ***************************************
 version-4.2.2
 
