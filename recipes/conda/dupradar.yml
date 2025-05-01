@@ -2,7 +2,6 @@ name: dupradar
 channels:
   - conda-forge
   - bioconda
-  - defaults
 dependencies:
   # R-packages
   - conda-forge::r-base=4.0.3=h349a78a_8

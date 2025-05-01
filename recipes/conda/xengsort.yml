@@ -1,17 +1,14 @@
-
 name: xengsort
 channels:
   - bioconda
   - conda-forge
-  - defaults
 dependencies:
   - python=3.10.12=hd12c33a_0_cpython
   - numpy=1.24.4=py310ha4c1d20_0
   - numba=0.57.1=py310h0f6aa51_0
-  - h5py=3.6.0=py310h18f346e_0
+  - h5py=3.6.0=nompi_py310he751f51_100
   - pytest=7.4.2=pyhd8ed1ab_0
   - sra-tools=2.10.0=pl526he1b5a44_0
-  - pip=23.2.1=py310h06a4308_0
+  - pip=23.2.1=pyhd8ed1ab_0
   - pip:
     - xengsort-cubic==1.1.0
-
