@@ -2,7 +2,6 @@ name: r
 channels:
   - conda-forge
   - bioconda
-  - defaults
 dependencies:
   - conda-forge::r-base=4.0.3=h349a78a_8
   - conda-forge::r-dplyr=1.0.9=r40h7525677_0

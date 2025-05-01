@@ -2,7 +2,6 @@ name: identito
 channels:
   - conda-forge
   - bioconda
-  - defaults
 dependencies:
   - bioconda::bcftools=1.12=h45bccc9_1
   - bioconda::snpsift=4.3.1t=hdfd78af_3
