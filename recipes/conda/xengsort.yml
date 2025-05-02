@@ -2,6 +2,7 @@ name: xengsort
 channels:
   - bioconda
   - conda-forge
+  - nodefaults
 dependencies:
   - python=3.10.12=hd12c33a_0_cpython
   - numpy=1.24.4=py310ha4c1d20_0
