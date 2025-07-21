@@ -3,9 +3,16 @@ version-4.3.0
 
 NEW FEATURES
   - Support UMI with umitools (--umi)
+  - New option `--umiProtocol` to specified how to search for UMIs
+  - New option `--saveUmiIntermediates` to save intermediates files from umitools
+  - New option `--umiExtractOpts` to manualy set up the `umitools extract` arguments
 
 SIGNIFICANT USER-VISIBLE CHANGES
+  - Update multiqc report
   - Default trimming options updated to `--trim-n --2colour 20 --length 10`
+
+BUG FIXES
+  - Update Hisat2 recipes
 
 ***************************************
 version-4.2.3

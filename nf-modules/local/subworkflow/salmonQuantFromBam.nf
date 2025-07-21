@@ -6,6 +6,7 @@ include { samtoolsSort as samtoolsSortSalmon } from '../../common/process/samtoo
 include { salmonQuant as salmonQuantFromBam } from '../../common/process/salmon/salmonQuant'
 include { salmonTx2gene } from '../process/salmonTx2gene'
 include { salmonTxImport } from '../process/salmonTxImport'
+include { umitoolsPrepareForRsem } from '../../common/process/umitools/umitoolsPrepareForRsem'
 
 workflow salmonQuantFromBamFlow {
 
@@ -23,8 +24,20 @@ workflow salmonQuantFromBamFlow {
   )
   chVersions = chVersions.mix(samtoolsSortSalmon.out.versions)
 
+  chTrsBam = samtoolsSortSalmon.out.bam
+    .branch { meta, bam ->
+      single: meta.singleEnd
+        return [ meta, bam ]
+      paired: !meta.singleEnd
+        return [ meta, bam ]
+    }
+
+  umitoolsPrepareForRsem (
+    chTrsBam.paired.map { meta, bam -> [ meta, bam, [] ] }
+  )
+
   salmonQuantFromBam(
-    samtoolsSortSalmon.out.bam,
+    umitoolsPrepareForRsem.out.bam.mix(chTrsBam.single),
     Channel.value([]),
     trsFasta.collect(),
     gtf.collect(),

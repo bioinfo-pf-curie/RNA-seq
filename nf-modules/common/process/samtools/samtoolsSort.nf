@@ -12,7 +12,7 @@ process samtoolsSort {
   tuple val(meta), path (bam)
 
   output:
-  tuple val(meta), path ("*_sorted.bam"), emit: bam
+  tuple val(meta), path ("*bam"), emit: bam
   path("versions.txt") , emit: versions
 
   when:

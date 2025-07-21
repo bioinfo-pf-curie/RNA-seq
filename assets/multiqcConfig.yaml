@@ -28,8 +28,6 @@ custom_data:
         headers:
             Sample_name:
               title: 'Sample Name'
-              scale: false
-              format: '{:.0f}'
               placement: 2000
             Strandness:
               cond_formatting_rules:
