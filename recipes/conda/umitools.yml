@@ -2,6 +2,6 @@ name: umitools
 channels:
   - conda-forge
   - bioconda
-  - defaults
+  - nodefaults
 dependencies:
   - bioconda::umi_tools=1.1.6=py310h1fe012e_0
