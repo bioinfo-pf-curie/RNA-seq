@@ -19,30 +19,34 @@ It comes with conda / singularity containers making installation easier and resu
 The first version of this pipeline was modified from the [nf-core/rnaseq](https://github.com/nf-core/rnaseq) pipeline. 
 See the [nf-core](https://nf-co.re/) project for more details.
 
+![image](./assets/rnseq_wkflow.png)
+
 ### Pipline summary
 
-1. Trim adapters from sequencing reads ([`TrimGalore!`](https://github.com/FelixKrueger/TrimGalore)
+1. Detect UMIs ([`UMI-tools`](/bioinfo/users/nservant/Apps/nextflow-24.04.4/nextflow))
+2. Trim adapters from sequencing reads ([`TrimGalore!`](https://github.com/FelixKrueger/TrimGalore))
 2. Separate host/graft reads for PDX model ([`xengsort`](https://gitlab.com/genomeinformatics/xengsort))
 3. Run quality control of sequencing reads ([`fastqc`](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/))
 4. Align reads on ribosomal RNAs sequences when available ([`bowtie1`](http://bowtie-bio.sourceforge.net/index.shtml))
 5. Align reads on reference genome ([`STAR`](https://github.com/alexdobin/STAR) / [`hisat2`](http://ccb.jhu.edu/software/hisat2/index.shtml))
 6. Infer reads orientation ([`rseqc`](http://rseqc.sourceforge.net/))
-7. Dedicated quality controls
+7. Deduplicates reads with the same UMIs ([`UMI-tools`](/bioinfo/users/nservant/Apps/nextflow-24.04.4/nextflow))
+8. Dedicated quality controls
     - Saturation curves ([`preseq`](http://smithlabresearch.org/software/preseq/) / [`R`](https://www.r-project.org/))
     - Duplicates ([`picard`](https://broadinstitute.github.io/picard/) / [`dupRadar`](https://bioconductor.org/packages/release/bioc/html/dupRadar.html))
     - Reads annotation ([`qualimap`](http://qualimap.conesalab.org/) / [`R`](https://www.r-project.org/))
     - Gene body coverage ([`qualimap`](http://qualimap.conesalab.org/))
-8. Identito monitoring based on a list of known polymorphism ([`bcftools`](http://samtools.github.io/bcftools/bcftools.html) / [`R`](https://www.r-project.org/))
-9. Generate counts table from aligned data or pseudo-alignment ([`STAR`](https://github.com/alexdobin/STAR) / [`featureCounts`](http://bioinf.wehi.edu.au/featureCounts/) / [`HTSeqCounts`](https://htseq.readthedocs.io/en/release_0.11.1/count.html)/[`salmon`](https://salmon.readthedocs.io/en/latest/salmon.html))
-10. Exploratory analysis ([`R`](https://www.r-project.org/))
-11. Reference-guided de novo transcripts assembly ([`stringtie`](https://ccb.jhu.edu/software/stringtie/), [`scallop`](https://github.com/Kingsford-Group/scallop))
-12. Present all QC results in a final report ([`MultiQC`](http://multiqc.info/))
+9. Identito monitoring based on a list of known polymorphism ([`bcftools`](http://samtools.github.io/bcftools/bcftools.html) / [`R`](https://www.r-project.org/))
+10. Generate counts table from aligned data or pseudo-alignment ([`STAR`](https://github.com/alexdobin/STAR) / [`featureCounts`](http://bioinf.wehi.edu.au/featureCounts/) / [`HTSeqCounts`](https://htseq.readthedocs.io/en/release_0.11.1/count.html)/[`salmon`](https://salmon.readthedocs.io/en/latest/salmon.html))
+11. Exploratory analysis ([`R`](https://www.r-project.org/))
+12. Reference-guided de novo transcripts assembly ([`stringtie`](https://ccb.jhu.edu/software/stringtie/), [`scallop`](https://github.com/Kingsford-Group/scallop))
+13. Present all QC results in a final report ([`MultiQC`](http://multiqc.info/))
 
 ### Quick help
 
 ```bash
-N E X T F L O W  ~  version 20.10.0
-Launching `main.nf` [awesome_archimedes] - revision: 7f7a25de60
+N E X T F L O W  ~  version 24.04.4
+Launching `main.nf` [confident_pare] DSL2 - revision: 56bcffae7d
 ------------------------------------------------------------------------
    ______ _   _   ___ 
    | ___ \ \ | | / _ \
@@ -52,9 +56,9 @@ Launching `main.nf` [awesome_archimedes] - revision: 7f7a25de60
    \_| \_\_| \_/\_| |_/      |___/\___|\__, |
                                           | |
                                           |_|
-                     v4.1.0
+                     v4.3.0
 ------------------------------------------------------------------------
-------------------------------------------------------------------------
+
 Usage:
 
 The typical command for running the pipeline is as follows:
@@ -72,6 +76,13 @@ MANDATORY ARGUMENTS:
 INPUTS:
     --singleEnd                                       For single-end input data
     --stranded  STRING [auto, forward, reverse, no]   Library strandness
+
+UMIS:
+    --saveUmiIntermediates                      save umitools results
+    --umi                                       Search for UMI
+    --umiDedupOpts         STRING               Options for umitools dedup
+    --umiExtractOpts       STRING               Options for umitools extract
+    --umiProtocol          STRING [smarterV3]   Preset to detect UMIs
 
 PREPROCESSING:
     --pdx                Deconvolute host/graft reads for PDX samples
@@ -98,6 +109,7 @@ REFERENCES:
     --bed12                PATH   Path to gene file (BED12)
     --fasta                PATH   Path to genome fasta file
     --fastaFai             PATH   Path to genome index fasta file
+	--gencode                        For Gencode-based GTF file
     --genomeAnnotationPath PATH   Path to genome annotations folder
     --gtf                  PATH   Path to GTF annotation file
     --hisat2Index          PATH   Path to Hisat2 indexes

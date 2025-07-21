@@ -80,6 +80,14 @@ denovoTools = params.denovo ? params.denovo.split(',').collect{it.trim().toLower
 ==========================
 */
 
+if (params.umi && !params.umiProtocol && !params.umiExtractOpts){
+  exit 1, "Please provide a way to extract the UMIs, using either '--umiProtocol' or '--umiExtractOpts'"
+}
+
+if (params.umi && params.counts == "star"){
+  exit 1, "UMI deduplication requires a BAM file, and thus is incompatible with using STAR to get the gene counts. Use `--counts salmon` instead."
+}
+
 if (!params.pseudoAligner && !params.aligner){
   exit 1, "Please provide a pseudo-aligner and an aligner, using either of the '--aligner' and '--pseudoAligner' parameters."
 }
@@ -140,6 +148,9 @@ summary = [
   'DOI': workflow.manifest.doi ?: null,
   'Run Name': customRunName,
   'Inputs' : params.samplePlan ?: params.reads ?: null,
+  'Trimming' : params.trimming ? 'yes' : 'no',
+  'UMIs' : params.umi ? 'yes' : 'no',
+  'UMIs Preset' : params.umiProtocol ?: null,
   'PDX' : params.pdx ?: null,
   'Genome' : params.genome,
   'GTF Annotation' : params.gtf ?: null,
@@ -550,7 +561,6 @@ workflow {
        .set{chWarn}
     
       multiqc(
-        customRunName,
         chSplan.collect(),
         chMetadata.ifEmpty([]),
         chMultiqcConfig.ifEmpty([]),
@@ -582,4 +592,5 @@ workflow {
 
 workflow.onComplete {
   NFTools.makeReports(workflow, params, summary, customRunName, mqcReport)
+  NFTools.autoCleanOnComplete(workflow, params)
 }

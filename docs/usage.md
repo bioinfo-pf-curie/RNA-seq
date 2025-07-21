@@ -18,6 +18,9 @@
 * [Reference genomes](#reference-genomes)
     * [`--genome`](#--genome)
 	* [`--genomeAnnotationPath`](#--genomeAnnotationPath)
+* [UMIs](#umi)
+    * [Extract](#extract)
+	* [Dedup](#dedup)
 * [Preprocessing](#preprocessing)
     * [`--trimming`](#--trimming)
 	* [`--pdx`](#--pdx)
@@ -284,6 +287,34 @@ Note that these paths can be updated on command line using the following paramet
 - `--bed12` - Path to gene bed12 file
 - `--transcriptsFasta` - Path to transcriptome in fasta format
 - `--saveAlignedIntermediates` - Save the BAM files from the Aligment step  - not done by default
+
+## UMI
+
+### Extract
+
+The current version of the pipeline supports Unique Molecular Identifiers (UMIs) detection and deduplication with the `--umi` parameter.  
+
+Then, you need to specify how to extract the UMIs from the raw sequencing reads. To do so, you can either use a preset option with `--umiProtocol` or manually
+specified the option to use with UMI-tools extract using `--umiExtractOpts`
+
+For instance, here is the typical command line to analyse **smarterV3** data
+
+```
+nextflow run main.nf \
+  --samplePlan ${input} \
+  --stranded 'reverse' \
+  --trimming \
+  --umi --umiProtocol 'smarterV3' --saveUmiIntermediates \
+  --genome 'hg38' \
+  --aligner star --counts salmon 
+```
+
+### Dedup
+
+The main interest of using UMIs is to be able to distingush true PCR artefacts (ie. duplicated sequences with the same UMIs).  
+Therefore, once the reads are mapped, `UMI-tools dedup` is used to remove duplicates from the aligned data.
+
+>**NB:** This step is not compatible with `--counts star` as the reads have to be mapped first to detect the duplicates.
 
 ## Preprocessing
 

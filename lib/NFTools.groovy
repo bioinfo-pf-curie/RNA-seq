@@ -20,7 +20,6 @@ class NFTools {
          return colors as LinkedHashMap
      }
 
-
     /**********************************************
      *
      * Welcome and Logs
@@ -85,15 +84,13 @@ class NFTools {
         log.info txtTemplate.toString()
     }
 
-
-
     /**
      * Has the run name been specified by the user?
      * This has the bonus effect of catching both -name and --name
      *
      * @return customRunName
      */
-    
+
      public static String checkRunName(workflowRunName, runName) {
        return workflowRunName ==~ /[a-z]+_[a-z]+/ && runName ? runName : workflowRunName
      }
@@ -168,7 +165,6 @@ Available Profiles
 """)
     }
 
-
     /**
      * Generate Help message
      * @param paramsWithUsage
@@ -185,13 +181,12 @@ Available Profiles
 
             The typical command for running the pipeline is as follows:
 
-            nextflow run main.nf ${CLIHelpMsg.join(" ")} -profile PROFILES
+            nextflow run main.nf ${CLIHelpMsg.join(" ")} 
 
         %s
         %s
             """.stripIndent(), prettyFormatParamsWithPaddingAndIndent(paramsWithUsage, 2, 4), profileHelp())
     }
-
 
 
     /***********************************
@@ -226,7 +221,7 @@ Available Profiles
         } catch (Exception e) {
             log.warn "Could not read parameters settings from JSON. $e"
             paramsWithUsage = Collections.emptyMap()
-	        }
+	}
         return paramsWithUsage
     }
 
@@ -287,8 +282,6 @@ Available Profiles
     """.stripIndent()}
      }
 
-
-
      /****************************************
       *
       * Load input data
@@ -303,7 +296,9 @@ Available Profiles
       */
 
       public static boolean hasExtension(it, String extension) {
-        it.toString().toLowerCase().endsWith(extension.toLowerCase())
+        //it.toString().toLowerCase().endsWith(extension.toLowerCase())
+        def extension_rg = extension.toLowerCase().replace(".", "\\.")
+        it.toString().toLowerCase().matches(/(?i).*($extension_rg)$/)
       }
 
       /**
@@ -366,9 +361,8 @@ Available Profiles
       }
 
       /**
-       * Channeling the input file containing FASTQ or BAM
+       * Channeling the input file containing FASTQ
        * Format is: "idSample,sampleName,pathToFastq1,[pathToFastq2]"
-       * or: "sampleID,sampleName,pathToBam"
        *
        * @param samplePlan
        * @return
@@ -392,15 +386,13 @@ Available Profiles
                   checkNumberOfItem(row, 4, params)
                   inputFile2 = returnFile(row[3], params)
                   if (!hasExtension(inputFile2, 'fastq.gz') && !hasExtension(inputFile2, 'fq.gz') && !hasExtension(inputFile2, 'fastq')) {
-                    Nextflow.exit(1, "File: ${inputFile2} has an unexpected extension. See --help for more information")
+                    Nextflow.exit(1, "File: ${inputFile2} is not a FASTQ file (.fastq.gz, .fq.gz). See --help for more information")
                   }
       		}
-              } else if (hasExtension(inputFile1, 'bam')) {
-                checkNumberOfItem(row, 3, params)
               } else {
-                Nextflow.exit(1, "File: ${inputFile1} has an unexpected extension. See --help for more information")
+                Nextflow.exit(1, "File: ${inputFile1} is not a FASTQ file (.fastq.gz, .fq.gz). See --help for more information")
               }
-	      
+
 	      if (singleEnd) {
 	        meta.singleEnd = true
 		return [meta, [inputFile1]]
@@ -429,7 +421,7 @@ Available Profiles
           return Channel
             .fromFilePairs(reads, size: singleEnd ? 1 : 2)
             .ifEmpty { Nextflow.exit 1, "Cannot find any reads matching: ${params.reads}\nNB: Path needs to be enclosed in quotes!\nNB: Path requires at least one * wildcard!\nIf this is single-end data, please specify --singleEnd on the command line." }
-            .map { row -> 
+            .map { row ->
                    def meta = [:]
                    meta.id = row[0]
                    if (singleEnd) {
@@ -437,21 +429,52 @@ Available Profiles
                      return [meta, [row[1][0]]]
                    }else{
                      meta.singleEnd = false
-                     return [meta, [row[1][0], row[1][1]]] 
+                     return [meta, [row[1][0], row[1][1]]]
                    }
             }
          }
       }
 
 
-      /**
+      /*
+       * Channeling the input file containing intermediates files
+       * Format is: "sampleID,sampleName,pathToIntermediates"
+       *
+       * @param samplePlan
+       * @return
+       */
+
+      public static Object getIntermediatesData(samplePlan, List extension, params) {
+          return Channel
+            .fromPath(samplePlan)
+            .splitCsv(header: false)
+            .map { row ->
+	          def meta = [:]
+              checkNumberOfItem(row, 2 + extension.size(), params)
+              meta.id = row[0]
+              meta.name = row[1]
+              meta.singleEnd = params.singleEnd ? true : false
+	      def inputFiles=[]
+	      for (int i=0; i<extension.size(); i++){
+                def ifile=returnFile(row[i+2], params)
+                if (hasExtension(ifile, extension[i])){
+	          inputFiles[i]=ifile
+                } else{
+                  Nextflow.exit(1, "File: ${ifile} is not a ${extension[i]} file. See --help for more information")
+                }
+              }
+              return [meta, inputFiles]
+            }
+      }
+
+      /*
        * Channeling the samplePlan and create a file is no samplePlan is provided
-       * 
+       *
        * @param samplePlan
        * @param reads
        * @param readPaths
        * @param singleEnd
-       
+
        * @return
        */
 
@@ -497,6 +520,26 @@ Available Profiles
     ************************************/
 
     /**
+     * Automatic deletion of work/ folder in the pipeline run successfully
+     * @param workflow
+     * @param params
+     * @return
+     */
+
+    public static void autoCleanOnComplete(workflow, params){
+      def colors = generateLogColors(params.get("monochromeLogs", false) as Boolean)
+
+      if (params.cleanup == 'success' && workflow.success){
+        def wdir = workflow.workDir
+        log.info "[$workflow.manifest.name]${colors.green} Automatic cleaning of work directory [${wdir.toString()}] ... ${colors.reset}"
+        def delRet = wdir.deleteDir()
+        if (!delRet){
+          log.info "[$workflow.manifest.name]${colors.red} Failed - workDir not removed ${colors.reset}"
+        }
+      } 
+    }
+
+    /**
      * Generate reports at the end of the workflow
      * @param workflow
      * @param params
@@ -506,7 +549,7 @@ Available Profiles
      */
 
     public static void makeReports(workflow, params, summary, customRunName, mqcReport) {
-    	def colors = generateLogColors(params.get("monochromeLogs", false) as Boolean)  
+    	def colors = generateLogColors(params.get("monochromeLogs", false) as Boolean)
         def engine = new groovy.text.GStringTemplateEngine()
 
 	// Complete summary
@@ -527,7 +570,7 @@ Available Profiles
   	def reportFields = params + [
         workflowName: workflow.manifest.name,
 	version : workflow.manifest.version,
-        runName: customRunName, 
+        runName: customRunName,
  	success: workflow.success,
 	dateComplete: workflow.complete,
 	duration:workflow.duration,
@@ -593,7 +636,7 @@ Available Profiles
             'Exit status': workflow.exitStatus,
             'Error report': workflow.errorReport ?: '-'
         ]
-        
+
         String endWfSummary = endSummary.collect { k,v -> "${k.padRight(30, '.')}: $v" }.join("\n")
         String execInfo = "Execution summary\n${endWfSummary}\n"
         woc.withWriter { w -> w << execInfo }

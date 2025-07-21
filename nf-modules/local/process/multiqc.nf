@@ -1,5 +1,5 @@
 /*
- * MultiQC for RNA-seq report
+ * MultiQC report
  */
 
 process multiqc {
@@ -8,7 +8,6 @@ process multiqc {
   label 'lowMem'
 
   input:
-  val customRunName
   path splan
   path metadata
   path multiqcConfig
@@ -33,7 +32,6 @@ process multiqc {
   path ('softwareVersions/*')
   path ('workflowSummary/*')
   path warnings
-  //val skippedPoorAlignment
 
   output:
   path splan, emit: splan
@@ -41,8 +39,9 @@ process multiqc {
   path "*_data", emit: data
 
   script:
-  rtitle = customRunName ? "--title \"$customRunName\"" : ''
-  rfilename = customRunName ? "--filename " + customRunName + "_rnaseq_report" : "--filename rnaseq_report"
+  def prefix = task.ext.prefix ?: ""
+  def args = task.ext.args ?: ""
+
   alignerOpts = params.aligner ?: params.pseudoAligner ?: ''
   metadataOpts = params.metadata ? "--metadata ${metadata}" : ""
   splanOpts = params.samplePlan ? "--splan ${params.samplePlan}" : ""
