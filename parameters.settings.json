@@ -87,7 +87,7 @@
       "usage": "Preset to detect UMIs",
       "type": "string",
       "nargs": "1",
-      "choices": ["smarterV3"],
+	"choices": ["smarterV3","quantSeqV2"],
       "default_value": false,
       "pattern": "",
       "render": "textfield",
@@ -123,8 +123,8 @@
 
     {
       "name": "saveUmiIntermediates",
-      "label": "save umitools results",
-      "usage": "save umitools results",
+      "label": "Save umitools results",
+      "usage": "Save umitools results",
       "type": "boolean",
       "nargs": 0,
       "choices": [],

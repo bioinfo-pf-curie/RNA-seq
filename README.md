@@ -78,11 +78,11 @@ INPUTS:
     --stranded  STRING [auto, forward, reverse, no]   Library strandness
 
 UMIS:
-    --saveUmiIntermediates                      save umitools results
-    --umi                                       Search for UMI
-    --umiDedupOpts         STRING               Options for umitools dedup
-    --umiExtractOpts       STRING               Options for umitools extract
-    --umiProtocol          STRING [smarterV3]   Preset to detect UMIs
+    --saveUmiIntermediates                                  Save umitools results
+    --umi                                                   Search for UMI
+    --umiDedupOpts         STRING                           Options for umitools dedup
+    --umiExtractOpts       STRING                           Options for umitools extract
+    --umiProtocol          STRING [smarterV3, quantSeqV2]   Preset to detect UMIs
 
 PREPROCESSING:
     --pdx                Deconvolute host/graft reads for PDX samples

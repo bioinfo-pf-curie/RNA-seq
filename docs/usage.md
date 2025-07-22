@@ -297,7 +297,11 @@ The current version of the pipeline supports Unique Molecular Identifiers (UMIs)
 Then, you need to specify how to extract the UMIs from the raw sequencing reads. To do so, you can either use a preset option with `--umiProtocol` or manually
 specified the option to use with UMI-tools extract using `--umiExtractOpts`
 
-For instance, here is the typical command line to analyse **smarterV3** data
+The following UMI protocols can be specified with the `--umiProtocol` option:
+- Takara Bio SMARTer® Stranded Total RNA-Seq Kit v3
+- Lexogen QuantSeq® 3’ mRNA-Seq V2 FWD + UMI Second Strand Synthesis Module
+
+For instance, here is the typical command line to analyse SMARTer v3 data
 
 ```
 nextflow run main.nf \
