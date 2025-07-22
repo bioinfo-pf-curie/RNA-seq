@@ -19,7 +19,7 @@ It comes with conda / singularity containers making installation easier and resu
 The first version of this pipeline was modified from the [nf-core/rnaseq](https://github.com/nf-core/rnaseq) pipeline. 
 See the [nf-core](https://nf-co.re/) project for more details.
 
-![image](./assets/rnseq_wkflow.png)
+![image](./assets/rnaseq_wkflow.png)
 
 ### Pipline summary
 
