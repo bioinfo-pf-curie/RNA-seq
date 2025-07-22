@@ -3,7 +3,7 @@
 **Institut Curie - Nextflow rna-seq analysis pipeline**
 
 [![Nextflow](https://img.shields.io/badge/nextflow-%E2%89%A520.10.0-brightgreen.svg)](https://www.nextflow.io/)
-[![MultiQC](https://img.shields.io/badge/MultiQC-1.11-blue.svg)](https://multiqc.info/)
+[![MultiQC](https://img.shields.io/badge/MultiQC-1.27-blue.svg)](https://multiqc.info/)
 [![Install with conda](https://img.shields.io/badge/install%20with-conda-brightgreen.svg)](https://conda.anaconda.org/anaconda)
 [![Singularity Container available](https://img.shields.io/badge/singularity-available-7E4C74.svg)](https://singularity.lbl.gov/)
 [![Docker Container available](https://img.shields.io/badge/docker-available-003399.svg)](https://www.docker.com/)
@@ -19,7 +19,7 @@ It comes with conda / singularity containers making installation easier and resu
 The first version of this pipeline was modified from the [nf-core/rnaseq](https://github.com/nf-core/rnaseq) pipeline. 
 See the [nf-core](https://nf-co.re/) project for more details.
 
-![image](./assets/rnseq_wkflow.png)
+![image](./assets/rnaseq_wkflow.png)
 
 ### Pipline summary
 
