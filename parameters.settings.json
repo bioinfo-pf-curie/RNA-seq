@@ -642,6 +642,20 @@
       "group": "Skip options"
     },
     {
+      "name": "skipSoftwareVersions",
+      "label": "Skip Identito",
+      "usage": "Disable Identito",
+      "type": "boolean",
+      "nargs": 0,
+      "choices": [],
+      "default_value": false,
+      "pattern": "",
+      "render": "check-box",
+      "arity": 0,
+      "group": "Skip options"
+    },
+
+    {
       "name": "skipMultiqc",
       "label": "Skip MultiQC",
       "usage": "Disable MultiQC",

@@ -131,6 +131,7 @@ SKIP OPTIONS:
     --skipQualimap                     Disable RNA-seq quality controls with Qualimap
     --skipRrna                         Disable rRNA mapping
     --skipSaturation                   Disable saturation analysis with Preseq
+    --skipSoftwareVersions             Disable software versions reporting
 
 OTHER OPTIONS:
     --metadata      PATH     Specify a custom metadata file for MultiQC
