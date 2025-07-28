@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import os
+import sys
 import argparse
 
 parser = argparse.ArgumentParser()
@@ -10,12 +11,17 @@ versions = {}
 with open(args.input) as f:
     for line in f:
         if line.strip():
-            (key, val) = line.strip().split()
-            if key in versions.keys():
-                if val != versions[str(key)]:
-                    versions[str(key)] = versions[str(key)] + " - " + val
+            parts = line.strip().split()
+            if len(parts) == 2:
+                key, val = parts
+                if key in versions.keys():
+                    if val != versions[str(key)]:
+                        versions[str(key)] = versions[str(key)] + " - " + val
+                else:
+                    versions[str(key)] = val
             else:
-                versions[str(key)] = val
+                print(f"Warning - Format error - line ignored : {line.strip()}", file=sys.stderr)
+
 
 # Dump to YAML
 print ('''
