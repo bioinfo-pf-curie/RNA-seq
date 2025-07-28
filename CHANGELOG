@@ -6,7 +6,7 @@ NEW FEATURES
   - New option `--umiProtocol` to specified how to search for UMIs. Support for `smarterV3` and `quantseqV2`.
   - New option `--saveUmiIntermediates` to save intermediates files from umitools
   - New option `--umiExtractOpts` to manualy set up the `umitools extract` arguments
-  - New option `--skipSotwareVersions`
+  - New option `--skipSoftwareVersions`
 
 SIGNIFICANT USER-VISIBLE CHANGES
   - Update multiqc report
