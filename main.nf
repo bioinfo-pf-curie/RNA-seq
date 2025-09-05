@@ -332,7 +332,7 @@ workflow {
 
       // Filter removes all 'aligned' channels that fail the check
       chAlignedFlagstat.join(chAlignedBam).join(chAlignedBai)
-        .filter { meta, logs, bam, bai -> checkAlignmentPercent(meta, logs) }
+        .filter { meta, logs, bam, bai -> checkAlignmentPercent(meta.id, logs) }
         .map { meta, logs, bam, bai -> [ meta, bam, bai ] }
         .set { chBamPassed }
 
@@ -502,7 +502,7 @@ workflow {
       chAlignedBam
         .join(chBamPassed, remainder: true)
         .filter{it -> it[2] == null}
-        .flatMap{ it -> it[0] + ": Poor alignment rate. Sample discarded !"}
+        .flatMap{ it -> it[0].id + ": Poor alignment rate. Sample discarded !"}
         .set{chWarnMapping}
 
       strandnessFlow.out.strand
