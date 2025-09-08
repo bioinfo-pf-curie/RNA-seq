@@ -502,7 +502,7 @@ workflow {
       chAlignedBam
         .join(chBamPassed, remainder: true)
         .filter{it -> it[2] == null}
-        .flatMap{ it -> it[0].id + ": Poor alignment rate. Sample discarded !"}
+        .flatMap{ it -> it[0].id + "- Poor alignment rate. Sample discarded !"}
         .set{chWarnMapping}
 
       strandnessFlow.out.strand
