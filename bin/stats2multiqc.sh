@@ -65,21 +65,29 @@ do
     fi
 
     ##PDX
-    if [[ -e xengsort/${sample}_xengsort.log ]]; then
-	n_host=$(awk -F"\t"  '$0!~"#" && $0!~"prefix"{print $2}' xengsort/${sample}_xengsort.log)
-	p_host=$(echo "${n_host} ${n_frag}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
-	n_graft=$(awk -F"\t"  '$0!~"#" && $0!~"prefix"{print $3}' xengsort/${sample}_xengsort.log)
-        p_graft=$(echo "${n_graft} ${n_frag}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
+    if [ -d "xengsort" ]; then
 	header+=",Number_pdx_host,Percent_pdx_host,Number_pdx_graft,Percent_pdx_graft"
-	output+=",${n_host},${p_host},${n_graft},${p_graft}"
+	if [[ -e xengsort/${sample}_xengsort.log ]]; then
+	    n_host=$(awk -F"\t"  '$0!~"#" && $0!~"prefix"{print $2}' xengsort/${sample}_xengsort.log)
+	    p_host=$(echo "${n_host} ${n_frag}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
+	    n_graft=$(awk -F"\t"  '$0!~"#" && $0!~"prefix"{print $3}' xengsort/${sample}_xengsort.log)
+            p_graft=$(echo "${n_graft} ${n_frag}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
+	    output+=",${n_host},${p_host},${n_graft},${p_graft}"
+	else
+	    output+=",NA,NA,NA,NA"
+	fi
     fi
 
     ##n_rRNA
     if [ -d "rrna" ]; then
-	n_rrna=$(grep "reads with at least one" rrna/${sample}.log | cut -d: -f 2 | tr "(|)" " " | cut -d" " -f2)
-	p_rrna=$(grep "reads with at least one" rrna/${sample}.log | cut -d: -f 2 | tr "(|)" " " | cut -d" " -f4 | sed -e 's/%//')
 	header+=",Number_of_rRNA,Percent_of_rRNA"
-	output+=",${n_rrna},${p_rrna}"
+	if [ -e rrna/${sample}.log ]; then
+	    n_rrna=$(grep "reads with at least one" rrna/${sample}.log | cut -d: -f 2 | tr "(|)" " " | cut -d" " -f2)
+	    p_rrna=$(grep "reads with at least one" rrna/${sample}.log | cut -d: -f 2 | tr "(|)" " " | cut -d" " -f4 | sed -e 's/%//')
+	    output+=",${n_rrna},${p_rrna}"
+	else
+	    output+=",NA,NA"
+	fi
     fi
 
     ## All values are in pairs for paired-end data /reads for single-end data
@@ -106,6 +114,9 @@ do
 	p_mapped=$(echo "${n_mapped} ${n_frag}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
 	header+=",Number_of_aligned,Percent_of_aligned"
 	output+=",${n_mapped},${p_mapped}"
+    else
+	header+=",Number_of_aligned,Percent_of_aligned"
+	output+=",NA,NA"
     fi
 
     ##n_dup
@@ -123,17 +134,19 @@ do
 	    p_dup=$(echo "${n_dup} ${n_mapped}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
 	    output+=",${n_dup},${p_dup}"
 	else
-	    output+=",NA,NA" 
+	    output+=",NA,NA"
 	fi
     fi
 
     ## Preseq
-    header+=",Percent_saturation"
-    if [ -e preseq/${sample}_extrap_ccurve.txt ]; then
-	p_sat=$(awk -v nbreads=${n_mapped} 'BEGIN{p=0} NR>1 && $1>nbreads && nbreads>p{val=$2} {p=$1; x=$2} END{printf "%.*f",2,val/x*100}' preseq/${sample}_extrap_ccurve.txt)
-	output+=",${p_sat}"
-    else
-	output+=",NA"
+    if [ -d "preseq" ]; then
+	header+=",Percent_saturation"
+	if [ -e preseq/${sample}_extrap_ccurve.txt ]; then
+	    p_sat=$(awk -v nbreads=${n_mapped} 'BEGIN{p=0} NR>1 && $1>nbreads && nbreads>p{val=$2} {p=$1; x=$2} END{printf "%.*f",2,val/x*100}' preseq/${sample}_extrap_ccurve.txt)
+	    output+=",${p_sat}"
+	else
+	    output+=",NA"
+	fi
     fi
 
     ## Number of detected genes
@@ -154,3 +167,6 @@ do
     fi
     echo -e $output >> mq.stats
 done
+
+
+
