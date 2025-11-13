@@ -1,4 +1,3 @@
-
 name: xengsort
 channels:
   - bioconda
@@ -14,4 +13,3 @@ dependencies:
   - pip=23.2.1=py310h06a4308_0
   - pip:
     - xengsort-cubic==1.1.0
-
