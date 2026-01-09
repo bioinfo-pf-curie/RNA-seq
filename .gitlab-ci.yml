@@ -330,8 +330,8 @@ deploy:
   variables:
     AP_NF_EXECUTOR: "slurm"
     APPS_PATH: "/mnt/beegfs/common/apps"
-    CLUSTER_NAME: "abacus"
-    CLUSTER_SUBMIT: "srun /bin/bash"   # for abacus
+    CLUSTER_NAME: "soroban"
+    CLUSTER_SUBMIT: "srun /bin/bash"
     DEPLOY_ENV: "${DEPLOY_ENV}"
     DEPLOY_HOME: "${DIR_BIOINFO_PIPELINE_ABACUS}/${PIPELINE_NAME}/${DEPLOY_ENV}/${CUBIC_PIPE}"
     DIR_ANNOTATION: "${DIR_ANNOTATION_ABACUS}"
