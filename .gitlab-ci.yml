@@ -7,11 +7,8 @@ variables:
   ROLE_PREFIX: "cubicpipes"
   IS_NF_CORE: ""
   #IS_NF_CORE: "_4nf-core" # for nf-core pipeline, use the corresponding template
-  # CLUSTER_NAME: "calcsub"                       # for calcsub
-  # CLUSTER_SUBMIT: "qsub -I -x"                  # /usr/local/bin/podman run -it --net cni-podman1 -v /local/users/newpipelines/profiles:/data/profiles -v /run/user/7886/podman/podman.sock:/run/user/0/podman/podman.sock mmonrunfor calcsub
-  # DEPLOY_OPTION: ""                             # for calcsub
-  CLUSTER_NAME: "abacus"                      # for abacus
-  CLUSTER_SUBMIT: "srun /bin/bash"   # for abacus
+  CLUSTER_NAME: "soroban"
+  CLUSTER_SUBMIT: "srun /bin/bash"
   DIR_ANALYSIS_PIPELINE_MODULE: "."
   DIR_DEPLOY_MODULE: "modules/deploy"
   DIR_DEPLOY_PACKAGE: "/opt/deploy"
@@ -159,8 +156,7 @@ export_var:
       echo "PIPELINE_NAME=cubicpipes" >> ${CI_BUILDS_DIR}/${CI_PROJECT_PATH_SLUG}/${CI_COMMIT_REF_SLUG}/deploy.env
       echo "PIPELINE_GROUP=cubicpipes" >> ${CI_BUILDS_DIR}/${CI_PROJECT_PATH_SLUG}/${CI_COMMIT_REF_SLUG}/deploy.env
       sed -e 's/^[ ]*export[ ]*//g' -e '/^#/d' -e '/^$/d' -e 's/"//g' -e 's/[ ]*#.*//g' ${DIR_DEPLOY_PACKAGE}/conf/deploy.conf >> ${CI_BUILDS_DIR}/${CI_PROJECT_PATH_SLUG}/${CI_COMMIT_REF_SLUG}/deploy.env
-      if [[ ${CLUSTER_NAME} == "calcsub" ]]; then sed -e '/DIR_BIOINFO_PIPELINE_CALCSUB/!d' -e 's/_CALCSUB//g' ${CI_BUILDS_DIR}/${CI_PROJECT_PATH_SLUG}/${CI_COMMIT_REF_SLUG}/deploy.env >> ${CI_BUILDS_DIR}/${CI_PROJECT_PATH_SLUG}/${CI_COMMIT_REF_SLUG}/deploy.env; fi
-      if [[ ${CLUSTER_NAME} == "abacus" ]]; then sed -e '/DIR_BIOINFO_PIPELINE_ABACUS/!d' -e 's/_ABACUS//g' ${CI_BUILDS_DIR}/${CI_PROJECT_PATH_SLUG}/${CI_COMMIT_REF_SLUG}/deploy.env >> ${CI_BUILDS_DIR}/${CI_PROJECT_PATH_SLUG}/${CI_COMMIT_REF_SLUG}/deploy.env; fi
+      sed -e '/DIR_BIOINFO_PIPELINE_ABACUS/!d' -e 's/_ABACUS//g' ${CI_BUILDS_DIR}/${CI_PROJECT_PATH_SLUG}/${CI_COMMIT_REF_SLUG}/deploy.env >> ${CI_BUILDS_DIR}/${CI_PROJECT_PATH_SLUG}/${CI_COMMIT_REF_SLUG}/deploy.env
       sed -i -e "s|/$||g" ${CI_BUILDS_DIR}/${CI_PROJECT_PATH_SLUG}/${CI_COMMIT_REF_SLUG}/deploy.env
       sed -i -e "/PATH=/d" ${CI_BUILDS_DIR}/${CI_PROJECT_PATH_SLUG}/${CI_COMMIT_REF_SLUG}/deploy.env
       mv ${CI_BUILDS_DIR}/${CI_PROJECT_PATH_SLUG}/${CI_COMMIT_REF_SLUG}/deploy.env ${CI_PROJECT_DIR} # files for artifacts need to be located in ${CI_PROJECT_DIR}
@@ -323,31 +319,7 @@ sif:
         job: ci_4_sif
     strategy: depend # wait for the child pipeline to be completed
 
-sync_sif_calcsub:
-  stage: deploy
-  script:
-    - env
-    - echo "Sync  sif on calcsub"
-    - |
-      export VAULT_SERVICE="${CLUSTER_NAME}"
-      bash ${DIR_DEPLOY_PACKAGE}/utils/set-vault-token-4-gitlab-ci.sh # set the vault token
-      source variables.sh
-    - |
-      echo "#! /bin/bash" > sync-calcsub.sh
-      echo "rsync -avz  --delete-excluded  -e \"ssh -o 'UserKnownHostsFile=/dev/null' -o 'StrictHostKeyChecking=no'\" ${USERSSH}@abacus:${DEPLOY_HOME_ABACUS}/singularity/images/ ${DEPLOY_HOME_CALCSUB}/singularity/images/" >> sync-calcsub.sh
-    - chmod +x sync-calcsub.sh
-    - cat sync-calcsub.sh
-    - ssh -p ${SSH_PORT} ${USERSSH}@${SERVER_NAME} "mkdir -p ${DEPLOY_HOME_CALCSUB}/singularity/images"
-    - scp -P ${SSH_PORT} sync-calcsub.sh ${USERSSH}@${SERVER_NAME}:${DEPLOY_HOME_CALCSUB}/sync-calcsub-${CI_JOB_ID}.sh
-    - ssh -q ${USERSSH}@${CLUSTER_NAME}.curie.fr "${CLUSTER_SUBMIT} -x ${DEPLOY_HOME_CALCSUB}/sync-calcsub-${CI_JOB_ID}.sh"
-    - ssh -q ${USERSSH}@${CLUSTER_NAME}.curie.fr "rm -rf ${DEPLOY_HOME_CALCSUB}/sync-calcsub-${CI_JOB_ID}.sh"
-  variables:
-    CLUSTER_NAME: "calcsub"
-    CLUSTER_SUBMIT: "qsub -I -x"
-    DEPLOY_HOME_ABACUS: "${DIR_BIOINFO_PIPELINE_ABACUS}/${PIPELINE_NAME}/${DEPLOY_ENV}/${CUBIC_PIPE}"
-    DEPLOY_HOME_CALCSUB: "${DIR_BIOINFO_PIPELINE_CALCSUB}/${PIPELINE_NAME}/${DEPLOY_ENV}/${CUBIC_PIPE}"
-
-deploy_abacus:
+deploy:
   # This job deploys the singularity images (if needed)
   stage: deploy
   trigger:
@@ -368,29 +340,4 @@ deploy_abacus:
     OUT_DIR: "${DIR_BIOINFO_PIPELINE_ABACUS}/${PIPELINE_NAME}/${DEPLOY_ENV}/${CUBIC_PIPE}/${DIR_TMP_ON_CLUSTER}/results-${CI_JOB_NAME}-${CI_JOB_ID}"
     DIR_TMP_IN_RUNNER: "${DIR_TMP_IN_RUNNER}"
 
-
-deploy_calcsub:
-  # This job deploys the singularity images (if needed)
-  stage: deploy
-  trigger:
-    include:
-      - artifact: gitlab-ci_deploy_pipeline.yml
-        job: ci_4_deploy
-    strategy: depend # wait for the child pipeline to be completed
-  variables:
-    AP_NF_EXECUTOR: "pbs"
-    APPS_PATH: "/bioinfo/local/build/Centos"
-    CLUSTER_NAME: "calcsub"
-    CLUSTER_SUBMIT: "qsub -I -x"   # for calcsub
-    DEPLOY_ENV: "${DEPLOY_ENV}"
-    DEPLOY_HOME: "${DIR_BIOINFO_PIPELINE_CALCSUB}/${PIPELINE_NAME}/${DEPLOY_ENV}/${CUBIC_PIPE}"
-    DIR_ANNOTATION: "${DIR_ANNOTATION_CALCSUB}"
-    DIR_TMP_ON_CLUSTER: "dir_tmp_4_deploy" # This will be a folder created in the HOME of the user app on the cluster
-    NEXTFLOW_OPTIONS: "-process.clusterOptions '-v PATH'"
-    OUT_DIR: "${DIR_BIOINFO_PIPELINE_CALCSUB}/${PIPELINE_NAME}/${DEPLOY_ENV}/${CUBIC_PIPE}/${DIR_TMP_ON_CLUSTER}/results-${CI_JOB_NAME}-${CI_JOB_ID}"
-    DIR_TMP_IN_RUNNER: "${DIR_TMP_IN_RUNNER}"
-  needs:
-    - job: sync_sif_calcsub
-    - job: export_var
-      artifacts: true
 
