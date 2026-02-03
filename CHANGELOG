@@ -1,6 +1,3 @@
-BUG FIXES
-  - correction of the xensort.yml conda recipe
-
 ***************************************
 version-4.3.0
 
@@ -13,10 +10,12 @@ NEW FEATURES
 
 SIGNIFICANT USER-VISIBLE CHANGES
   - Update multiqc report
-  - Default trimming options updated to `--trim-n --2colour 20 --length 10`
+  - Default trimming options updated to `--trim-n --2colour 20 --length 20`
+  - Fix seed for STAR mapping
 
 BUG FIXES
   - Update Hisat2 recipes
+  - correction of the xensort.yml conda recipe
 
 ***************************************
 version-4.2.3
