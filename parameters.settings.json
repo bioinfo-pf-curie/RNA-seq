@@ -269,7 +269,7 @@
     }, 
 
     {
-      "name": "saveIntermediates",
+      "name": "saveAlignedIntermediates",
       "label": "Save fastq or bams intermediates",
       "usage": "Save fastq or bams intermediates",
       "type": "boolean",

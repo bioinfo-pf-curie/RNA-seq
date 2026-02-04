@@ -1,3 +1,12 @@
+**************************************
+version-4.3.1
+
+SIGNIFICANT USER-VISIBLE CHANGES
+  - `--saveIntermediates` now move to `--saveAlignedIntermediates`
+
+BUG FIXES
+  - In trimming, the min length size is now set to 20 to avoid issue with bad quality `smarterV3` samples
+
 ***************************************
 version-4.3.0
 
