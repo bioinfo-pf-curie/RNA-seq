@@ -319,6 +319,8 @@ sif:
       - artifact: gitlab-ci_singularity.yml
         job: ci_4_sif
     strategy: depend # wait for the child pipeline to be completed
+  variables:
+    CLUSTER_NAME: "${CLUSTER_NAME}"
 
 deploy:
   # This job deploys the singularity images (if needed)
