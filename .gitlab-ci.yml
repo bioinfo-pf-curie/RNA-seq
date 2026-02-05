@@ -152,6 +152,7 @@ export_var:
     - |
       mkdir -p ${CI_BUILDS_DIR}/${CI_PROJECT_PATH_SLUG}/${CI_COMMIT_REF_SLUG}/build_4_gitlab # mkdir needed to avoid the next rm to fail
       rm -rf ${CI_BUILDS_DIR}/${CI_PROJECT_PATH_SLUG}/${CI_COMMIT_REF_SLUG}/build_4_gitlab*  # remove all previous builds (just in case the clean job failed or not performed on a previous gitlab-ci)
+      echo "CLUSTER_NAME=${CLUSTER_NAME}" >> ${CI_BUILDS_DIR}/${CI_PROJECT_PATH_SLUG}/${CI_COMMIT_REF_SLUG}/deploy.env
       echo "DIR_TMP_IN_RUNNER=${CI_BUILDS_DIR}/${CI_PROJECT_PATH_SLUG}/${CI_COMMIT_REF_SLUG}/build_4_gitlab_$(date +%Y%m%d%H%M%S)_$RANDOM" >> ${CI_BUILDS_DIR}/${CI_PROJECT_PATH_SLUG}/${CI_COMMIT_REF_SLUG}/deploy.env
       echo "PIPELINE_NAME=cubicpipes" >> ${CI_BUILDS_DIR}/${CI_PROJECT_PATH_SLUG}/${CI_COMMIT_REF_SLUG}/deploy.env
       echo "PIPELINE_GROUP=cubicpipes" >> ${CI_BUILDS_DIR}/${CI_PROJECT_PATH_SLUG}/${CI_COMMIT_REF_SLUG}/deploy.env
