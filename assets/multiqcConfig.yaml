@@ -4,6 +4,8 @@
 ###################
 
 skip_generalstats: true
+skip_versions_section: true
+disable_version_detection: true
 read_count_multiplier: 0.000001
 read_count_prefix: 'M'
 read_count_desc: 'millions'
@@ -26,12 +28,18 @@ custom_data:
         headers:
             Sample_name:
               title: 'Sample Name'
-              scale: false
-              format: '{:.0f}'
               placement: 2000
             Strandness:
-              scale: false
-              format: '{:.0f}'
+              cond_formatting_rules:
+                blue:
+                  - s_eq: "auto"
+                black:
+                  - s_eq: "forward"
+                grey:
+                  - s_eq: "reverse"
+              cond_formatting_colours:
+                - grey: "#AAB7B8"
+                - black: "#17202A"
               placement: 3000
             Number_of_frag:
               title: 'Total Fragments'
@@ -82,6 +90,13 @@ custom_data:
               scale: 'RdYlGn-rev'
               suffix: '%'
               format: '{:,.1f}'
+              cond_formatting_rules:
+                pass:
+                  - lt: 10
+                warn:
+                  - gt: 10
+                fail:
+                  - gt: 20      
               placement: 6000
             Number_of_aligned:
               title: 'Aligned'
@@ -96,35 +111,14 @@ custom_data:
               scale: 'RdYlGn'
               suffix: '%'
               format: '{:,.1f}'
+              cond_formatting_rules:
+                pass:
+                  - gt: 80
+                warn:
+                  - lt: 80
+                fail:
+                  - lt: 50
               placement: 8000
-            Number_of_uniquely_aligned:
-              title: 'Aligned Unique'
-              scale: 'RdYlGn'
-              format: '{:,.0f}'
-              hidden: true
-              placement: 9000
-            Percent_uniquely_aligned:
-              title: 'Aligned Unique (%)'
-              min: 0
-              max: 100
-              scale: 'RdYlGn'
-              suffix: '%'
-              format: '{:,.1f}'
-              placement: 10000
-            Number_of_multiple_aligned:
-              title: 'Aligned Multiple'
-              scale: 'RdYlGn-rev'
-              format: '{:,.0f}'
-              hidden: true
-              placement: 11000
-            Percent_multiple_aligned:
-              title: 'Aligned Multiple (%)'
-              min: 0
-              max: 100
-              scale: 'RdYlGn-rev'
-              suffix: '%'
-              format: '{:,.1f}'
-              placement: 12000
             Number_of_duplicates:
               title: 'Duplicates'
               scale: 'RdYlGn-rev'
@@ -138,6 +132,13 @@ custom_data:
               scale: 'RdYlGn-rev'
               suffix: '%'
               format: '{:,.1f}'
+              cond_formatting_rules:
+                pass:
+                  - lt: 35
+                warn:
+                  - gt: 35
+                fail:
+                  - gt: 50   
               placement: 14000
             Percent_saturation:
               title: 'Saturation (%)'
@@ -148,6 +149,18 @@ custom_data:
               suffix: '%'
               format: '{:,.1f}'
               placement: 15000
+            Coding_genes:
+              title: 'Coding genes'
+              description: 'Number of coding genes detected'
+              format: '{:,.0f}'
+              cond_formatting_rules:
+                pass:
+                  - gt: 8000
+                warn:
+                  - lt: 8000
+                fail:
+                  - lt: 5000
+              placement: 16000
 
     gene_type:
        file_format: 'csv'
@@ -155,11 +168,9 @@ custom_data:
        description: 'The number of expressed genes per sample was splitted into the 5 most abundant classes following the known gene annotations.'
        plot_type: 'bargraph'
        pconfig:
-            namespace: 'genetype'
             id: 'genetype'
             title: 'Expressed Genes'
             ylab: 'Number of expressed genes (TPM>1)'
-            scale: 'Pastel1'
 
     gene_saturation:
        file_format: 'tsv'
@@ -167,7 +178,6 @@ custom_data:
        description: 'plot showing the number of detected genes for a given set of subsampling values.'
        plot_type: 'linegraph'
        pconfig:
-            namespace: 'gene saturation'
             id: 'genesaturation'
             title: 'Gene-based Saturation'
             ylab: 'Number of detected genes'
@@ -182,7 +192,7 @@ custom_data:
             title: 'Polymorphisms'
             id: 'polym'
             scale: 'RdYlBu'
-            format: '{:,.2f}'
+            tt_decimals: 2
             save_file: true
 
     xengsort:
@@ -211,28 +221,29 @@ sp:
       fn: '*_xengsort.log'
 
 
-table_cond_formatting_rules:
-    Percent_of_rRNA:
-        pass:
-            - lt: 10
-        warn:
-            - gt: 10
-        fail:
-            - gt: 20
-    Percent_of_aligned:
-        pass:
-            - gt: 80
-        warn:
-            - lt: 80
-        fail:
-            - lt: 50
-    Percent_duplicates:
-        pass:
-            - lt: 35
-        warn:
-            - gt: 35
-        fail:
-            - gt: 50
+#table_cond_formatting_rules:
+#  my_stats-percent_of_rRNA:
+#    pass:
+#      - lt: 10
+#    warn:
+#      - gt: 10
+#    fail:
+#      - gt: 20
+#  my_stats-percent_of_aligned:
+#    pass:
+#      - gt: 80
+#    warn:
+#      - lt: 80
+#    fail:
+#      - lt: 50
+#  my_stats-percent_duplicates:
+#    pass:
+#      - lt: 35
+#    warn:
+#      - gt: 35
+#    fail:
+#      - gt: 50
+
 
 ################################
 ## Clean sample names
@@ -249,6 +260,7 @@ module_order:
   - cutadapt:
       name: 'Trimming'
   - fastqc
+  - umitools
   - bowtie1:
       name: 'rRNA Mapping'
       info: 'This section reports the fraction of reads aligned on ribosomal RNAs.'
@@ -267,22 +279,16 @@ module_order:
      info: 'estimates the complexity of a library, showing how many additional unique reads are sequenced for increasing total read count. A shallow curve indicates complexity saturation. The dashed line shows a perfectly complex library where total reads = unique reads. The presented graph shows extrapolated curves up to 200M sequencing reads.'
   - gffcompare
 
-#custom_plot_config:
-#   bowtie1_alignment:
-#     reads_aligned:
-#       color: '#e41a1c'
-#     multimapped:
-#       color: '#ffffb3'
-#     not_aligned:
-#       color: '#1f78b4'
-
 #############################
 ## Removed plots
 remove_sections :
+  - cutadapt_filtered_reads
   - fastqc_sequence_counts
   - fastqc_per_sequence_quality_scores
   - fastqc_overrepresented_sequences
   - fastqc_status_checks
+  - umitools_extract_regex
+  - umitools_extract_overall
   - plotFingerprint
 
 #############################
@@ -297,6 +303,8 @@ report_section_order:
     order: -20
   fastqc:
     order: -30
+  umitools:
+    order: -35
   bowtie1:
     order: -40
   star:

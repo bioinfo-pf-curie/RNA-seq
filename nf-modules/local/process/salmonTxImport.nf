@@ -6,7 +6,7 @@
 process salmonTxImport {
   label "r"
   label "medCpu"
-  label "highMem"
+  label "extraMem"
 
   input:
   path("salmon/*")

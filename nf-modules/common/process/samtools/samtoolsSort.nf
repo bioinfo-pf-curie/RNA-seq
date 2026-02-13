@@ -12,7 +12,7 @@ process samtoolsSort {
   tuple val(meta), path (bam)
 
   output:
-  tuple val(meta), path ("*_sorted.bam"), emit: bam
+  tuple val(meta), path ("*bam"), emit: bam
   path("versions.txt") , emit: versions
 
   when:
@@ -20,13 +20,13 @@ process samtoolsSort {
 
   script:
   def args = task.ext.args ?: ''
-  def prefix = task.ext.prefix ?: "${bam.baseName}"
+  def prefix = task.ext.prefix ?: "${bam.baseName}_sorted"
   """
   echo \$(samtools --version | head -1 ) > versions.txt
   samtools sort \\
     ${args} \\
     -@  ${task.cpus}  \\
-    -o ${prefix}_sorted.bam  \\
+    -o ${prefix}.bam  \\
     ${bam}
   """
 }

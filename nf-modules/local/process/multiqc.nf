@@ -1,5 +1,5 @@
 /*
- * MultiQC for RNA-seq report
+ * MultiQC report
  */
 
 process multiqc {
@@ -8,16 +8,17 @@ process multiqc {
   label 'lowMem'
 
   input:
-  val customRunName
   path splan
   path metadata
   path multiqcConfig
   path ('trimming/*')
+  path ('umi/*')
   path ('xengsort/*')
   path ('fastqc/*')
   path ('rrna/*')
   path ('alignment/*')
   path ('strandness/*')
+  path ('umi/*')
   path ('qualimap/*')
   path ('preseq/*')
   path ('identito/*')
@@ -31,7 +32,6 @@ process multiqc {
   path ('softwareVersions/*')
   path ('workflowSummary/*')
   path warnings
-  //val skippedPoorAlignment
 
   output:
   path splan, emit: splan
@@ -39,23 +39,23 @@ process multiqc {
   path "*_data", emit: data
 
   script:
-  rtitle = customRunName ? "--title \"$customRunName\"" : ''
-  rfilename = customRunName ? "--filename " + customRunName + "_rnaseq_report" : "--filename rnaseq_report"
+  def prefix = task.ext.prefix ?: ""
+  def args = task.ext.args ?: ""
+
   alignerOpts = params.aligner ?: params.pseudoAligner ?: ''
   metadataOpts = params.metadata ? "--metadata ${metadata}" : ""
   splanOpts = params.samplePlan ? "--splan ${params.samplePlan}" : ""
   isPE = params.singleEnd ? 0 : 1
     
-  modulesList = "-m custom_content -m preseq -m rseqc -m bowtie1 -m hisat2 -m star -m cutadapt -m fastqc -m qualimap -m salmon -m gffcompare"
+  modulesList = "-m custom_content -m preseq -m rseqc -m bowtie1 -m hisat2 -m star -m cutadapt -m fastqc -m qualimap -m salmon -m gffcompare -m umitools"
   modulesList = params.counts == 'featureCounts' ? "${modulesList} -m featureCounts" : "${modulesList}"  
   modulesList = params.counts == 'HTseqCounts' ? "${modulesList} -m htseq" : "${modulesList}"  
  
-  //warn=skippedPoorAlignment.size() > 0 ? "--warn warnings.txt" : ""
   warn = warnings.name == 'warnings.txt' ? "--warn warnings.txt" : ""
   """
   stats2multiqc.sh ${splan} ${alignerOpts} ${isPE}
   medianReadNb="\$(sort -t, -k3,3n mq.stats | awk -F, '{a[i++]=\$3;} END{x=int((i+1)/2); if (x<(i+1)/2) printf "%.0f", (a[x-1]+a[x])/2; else printf "%.0f",a[x-1];}')"
   mqc_header.py --name "RNA-seq" --version ${workflow.manifest.version} ${metadataOpts} ${splanOpts} --nbreads \${medianReadNb} ${warn} > multiqc-config-header.yaml
-  multiqc . -f $rtitle $rfilename -c $multiqcConfig -c multiqc-config-header.yaml $modulesList
+  multiqc . ${args} -c $multiqcConfig -c multiqc-config-header.yaml $modulesList --filename ${prefix}multiqc_report
   """    
 }

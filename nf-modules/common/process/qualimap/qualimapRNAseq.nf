@@ -6,7 +6,7 @@ process qualimapRNAseq {
   tag "${meta.id}"
   label 'qualimap'
   label 'minCpu'
-  label 'medMem'
+  label 'highMem'
 
   input:
   tuple val(meta), path(bam), path(bai)

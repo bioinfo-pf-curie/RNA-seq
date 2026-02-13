@@ -46,8 +46,7 @@ workflow mappingHisat2Flow {
   chVersions = chVersions.mix(samtoolsFlagstat.out.versions)
 
   emit:
-  bam = samtoolsSort.out.bam
-  bai = samtoolsIndex.out.bai
+  genomeBam = samtoolsSort.out.bam.join(samtoolsIndex.out.bai)
   logs = hisat2Align.out.logs
   flagstat = samtoolsFlagstat.out.stats
   versions = chVersions

@@ -2,6 +2,6 @@ name: stringtie
 channels:
   - conda-forge
   - bioconda
-  - defaults
+  - nodefaults
 dependencies:
   - bioconda::stringtie=2.1.7=h978d192_0

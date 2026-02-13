@@ -1,3 +1,31 @@
+**************************************
+version-4.3.1
+
+SIGNIFICANT USER-VISIBLE CHANGES
+  - `--saveIntermediates` now move to `--saveAlignedIntermediates`
+
+BUG FIXES
+  - In trimming, the min length size is now set to 20 to avoid issue with bad quality `smarterV3` samples
+
+***************************************
+version-4.3.0
+
+NEW FEATURES
+  - Support UMI with umitools (--umi)
+  - New option `--umiProtocol` to specified how to search for UMIs. Support for `smarterV3` and `quantseqV2`.
+  - New option `--saveUmiIntermediates` to save intermediates files from umitools
+  - New option `--umiExtractOpts` to manualy set up the `umitools extract` arguments
+  - New option `--skipSoftwareVersions` and update of scrape_software_versions.py to avoid systematic crashes
+
+SIGNIFICANT USER-VISIBLE CHANGES
+  - Update multiqc report
+  - Default trimming options updated to `--trim-n --2colour 20 --length 20`
+  - Fix seed for STAR mapping
+
+BUG FIXES
+  - Update Hisat2 recipes
+  - correction of the xensort.yml conda recipe
+
 ***************************************
 version-4.2.3
 

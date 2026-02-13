@@ -69,6 +69,73 @@
     },
 
     {
+      "name": "umi",
+      "label": "umi",
+      "usage": "Search for UMI",
+      "type": "boolean",
+      "nargs": 0,
+      "choices": [],
+      "default_value": false,
+      "pattern": "",
+      "render": "check-box",
+      "arity": 0,
+      "group": "UMIs"
+    },
+    {
+      "name": "umiProtocol",
+      "label": "umi protocol",
+      "usage": "Preset to detect UMIs",
+      "type": "string",
+      "nargs": "1",
+	"choices": ["smarterV3","quantSeqV2"],
+      "default_value": false,
+      "pattern": "",
+      "render": "textfield",
+      "arity": 0,
+      "group": "UMIs"
+    },
+    {
+      "name": "umiExtractOpts",
+      "label": "umitools extract options",
+      "usage": "Options for umitools extract",
+      "type": "string",
+      "nargs": "1",
+      "choices": [],
+      "default_value": null,
+      "pattern": ".*",
+      "render": "textfield",
+      "arity": 0,
+      "group": "UMIs"
+    },
+    {
+      "name": "umiDedupOpts",
+      "label": "umitools dedup options",
+      "usage": "Options for umitools dedup",
+      "type": "string",
+      "nargs": "1",
+      "choices": [],
+      "default_value": null,
+      "pattern": ".*",
+      "render": "textfield",
+      "arity": 0,
+      "group": "UMIs"
+    },
+
+    {
+      "name": "saveUmiIntermediates",
+      "label": "Save umitools results",
+      "usage": "Save umitools results",
+      "type": "boolean",
+      "nargs": 0,
+      "choices": [],
+      "default_value": false,
+      "pattern": "",
+      "render": "check-box",
+      "arity": 0,
+      "group": "UMIs"
+    },
+
+    {
       "name": "trimming",
       "label": "Trimming",
       "usage": "Trim adapters with TrimGalore",
@@ -188,9 +255,9 @@
       "group": "Counts"
     },
     {
-      "name": "htseqOpts",                                                                                                                                                                          
-      "label": "HTSeq options",                                                                                                                                                                             
-      "usage": "Options for HTSeq quantification",                                                                                                                                                          
+      "name": "htseqOpts",
+      "label": "HTSeq options",
+      "usage": "Options for HTSeq quantification",
       "type": "string",
       "nargs": "1",
       "choices": [],
@@ -202,7 +269,7 @@
     }, 
 
     {
-      "name": "saveIntermediates",
+      "name": "saveAlignedIntermediates",
       "label": "Save fastq or bams intermediates",
       "usage": "Save fastq or bams intermediates",
       "type": "boolean",
@@ -439,7 +506,7 @@
       "pattern": "",
       "render": "check-box",
       "arity": 0,
-      "group": "Inputs"
+      "group": "References"
     },
     {
       "name": "polym",
@@ -574,6 +641,20 @@
       "arity": 0,
       "group": "Skip options"
     },
+    {
+      "name": "skipSoftwareVersions",
+      "label": "Skip Identito",
+      "usage": "Disable Identito",
+      "type": "boolean",
+      "nargs": 0,
+      "choices": [],
+      "default_value": false,
+      "pattern": "",
+      "render": "check-box",
+      "arity": 0,
+      "group": "Skip options"
+    },
+
     {
       "name": "skipMultiqc",
       "label": "Skip MultiQC",
