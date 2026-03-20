@@ -86,7 +86,7 @@ UMIS:
 
 PREPROCESSING:
     --pdx                Deconvolute host/graft reads for PDX samples
-	--trimming           Trim adapters with TrimGalore	
+    --trimming           Trim adapters with TrimGalore	
 
 MAPPING:
     --bowtieOpts               STRING    Options for rRNA mapping with bowtie
@@ -109,7 +109,7 @@ REFERENCES:
     --bed12                PATH   Path to gene file (BED12)
     --fasta                PATH   Path to genome fasta file
     --fastaFai             PATH   Path to genome index fasta file
-	--gencode                        For Gencode-based GTF file
+    --gencode                        For Gencode-based GTF file
     --genomeAnnotationPath PATH   Path to genome annotations folder
     --gtf                  PATH   Path to GTF annotation file
     --hisat2Index          PATH   Path to Hisat2 indexes
