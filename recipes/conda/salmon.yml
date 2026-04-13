@@ -4,4 +4,5 @@ channels:
   - conda-forge
   - nodefaults
 dependencies:
-  - bioconda::salmon=1.10.3=h45fbf2d_5
+  - bioconda::salmon=1.11.4=h7f96273_0
+

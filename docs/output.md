@@ -81,7 +81,7 @@ By default, or if you do not have the information (`--stranded 'auto'`), the pip
 This script predicts the mode of library preparation (sense-stranded or antisense-stranded) according to how aligned reads overlay gene features in the reference genome.
 For further detail on the infer experiment tool see the [RSeQC help page](http://rseqc.sourceforge.net/).
 
-**Output directory: `results/strandness`
+**Output directory: `results/strandness`**
 
 * `[SAMPLE].txt`
   * RSeQC infer experiment output file
@@ -89,6 +89,26 @@ For further detail on the infer experiment tool see the [RSeQC help page](http:/
   * Readable Strandness information
 
 ![MultiQC - RNA-seq strandness with RSeQC](images/rseqc_infer_experiment_plot.png)
+
+
+## UMIs
+
+If the `--umi` parameter is specified, `umiTools` will be used to;
+- Extract the UMIs, using the pattern discribed with `--umiExtractOpts` or with the `--umiProtocol` preset.  
+- Remove duplicates **after reads mapping** using the UMIs information.
+
+For details about `umiTools` and how to provided customized options, see its [help page](https://github.com/CGATOxford/UMI-tools).
+
+**Output directory: `umitoolsExtract`**
+- Log files are stored by default
+- Fastq files `*umi_extract_[12].fastq.gz` are stored only if `--saveUmiIntermediates` is used.
+
+**Output directory:`umitoolsDedup`**
+- Log files are stored by default
+- **bam** files with mapped reads after deduplication, for both genome and transcriptome **bam**.
+These files are stored only if `--saveUmiIntermediates` is used.
+
+![MultiQC - RNA-seq UMIs](images/umitools_stats_violin.png)
 
 ## Genome Mapping
 

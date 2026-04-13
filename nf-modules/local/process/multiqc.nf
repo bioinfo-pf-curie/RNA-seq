@@ -48,7 +48,7 @@ process multiqc {
   isPE = params.singleEnd ? 0 : 1
     
   modulesList = "-m custom_content -m preseq -m rseqc -m bowtie1 -m hisat2 -m star -m cutadapt -m fastqc -m qualimap -m salmon -m gffcompare -m umitools"
-  modulesList = params.counts == 'featureCounts' ? "${modulesList} -m featureCounts" : "${modulesList}"  
+  modulesList = params.counts == 'featureCounts' ? "${modulesList} -m featurecounts" : "${modulesList}"  
   modulesList = params.counts == 'HTseqCounts' ? "${modulesList} -m htseq" : "${modulesList}"  
  
   warn = warnings.name == 'warnings.txt' ? "--warn warnings.txt" : ""
